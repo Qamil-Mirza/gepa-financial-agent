@@ -1,0 +1,20 @@
+{
+  "query": "NVIDIA Data Center revenue Q1 fiscal 2028",
+  "normalized": "2028 center data fiscal nvidia q1 revenue",
+  "fetched_at": "2026-10-17T19:30:57Z",
+  "elapsed_s": 8.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA reported **$75.2 billion** of Data Center revenue in **Q1 fiscal 2027**; **Q1 fiscal 2028 has not yet been reported** as of October 17, 2026. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2027",
+          "title": "NVIDIA Announces Financial Results for First Quarter Fiscal 2027"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "query": "AMD data center segment year over year growth most recent quarter",
+  "normalized": "amd center data growth over quarter segment year",
+  "fetched_at": "2026-10-17T19:25:28Z",
+  "elapsed_s": 6.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD\u2019s most recently reported quarter is Q2 2026 (ended June 27, 2026), in which Data Center segment revenue was **$6.7 billion**, representing **107% year-over-year growth**; AMD attributed the increase to strong demand for EPYC processors and Instinct GPUs. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1295/amd-reports-second-quarter-2026-financial-results",
+          "title": "AMD Reports Second Quarter 2026 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

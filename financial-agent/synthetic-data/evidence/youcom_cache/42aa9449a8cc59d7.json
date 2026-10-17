@@ -1,0 +1,24 @@
+{
+  "query": "smartphone processor market share Qualcomm Apple",
+  "normalized": "apple market processor qualcomm share smartphone",
+  "fetched_at": "2026-10-17T19:26:35Z",
+  "elapsed_s": 13.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "On a **global smartphone application-processor/system-on-chip (AP/SoC) shipment basis**, Qualcomm held **23%** market share in **Q1 2026**, versus Apple at **19%**; Qualcomm therefore led Apple by **4 percentage points**. [[1]] \n\nFor context, Qualcomm\u2019s share declined from **27% in Q1 2025** to 23%, while Apple rose from **15%** to 19% over the same period. [[1]] \n\nThis is **chipset shipment share**, not smartphone-brand market share or semiconductor revenue share; Apple\u2019s chips are principally used in its own iPhones, whereas Qualcomm supplies numerous Android OEMs. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.thetechoutlook.com/current-affairs/business/global-smartphone-chipsets-market-share-results-for-q1-2026-revealed-by-counterpoint-mediatek-continues-to-stay-at-the-top-position/",
+          "title": "Global Smartphone Chipsets Market Share results for Q1 2026 revealed by Counterpoint; MediaTek continues to stay at the top position - The Tech Outlook"
+        },
+        {
+          "url": "https://counterpointresearch.com/en/insights/Global-Smartphone-SoC-Market-Q1-2026",
+          "title": "Global Smartphone SoC Shipments Fall 8% YoY in Q1 2026; Recovery Expected Early 2028"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

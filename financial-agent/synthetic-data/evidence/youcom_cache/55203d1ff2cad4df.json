@@ -1,0 +1,20 @@
+{
+  "query": "NVIDIA Data Center revenue Q2 fiscal 2027",
+  "normalized": "2027 center data fiscal nvidia q2 revenue",
+  "fetched_at": "2026-10-17T19:30:16Z",
+  "elapsed_s": 13.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s Data Center revenue was **$89.0 billion** in the second quarter of fiscal 2027, ended July 26, 2026; it increased **18% quarter over quarter** and **117% year over year**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2027",
+          "title": "NVIDIA Announces Financial Results for Second Quarter Fiscal 2027"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

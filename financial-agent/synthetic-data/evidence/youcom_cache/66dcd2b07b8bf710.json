@@ -1,0 +1,44 @@
+{
+  "query": "why is NVIDIA gross margin higher than AMD",
+  "normalized": "amd gross higher margin nvidia than why",
+  "fetched_at": "2026-10-17T19:27:38Z",
+  "elapsed_s": 28.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s gross margin is higher primarily because its revenue is far more concentrated in premium AI data-center platforms, where it has greater pricing power and sells a more differentiated, integrated product offering. In FY2026, NVIDIA reported a 71.1% GAAP gross margin on $215.9 billion of revenue, versus AMD\u2019s 50% gross margin on $34.6 billion in FY2025\u2014a roughly 21-percentage-point gap. [[1, 2]]\n\n**1. NVIDIA has a much more favorable revenue mix.** Data Center produced $193.7 billion, or about 90%, of NVIDIA FY2026 revenue, compared with AMD\u2019s $16.6 billion Data Center revenue out of $34.6 billion total revenue, or about 48%. [[1, 3, 4]] NVIDIA\u2019s business is therefore overwhelmingly exposed to high-value AI compute and networking, whereas AMD also has substantial Client and Gaming revenue ($14.6 billion) and Embedded revenue ($3.5 billion), product categories that generally face more price competition and carry a less AI-infrastructure-heavy mix. [[4]]\n\n**2. NVIDIA sells an integrated AI platform, not only a processor.** NVIDIA\u2019s Compute & Networking revenue reached $193.5 billion in FY2026, supported by Blackwell data-center computing demand and by 142% growth in data-center networking from NVLink compute fabric plus Ethernet and InfiniBand platforms. [[1]] This lets NVIDIA capture value across the accelerator, high-speed interconnect, system architecture, and associated software/tooling, rather than competing mainly on the price of an individual chip. NVIDIA\u2019s transition toward full-scale Blackwell data-center solutions actually reduced FY2026 margin versus the prior Hopper HGX-oriented model, illustrating that system-level sales can initially be more cost-intensive even while margins remain unusually high. [[1]]\n\n**3. CUDA and the established software ecosystem support pricing power and lower customer switching willingness.** NVIDIA\u2019s CUDA ecosystem has a substantially longer and broader installed base than AMD\u2019s ROCm\u2014one cited comparison characterizes CUDA as having 19 years, more than 400 libraries, and 6 million developers, versus ROCm\u2019s 10 years and a growing ecosystem. [[5]] For enterprise and hyperscale buyers, the cost and risk of porting, tuning, validating, and operating AI workloads can make total platform performance and time-to-deployment more important than the accelerator\u2019s standalone purchase price; that supports NVIDIA\u2019s premium pricing. [[6]]\n\n**4. AMD\u2019s mix includes lower-margin and more cyclical businesses, even though its AI business is growing.** AMD\u2019s Client and Gaming segment includes PCs, discrete graphics, and semi-custom game-console SoCs, while its Embedded segment includes products exposed to mixed end-market demand. [[7, 4]] AMD\u2019s Client business benefited in 2025 from both higher processor shipments and a 31% rise in average selling prices, but its consolidated gross margin still reflects the economics of the broader portfolio rather than an NVIDIA-like concentration in large-scale AI systems. [[4, 2]]\n\n**5. One-off costs narrowed both companies\u2019 reported margins, but do not explain the structural gap.** AMD said its FY2025 margin rose to 50% from 49% chiefly because of product mix, partly offset by approximately $440 million of MI308 inventory-related charges tied to U.S. export controls. [[2]] NVIDIA\u2019s FY2026 gross margin fell from 75.0% to 71.1%, partly because of its Blackwell system transition and a $4.5 billion H20 inventory and purchase-obligation charge. [[1]] Thus, NVIDIA\u2019s reported margin was already depressed by a larger unusual charge, yet remained well above AMD\u2019s, reinforcing that the core explanation is product mix, platform differentiation, and pricing power\u2014not merely accounting items. [[1, 2]]\n\n**Bottom line:** NVIDIA\u2019s margin advantage is principally a *platform and mix advantage*: a dominant share of revenue comes from premium AI data-center compute and networking sold into an ecosystem centered on CUDA, while AMD has a broader mix that includes client, console/semi-custom, gaming, and embedded products. [[1, 4]] The gap is not necessarily permanent\u2014AMD\u2019s Data Center segment is growing and its MI350X products saw strong hyperscaler, OEM, and ODM deployment in 2025\u2014but AMD would need much greater scale in differentiated AI platforms and software-led pricing power for its consolidated margin to converge materially toward NVIDIA\u2019s. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+          "title": "nvda-20260125"
+        },
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/amd-20251227.htm",
+          "title": "February 4, 2026 - 10-K: Annual report [Section 13 and 15(d), not S-K Item 405]"
+        },
+        {
+          "url": "https://mungomash.com/orgs/nvidia/financials/",
+          "title": "NVIDIA Financials \u2014 Data Center Revenue, Gross Margin, Customer Concentration, and the AI Inflection"
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000021/amd-20251227.htm",
+          "title": "amd-20251227"
+        },
+        {
+          "url": "https://www.amcompute.com/blog/nvidia-software-ecosystem",
+          "title": "NVIDIA Software Ecosystem for AI"
+        },
+        {
+          "url": "https://blog.inovuslabs.org/the-cuda-monopoly-why-ai-developers-still-struggle-to-ditch-nvidia-in-2026/",
+          "title": "The CUDA Monopoly: Why AI Developers Still Struggle to Ditch NVIDIA in 2026"
+        },
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/0000002488-26-000018.pdf",
+          "title": "UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

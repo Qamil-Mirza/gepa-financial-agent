@@ -1,0 +1,44 @@
+{
+  "query": "NVIDIA Data Center revenue growth drivers fiscal 2025",
+  "normalized": "2025 center data drivers fiscal growth nvidia revenue",
+  "fetched_at": "2026-10-17T19:31:19Z",
+  "elapsed_s": 21.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**NVIDIA\u2019s Data Center revenue reached $115.2 billion in FY2025** (year ended January 26, 2025), a **142% year-over-year increase** from $47.5 billion in FY2024; it was the central source of the company\u2019s 114% total-revenue growth. [[1]] [[2]]\n\n**Primary growth drivers**\n\n- **Hopper accelerated-computing demand was the dominant driver.** NVIDIA said Data Center computing revenue grew **162%** year over year, principally due to Hopper-platform demand for large-language models, recommendation engines, and generative-AI applications. [[3]]\n- **AI model scaling increased infrastructure requirements.** NVIDIA attributed rising Data Center-system demand to advances in accelerated computing and generative-AI models, as well as increasing model complexity and scale. [[3]]\n- **Cloud-provider and enterprise AI build-outs supported volume.** NVIDIA\u2019s products were being deployed through major cloud platforms\u2014including AWS, CoreWeave, Google Cloud, Microsoft Azure, and Oracle Cloud\u2014to meet customer AI demand, underpinning broad-based capacity expansion. [[1]]\n- **Networking was a meaningful secondary contributor.** Data Center networking revenue increased **51%** year over year, driven by Ethernet-for-AI revenue, including NVIDIA\u2019s Spectrum-X end-to-end Ethernet platform. [[3]]\n- **Blackwell began contributing late in the year.** NVIDIA started shipping production Blackwell systems in FY2025\u2019s fourth quarter and reported billions of dollars of Blackwell AI-supercomputer sales in that initial production quarter, adding a new growth leg while Hopper remained the full-year engine. [[3]] [[4]]\n- **The revenue ramp accelerated through the year.** Quarterly Data Center revenue rose from **$22.6 billion in Q1** to **$26.3 billion in Q2**, **$30.8 billion in Q3**, and **$35.6 billion in Q4**, reflecting sustained Hopper demand, continuing AI-infrastructure deployment, and the initial Blackwell ramp. [[5]] [[6]] [[7]] [[1]]\n\n**Mix perspective:** Data Center compute generated **$102.2 billion** of FY2025 revenue, versus $39.0 billion in FY2024, and therefore accounted for the overwhelming majority of the platform\u2019s $67.7 billion absolute revenue increase; networking supplied the remainder of the growth. [[2]] [[3]]\n\n**Bottom line:** FY2025 Data Center growth was chiefly an AI-compute capacity cycle\u2014hyperscalers, model builders, and enterprises buying Hopper-based systems for training and inference\u2014with Spectrum-X networking expansion and the late-year Blackwell production ramp providing additional support. [[3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2025/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2025/",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Fourth Quarter and Fiscal 2025"
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126.htm",
+          "title": "nvda-20250126"
+        },
+        {
+          "url": "https://www.publicnow.com/view/5EBFB425AD1D43945A255B6E3A1E3927B06A7141",
+          "title": "Nvidia Corporation (via Public) / Annual Report for Fiscal Year Ending January 26, 2025 (Form 10-K)"
+        },
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2025",
+          "title": "NVIDIA Announces Financial Results for Fourth Quarter and Fiscal 2025"
+        },
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2024/NVIDIA-Announces-Financial-Results-for-First-Quarter-Fiscal-2025/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for First Quarter Fiscal 2025"
+        },
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2024/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2025/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Second Quarter Fiscal 2025"
+        },
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2024/NVIDIA-Announces-Financial-Results-for-Third-Quarter-Fiscal-2025/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Third Quarter Fiscal 2025"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

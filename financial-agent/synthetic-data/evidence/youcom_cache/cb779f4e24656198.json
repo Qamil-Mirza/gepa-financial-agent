@@ -1,0 +1,20 @@
+{
+  "query": "NVIDIA Data Center segment definition fiscal 2027 10-Q",
+  "normalized": "10 2027 center data definition fiscal nvidia q segment",
+  "fetched_at": "2026-10-17T19:30:42Z",
+  "elapsed_s": 16.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s FY2027 Form 10\u2011Q presents **Data Center** as a **market platform**, rather than an operating segment; NVIDIA\u2019s two operating segments remain **Compute & Networking** and **Graphics**. [[1]] \n\nThe Data Center platform encompasses NVIDIA\u2019s accelerated-computing and networking offerings for data-center-scale AI infrastructure; NVIDIA describes its platforms as incorporating processors, interconnects, software, algorithms, systems, and services. [[1]] \n\nBeginning in Q1 FY2027, NVIDIA changed its revenue-by-market-platform presentation and recast comparable periods; Data Center is now disaggregated by customer category into **Hyperscale** and **AI Clouds, Industrial & Enterprise (ACIE)**. [[1]] \n\nFor Q2 FY2027, Data Center revenue was **$89.023 billion**, consisting of **$48.710 billion** from Hyperscale and **$40.313 billion** from ACIE. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/files/doc_financials/2027/NVDA-2027-Q2-10Q-Final-including-exhibits.pdf",
+          "title": "UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}
