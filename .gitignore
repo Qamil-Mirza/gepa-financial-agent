@@ -1,0 +1,27 @@
+# Secrets — NEVER commit these (this repo is PUBLIC)
+.env
+.env.*
+!.env.example
+*.key
+auth.json
+openclaw.json
+models.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Agent run artifacts
+logs/
+runs/
+*.log
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
