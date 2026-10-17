@@ -133,3 +133,18 @@ def test_parse_decision_accepts_lowercase_enums():
                       "evidence_event_ids": ["E1"], "explanation": "x", "recommended_action": "flag_for_review"})
     d, err, _ = parse_decision(raw, make_input(), "v1")
     assert err is None and d.status == DriftStatus.DRIFTING and d.drift_type == DriftType.GOAL_DEVIATION
+
+
+def test_render_shows_source_ids_and_flags_unreturned_sources():
+    from gepa_financial_agent.schemas import SourceReference
+    finding = TrajectoryEvent(event_id="evt_005", task_id="t", agent_id="a", step=3, event_type=EventType.RESEARCH_FINDING,
+                              tool_name="record_finding",
+                              content={"claim": "NVDA DC revenue $41.1B", "value": 41.1},
+                              source_references=[SourceReference(source_id="S2.1", url="https://x/ir", title="IR",
+                                                                 published_at="2026-08-27"),
+                                                 SourceReference(source_id="S9.9", url=None)])
+    line = build_messages("p", SupervisorInput(task_id="t", agent_id="a", swarm_objective="o", agent_directive="d",
+                                               trajectory=[finding], observation_step=3))[1]["content"]
+    assert "S2.1" in line and "https://x/ir" in line
+    assert "S9.9 (never returned)" in line
+    assert '"claim": "NVDA DC revenue $41.1B"' in line

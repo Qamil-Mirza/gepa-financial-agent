@@ -41,9 +41,11 @@ class RecommendedAction(str, Enum):
 
 class SourceReference(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    source_id: str | None = None  # e.g. "S3.1": how findings cite sources returned by an earlier tool result
     url: str | None = None
     title: str | None = None
     retrieved_at: str | None = None
+    published_at: str | None = None
     snippet: str | None = None
 
 

@@ -47,9 +47,14 @@ def render_event(e: TrajectoryEvent, max_chars: int = 600, alias: str | None = N
         body = e.content if isinstance(e.content, str) else json.dumps(e.content, sort_keys=True)
         parts.append(":: " + _clip(body, max_chars))
     if e.source_references:
-        urls = [r.url for r in e.source_references if r.url]
-        if urls:
-            parts.append("sources=" + ", ".join(urls[:4]))
+        refs = []
+        for r in e.source_references[:6]:
+            if r.source_id:
+                refs.append(f"{r.source_id} {r.url}" if r.url else f"{r.source_id} (never returned)")
+            elif r.url:
+                refs.append(r.url)
+        if refs:
+            parts.append("sources=" + ", ".join(refs))
     return " ".join(parts)
 
 
