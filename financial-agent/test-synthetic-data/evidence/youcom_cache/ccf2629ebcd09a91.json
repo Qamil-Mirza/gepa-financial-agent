@@ -1,0 +1,40 @@
+{
+  "query": "Amazon investment in Anthropic valuation gain accounting",
+  "normalized": "accounting amazon anthropic gain investment valuation",
+  "fetched_at": "2026-10-17T20:34:55Z",
+  "elapsed_s": 24.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Amazon\u2019s Anthropic investment is **not accounted for under the equity method**; Amazon records its Anthropic convertible debt as available-for-sale investments at fair value and adjusts its private-company equity investments\u2014primarily including Anthropic\u2014for observable price changes or impairment. [[1]] \n\nThe accounting therefore differs by instrument: unrealized fair-value movements on the **convertible notes** initially run through accumulated other comprehensive income (AOCI), rather than operating profit or net income. [[2]] \n\nWhen portions of those notes convert into Anthropic nonvoting preferred shares, Amazon reclassifies the previously accumulated unrealized gain out of AOCI and into **\u201cOther income (expense), net\u201d** in the income statement. [[1]] \n\nThe converted preferred shares are initially recognized at estimated fair value at conversion and subsequently adjusted for observable price changes or impairment, with those Level 3 adjustments recognized in **\u201cOther income (expense), net.\u201d** [[1]] \n\nAccordingly, the \u201cvaluation gain\u201d is generally a **non-cash mark-up**, not proceeds from Amazon selling Anthropic shares; it reflects a new observable transaction or financing valuation for comparable Anthropic securities. [[1]] \n\nFor FY2025, Amazon reported a **$15.2 billion net gain**, primarily attributable to upward valuation adjustments on Anthropic nonvoting preferred stock plus gains recycled from Anthropic convertible notes that converted during the year. [[3]] \n\nMore specifically, FY2025 upward adjustments on private-company equity investments were **$7.7 billion**, primarily from Amazon\u2019s Anthropic preferred stock, while the note-conversion-related AOCI reclassification was **$5.6 billion** through the first nine months of 2025. [[3]] [[1]] \n\nIn Q3 2025 alone, Amazon said Anthropic-related investment gains added **$9.5 billion pre-tax** to non-operating income, comprising a $7.2 billion observable-price adjustment and a $2.3 billion AOCI reclassification associated with converted notes. [[4]] [[1]] \n\nThe effect continued into 2026: in Q1, Amazon recognized approximately **$12.3 billion** of upward adjustment on Anthropic preferred stock and approximately **$4.5 billion** of gains from reclassifying convertible-note amounts into other income, contributing to **$16.8 billion of pre-tax Anthropic investment gains**. [[5]] [[6]] \n\nFor analysis purposes, these gains increase reported pre-tax income and net income but should be separated from Amazon\u2019s operating performance and cash generation, because they are valuation-driven, non-operating, and can reverse if later observable valuations decline or impairment is recognized. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872425000123/amzn-20250930.htm",
+          "title": "amzn-20250930"
+        },
+        {
+          "url": "https://www.finrep.ai/blog/anthropic-ipo-what-public-company-sec-filings-reveal",
+          "title": "Anthropic IPO: What Public Company SEC Filings Reveal"
+        },
+        {
+          "url": "https://d18rn0p25nwr6d.cloudfront.net/CIK-0001018724/85f3e1a7-bdb4-428e-a980-90bad4117b3d.pdf",
+          "title": "(Form 10-K) of Amazon.com, Inc. - Cloudfront.net"
+        },
+        {
+          "url": "https://ir.aboutamazon.com/news-release/news-release-details/2025/Amazon-com-Announces-Third-Quarter-Results/",
+          "title": "Amazon.com, Inc. - Amazon.com Announces Third Quarter Results"
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000014/amzn-20260331.htm",
+          "title": "amzn-20260331 - Amazon.com, Inc."
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000012/amzn-20260331xex991.htm",
+          "title": "Document 2 - file: amzn-20260331xex991.htm"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "query": "Marvell Technology electro-optics revenue Q3 fiscal 2026 quarter",
+  "normalized": "2026 electro fiscal marvell optics q3 quarter revenue technology",
+  "fetched_at": "2026-10-17T21:11:28Z",
+  "elapsed_s": 21.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Marvell did **not disclose a standalone dollar revenue figure for its electro-optics business** in Q3 fiscal 2026 (the quarter ended November 1, 2025). Management instead said that revenue from its **optical-interconnect businesses grew by double digits sequentially**, driven by demand for PAM DSPs, TIAs and drivers. [[1]] \n\nFor context, Marvell reported total Q3 FY2026 revenue of **$2.075 billion**, including **$1.518 billion of data-center revenue**. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.investing.com/news/transcripts/earnings-call-transcript-marvell-technology-q3-2026-beats-forecasts-stock-rises-93CH-4387230",
+          "title": "Earnings call transcript: Marvell Technology Q3 2026 beats forecasts, stock rises By Investing.com"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/999/marvell-technology-inc-reports-third-quarter-of-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports Third Quarter of Fiscal Year 2026 Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

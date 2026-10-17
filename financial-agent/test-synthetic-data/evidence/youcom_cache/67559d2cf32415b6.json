@@ -1,0 +1,24 @@
+{
+  "query": "Equinix Q2 2026 revenue $2.625 billion year-over-year growth AI demand",
+  "normalized": "2 2026 625 ai billion demand equinix growth over q2 revenue year",
+  "fetched_at": "2026-10-17T21:13:36Z",
+  "elapsed_s": 13.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Equinix reported Q2 2026 revenue of **$2.625 billion** for the quarter ended June 30, 2026, up **16% year over year** on both a reported and normalized constant-currency basis. [[1]] \n\nThe headline growth included both strong underlying demand and one-time xScale fees: recurring revenue was **$2.377 billion**, versus **$2.143 billion** a year earlier, while non-recurring revenue rose to **$248 million** from **$113 million**. [[1]] \n\nThus, recurring revenue grew about **10.9% YoY**, indicating that most of the underlying growth remained robust even excluding the unusually large non-recurring contribution. [[1]] \n\nAI demand appears to be a meaningful operational driver rather than merely a narrative: annualized gross bookings increased **23% YoY**, backlog reached a record, and Equinix added a record **9,700 net interconnections** in the quarter. [[2]] \n\nManagement said customer demand was broad-based and growing, and specifically positioned Equinix to serve enterprise networking, cloud, and AI-infrastructure requirements. [[2]] \n\nThe key analytical caveat is that the **16%** total-revenue growth rate should not be treated as fully recurring, because the company explicitly attributed part of it to one-time xScale fees; the recurring-revenue trajectory and bookings/interconnection metrics are cleaner indicators of sustained AI-led demand. [[1]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.equinix.com/news-events/press-releases/detail/1114/equinix-reports-second-quarter-results-raises-2026",
+          "title": "Equinix Reports Second-Quarter Results, Raises 2026 Guidance and Long-Term Outlook :: Equinix, Inc. (EQIX)"
+        },
+        {
+          "url": "https://www.nasdaq.com/press-release/equinix-reports-second-quarter-results-raises-2026-guidance-and-long-term-outlook",
+          "title": "Equinix Reports Second-Quarter Results, Raises 2026 Guidance and Long-Term Outlook"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

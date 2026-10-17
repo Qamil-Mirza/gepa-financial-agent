@@ -41,3 +41,22 @@ $PY build_hard_set.py stats
 
 `traces/` holds the raw runs, including ground truth and the private steer conversation. Never
 feed them to the supervisor; use `data/test.jsonl`.
+
+## Current contents
+
+42 verified traces (of 72 completed rollouts; 3 more errored before producing a trace) →
+**135 examples** in `data/test.jsonl`: 68 ON_TRACK, 17 UNCERTAIN, 50 DRIFTING.
+
+| Verified traces by steer | Count |
+|---|---|
+| GOAL_DEVIATION (close-call distractors) | 11 |
+| CONSTRAINT_VIOLATION / UNSUPPORTED_CONCLUSION | 4 / 4 |
+| OBSOLETE_DIRECTIVE / UNPRODUCTIVE_LOOP | 3 / 3 |
+| benign detour or tool error | 8 |
+| ignored bait | 2 |
+| clean | 7 |
+
+Only 2 of 15 ignored-bait runs verified. Most were dropped because the agent made other
+mistakes on its own over the longer runs (uncited findings, figures absent from the evidence), not
+because it took the bait. With only a handful of examples per category, report hard-set
+results with that caveat.

@@ -1,0 +1,32 @@
+{
+  "query": "Equinix Q3 2026 revenue total and segment results recent filing",
+  "normalized": "2026 equinix filing q3 results revenue segment total",
+  "fetched_at": "2026-10-17T21:12:19Z",
+  "elapsed_s": 14.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Equinix has not yet filed or reported **Q3 2026** as of October 17, 2026: its investor-relations filing page identifies the latest quarterly filing as the **Q2 2026 Form 10-Q**, filed July 29, 2026, while Q3 earnings are scheduled for October 28, 2026. [[1, 2]] \n\nIn the latest reported quarter, **Q2 2026 (three months ended June 30, 2026)**, Equinix generated **$2.625 billion of total revenue**, up **16% year over year** from **$2.256 billion**. [[3, 4]]\n\n| Q2 2026 segment result | Revenue ($m) | Recurring revenue ($m) | Non-recurring revenue ($m) | Segment adjusted EBITDA ($m) |\n|---|---:|---:|---:|---:|\n| Americas | 1,251 | 1,067 | 184 | 641 |\n| EMEA | 845 | 806 | 39 | 456 |\n| Asia-Pacific | 529 | 504 | 25 | 299 |\n| **Total** | **2,625** | **2,377** | **248** | **1,396** |\n\nThe figures above are from Equinix\u2019s Q2 2026 Form 10-Q, which defines the company\u2019s three reportable geographic segments as Americas, EMEA, and Asia-Pacific and reports revenue and adjusted EBITDA by segment. [[4]] \n\nAmericas was the largest and fastest-growing segment, with revenue up **$247 million, or 25% year over year**, to $1.251 billion; EMEA revenue rose **$78 million, or 10%**, to $845 million; and Asia-Pacific revenue rose **$44 million, or 9%**, to $529 million. [[4]] \n\nFor context only, Equinix\u2019s Q2 release guided to **Q3 2026 revenue of $2.525 billion to $2.575 billion**, rather than reporting a Q3 actual result. [[3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.equinix.com/sec-filings",
+          "title": "SEC Filings :: Equinix, Inc. (EQIX)"
+        },
+        {
+          "url": "https://www.marketbeat.com/earnings/reports/2026-10-28-equinix-inc-reit-stock/",
+          "title": "EQIX Q3 2026 Earnings Report on 10/28/2026"
+        },
+        {
+          "url": "https://investor.equinix.com/news-events/press-releases/detail/1114/equinix-reports-second-quarter-results-raises-2026",
+          "title": "Equinix Reports Second-Quarter Results, Raises 2026 Guidance and Long-Term Outlook :: Equinix, Inc. (EQIX)"
+        },
+        {
+          "url": "https://investor.equinix.com/sec-filings/all-sec-filings/content/0001101239-26-000147/eqix-20260630.htm",
+          "title": "eqix-20260630"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

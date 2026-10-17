@@ -1,0 +1,20 @@
+{
+  "query": "Amazon advertising services revenue latest quarter",
+  "normalized": "advertising amazon quarter revenue services",
+  "fetched_at": "2026-10-17T20:34:51Z",
+  "elapsed_s": 16.0,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Amazon\u2019s latest reported quarterly advertising-services revenue was **$19.809 billion in Q2 2026**, representing **26% year-over-year growth**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-Second-Quarter-Results/",
+          "title": "Amazon.com, Inc. - Amazon.com Announces Second Quarter Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

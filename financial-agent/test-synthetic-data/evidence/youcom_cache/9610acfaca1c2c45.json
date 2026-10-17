@@ -1,0 +1,40 @@
+{
+  "query": "Marvell Technology Q2 fiscal 2027 data center revenue custom AI silicon electro-optics",
+  "normalized": "2027 ai center custom data electro fiscal marvell optics q2 revenue silicon technology",
+  "fetched_at": "2026-10-17T21:06:37Z",
+  "elapsed_s": 27.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Marvell Technology \u2014 Q2 FY2027 AI/Data-Center read-through:** Marvell reported record Q2 FY2027 revenue of **$2.739 billion** for the quarter ended **August 1, 2026**, up **37% year over year** and **13% sequentially**; GAAP diluted EPS was **$0.33** and non-GAAP diluted EPS was **$0.94**. [[1]]\n\n**Data center was the central driver:** Data-center revenue reached **$2.172 billion**, up **46% YoY** and **18% QoQ**, and represented **79%** of company revenue, versus 74% a year earlier. [[2]] This implies that virtually all of Marvell\u2019s near-term growth thesis is now linked to hyperscale AI infrastructure rather than its communications-and-other businesses. [[2]]\n\n**Guidance moved materially higher:** Management guided Q3 FY2027 revenue to **$3.15 billion \u00b15%**, which at the midpoint implies roughly **15% sequential growth** and more than **50% YoY growth**; it also raised FY2027 revenue expectations to approximately **$12 billion** and FY2028 expectations to approximately **$18 billion**. [[2]] [[3]] Management expects data-center revenue to grow about **60% in FY2027** and more than **60% in FY2028**. [[4]] [[3]]\n\n**Custom AI silicon is shifting from design-win narrative to revenue ramp:** Marvell said its Custom business should accelerate significantly in the second half of FY2027, with growth coming from both **XPU** programs and **XPU-attach** products, including custom NICs and CXL-related products. [[1]] [[4]] The disclosed expanded hyperscaler warrant agreement covers existing custom programs, new design wins, and potential future programs spanning AI inference accelerators, storage controllers, NICs, memory-interface controllers, and near-memory compute. [[4]] The important investment implication is that custom silicon can add a second major AI engine alongside connectivity, but it may also pressure gross margin as its revenue mix rises. [[4]] [[3]]\n\n**Electro-optics/connectivity remains the nearer-term revenue base:** Marvell cited strong demand across connectivity, including **800G and 1.6T scale-out optics**, **51.2T Ethernet switches**, scale-up optical solutions for **NPO/CPO**, and coherent **1.6T ZR/ZR+** modules for data-center interconnect. [[5]] [[6]] Management said 800G demand remains strong, 1.6T is ramping rapidly, and 51.2T products are expected to drive more than a doubling of scale-out-switching revenue during FY2027. [[6]]\n\n**Scale-up optics is the longer-duration optionality:** Customers are beginning to plan optical links in scale-up networks as early as next year, while considering NPO and CPO architectures, silicon photonics, and multiple modulator technologies. [[4]] Marvell\u2019s strategic argument is that its combination of high-speed SerDes, optical interconnect, and large switch silicon gives it exposure to the convergence of optics and switching in future AI clusters. [[4]]\n\n**Key watch items:** Marvell is securing additional supply amid industry-wide constraints and has used capacity prepayments to support demand for 1.6T optical DSPs and 51.2T switches. [[4]] [[6]] Investors should therefore watch execution on the H2 FY2027 custom-silicon ramp, supply availability, gross-margin mix effects, and whether hyperscaler demand converts the elevated FY2028 **$18 billion** revenue target into reported revenue. [[1]] [[3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.marvell.com/sec-filings/all-sec-filings/content/0001835632-26-000022/q227_8kx812026ex-991.htm",
+          "title": "August 27, 2026 - EXHIBIT 99.1 - 8-K: Current report"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/1031/marvell-technology-inc-reports-second-quarter-of-fiscal-year-2027-financial-results",
+          "title": "Marvell Technology, Inc. Reports Second Quarter of Fiscal Year 2027 Financial Results"
+        },
+        {
+          "url": "https://www.tradingkey.com/news/transcripts/262137259-tradingkey",
+          "title": "Marvell (MRVL) Fiscal Q2 2027 Earnings Call: FY2028 Outlook Raised to $18 Billion"
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/31/marvell-mrvl-q2-2027-earnings-call-transcript/",
+          "title": "Marvell (MRVL) Q2 2027 Earnings Call Transcript"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/1023/marvell-technology-inc-reports-first-quarter-of-fiscal-year-2027-financial-results",
+          "title": "Marvell Technology, Inc. Reports First Quarter of Fiscal Year 2027 Financial Results"
+        },
+        {
+          "url": "https://www.theglobeandmail.com/investing/markets/stocks/MRVL/pressreleases/4354611/marvell-mrvl-q2-2027-earnings-call-transcript/",
+          "title": "Marvell (MRVL) Q2 2027 Earnings Call Transcript - The Globe and Mail"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "query": "AWS segment revenue and operating income Q2 2026 quarterly results Amazon",
+  "normalized": "2026 amazon aws income operating q2 quarterly results revenue segment",
+  "fetched_at": "2026-10-17T21:07:40Z",
+  "elapsed_s": 6.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AWS generated **$42.232 billion of net sales (segment revenue)** in Amazon\u2019s Q2 2026, the three months ended June 30, 2026, up 37% from $30.873 billion in Q2 2025. [[1]] \n\nAWS reported **$16.621 billion of operating income** in Q2 2026, versus $10.160 billion a year earlier; this equates to an operating margin of approximately **39.4%** of AWS revenue. [[2]] [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-Second-Quarter-Results/",
+          "title": "Amazon.com, Inc. - Amazon.com Announces Second Quarter Results"
+        },
+        {
+          "url": "https://www.businesswire.com/news/home/20260729379483/en/Amazon.com-Announces-Second-Quarter-Results",
+          "title": "Amazon.com Announces Second Quarter Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

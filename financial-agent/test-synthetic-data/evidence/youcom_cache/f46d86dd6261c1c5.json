@@ -1,0 +1,24 @@
+{
+  "query": "Marvell Technology data center revenue Q1 fiscal 2026",
+  "normalized": "2026 center data fiscal marvell q1 revenue technology",
+  "fetched_at": "2026-10-17T21:10:44Z",
+  "elapsed_s": 4.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Marvell Technology\u2019s data-center revenue was **$1.441 billion** in Q1 fiscal 2026 (quarter ended May 3, 2025), up **76% year over year** and **5% sequentially**. [[1]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/95/marvell-technology-inc-reports-first-quarter-of-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports First Quarter of Fiscal Year 2026 Financial Results"
+        },
+        {
+          "url": "https://investor.marvell.com/financial-information/financial-results",
+          "title": "Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

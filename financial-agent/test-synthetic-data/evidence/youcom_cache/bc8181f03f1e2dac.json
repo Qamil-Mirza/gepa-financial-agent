@@ -1,0 +1,24 @@
+{
+  "query": "Super Micro Computer AI server revenue Q1 fiscal 2027 quarter ended September 2025",
+  "normalized": "2025 2027 ai computer ended fiscal micro q1 quarter revenue september server super",
+  "fetched_at": "2026-10-17T21:15:30Z",
+  "elapsed_s": 27.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Super Micro Computer\u2019s quarter ended **September 30, 2025** was **Q1 fiscal 2026\u2014not Q1 fiscal 2027**; the company reported total net sales of **$5.018 billion**. [[1]] \n\nManagement said that **AI GPU platforms accounted for more than 75% of Q1 revenue**, implying AI-server/platform revenue of **more than approximately $3.76 billion** ($5.018 billion \u00d7 75%). [[2]] [[1]] \n\nThis is an inferred lower bound rather than a separately disclosed \u201cAI server revenue\u201d line item: Supermicro\u2019s reported financial statements disclose consolidated net sales, while the AI-platform figure was stated as a revenue mix percentage. [[1]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.supermicro.com/news/news-details/2025/Supermicro-Announces-First-Quarter-Fiscal-Year-2026-Financial-Results/default.aspx",
+          "title": "Super Micro Computer, Inc. - Supermicro Announces First Quarter Fiscal Year 2026 Financial Results"
+        },
+        {
+          "url": "https://finance.yahoo.com/news/super-micro-computer-inc-smci-050939630.html",
+          "title": "Super Micro Computer Inc (SMCI) Q1 2026 Earnings Call Highlights: Navigating Challenges with AI ..."
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

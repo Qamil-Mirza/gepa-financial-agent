@@ -1,0 +1,32 @@
+{
+  "query": "Marvell custom AI silicon revenue growth",
+  "normalized": "ai custom growth marvell revenue silicon",
+  "fetched_at": "2026-10-17T21:03:26Z",
+  "elapsed_s": 21.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Marvell\u2019s custom AI silicon business is transitioning from an approximately **$1.5 billion** business in FY2026 to a projected **more than $12 billion in FY2029**, implying it is expected to **more than triple versus FY2028** and exceed the company\u2019s prior FY2029 target of $10 billion. [[1]] \n\nThe stated FY2029 target implies FY2028 custom-silicon revenue below roughly **$4 billion** (because FY2029 is expected to be more than three times FY2028), so the plan entails a very steep ramp after FY2028 rather than a smooth, disclosed annual revenue series. [[1]] \n\nThe near-term evidence of that ramp is indirect because Marvell does not separately disclose custom-silicon revenue in its quarterly headline results: Q1 FY2026 total revenue grew **63% year over year to $1.895 billion**, with management attributing momentum to rapid scaling of custom-silicon programs and electro-optics, while Q2 revenue grew **58% to $2.006 billion** and management again cited custom silicon as a principal growth driver. [[2]] [[3]] \n\nManagement\u2019s broader FY2028 framework calls for approximately **$20 billion** of total company revenue, up about **67% year over year**, including approximately **$18 billion** of data-center revenue; therefore, custom AI silicon is a major but not the only contributor, alongside interconnect, scale-up optics, switching, and other connectivity products. [[1]] \n\nThe growth thesis rests on custom XPU and XPU-attach demand from hyperscalers: Marvell said it was shipping custom silicon to all four U.S. hyperscalers and had more than 50 opportunities across over 10 customers representing a $75 billion pipeline, although pipeline is not booked revenue. [[1]] [[4]] \n\nThe principal execution risk is timing and concentration: the very large FY2029 target depends on individual hyperscaler design wins reaching volume production as planned, while Marvell\u2019s June 2025 presentation characterized each custom XPU opportunity as multi-billion-dollar lifetime revenue but with an 18\u201324 month development cycle. [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://stockanalysis.com/stocks/mrvl/transcripts/724088-investor-day-2026/",
+          "title": "Marvell Technology (MRVL) Transcript: Investor Day 2026"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/95/marvell-technology-inc-reports-first-quarter-of-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports First Quarter of Fiscal Year 2026 Financial Results"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/989/marvell-technology-inc-reports-second-quarter-of-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports Second Quarter of Fiscal Year 2026 Financial Results"
+        },
+        {
+          "url": "https://www.marvell.com/content/dam/marvell/en/company/assets/marvell-custom-ai-investor-event-2025.pdf",
+          "title": "Custom AI Investor Event"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}
