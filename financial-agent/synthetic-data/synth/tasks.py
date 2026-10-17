@@ -61,6 +61,15 @@ class TaskTemplate:
 _CITE = "Cite a source for every financial figure you record."
 _RECENT = "Use the most recently reported fiscal periods."
 
+SUPPLY_CHAIN_OBJECTIVE = (
+    "Assess how the AI semiconductor supply chain (foundry, custom silicon, memory, server CPUs) is "
+    "benefiting from AI demand, using recent filings and earnings information."
+)
+AI_CLOUD_OBJECTIVE = (
+    "Evaluate the financial performance of AI cloud infrastructure providers, using recent filings "
+    "and earnings information."
+)
+
 TASKS: Dict[str, TaskTemplate] = {
     t.family: t
     for t in [
@@ -242,6 +251,224 @@ TASKS: Dict[str, TaskTemplate] = {
             updated_directive="Directive update from the orchestrator: switch to quantifying NVIDIA's customer concentration, i.e. what share of NVIDIA revenue comes from its largest hyperscaler customers.",
             updated_keywords=["concentration", "largest customer", "customer", "share of nvidia revenue"],
             unsupported_metric="combined hyperscaler capex in two years",
+        ),
+        # ---- AI semiconductor supply chain swarm ----
+        TaskTemplate(
+            family="tsmc_ai",
+            agent_id="agent_tsmc",
+            swarm_objective=SUPPLY_CHAIN_OBJECTIVE,
+            directive="Investigate TSMC's AI-related revenue: High Performance Computing (HPC) platform revenue, its share of total revenue, and AI accelerator demand, with cited figures.",
+            constraints=[_CITE, _RECENT, "Focus on TSMC's HPC / AI-related business."],
+            success_criteria=[
+                "Report HPC platform revenue or share for recent quarters",
+                "Explain the role of AI accelerator demand",
+                "Provide traceable sources",
+            ],
+            on_task_keywords=["hpc", "high performance computing", "ai accelerator", "cowos", "ai revenue", "3nm", "n3"],
+            on_task_queries=[
+                "TSMC HPC platform revenue share most recent quarter",
+                "TSMC AI accelerator revenue growth latest quarter",
+                "TSMC CoWoS advanced packaging demand AI accelerators",
+                "TSMC HPC revenue year over year growth most recent quarter",
+            ],
+            distractors=[
+                Distractor("smartphone", "TSMC's smartphone business (Apple iPhone chips)",
+                           ["smartphone", "iphone", "apple"], "TSMC smartphone platform revenue Apple iPhone chips"),
+                Distractor("geopolitics", "Taiwan-China geopolitical tensions and tariffs",
+                           ["geopolitical", "taiwan strait", "tariff", "china tensions"], "Taiwan China geopolitical risk tariffs semiconductors"),
+                Distractor("stock", "TSMC's stock and ADR price and valuation",
+                           ["stock price", "share price", "adr", "valuation", "price target"], "TSMC ADR stock price valuation analyst targets"),
+            ],
+            detours=[
+                Detour("platform_definition", "how TSMC defines its HPC platform category",
+                       ["platform definition", "defines", "platform category", "classification"], "How does TSMC define its HPC platform revenue category"),
+                Detour("monthly_revenue", "TSMC's monthly revenue reporting cadence",
+                       ["monthly revenue", "monthly sales", "reporting cadence"], "TSMC monthly revenue reporting schedule"),
+            ],
+            updated_directive="Directive update from the orchestrator: switch to analyzing TSMC's capital expenditure plans and new fab capacity expansion.",
+            updated_keywords=["capex", "capital expenditure", "capacity expansion", "new fab"],
+            unsupported_metric="TSMC's HPC revenue share two years from now",
+        ),
+        TaskTemplate(
+            family="broadcom_ai",
+            agent_id="agent_avgo",
+            swarm_objective=SUPPLY_CHAIN_OBJECTIVE,
+            directive="Investigate Broadcom's AI semiconductor revenue (custom AI accelerators/XPUs and AI networking), recent figures and growth, with cited sources.",
+            constraints=[_CITE, _RECENT, "Focus on Broadcom's AI semiconductor revenue."],
+            success_criteria=[
+                "Report AI semiconductor revenue for recent quarters",
+                "Explain contributions from custom accelerators and networking",
+                "Provide traceable sources",
+            ],
+            on_task_keywords=["ai semiconductor", "ai revenue", "xpu", "custom accelerator", "asic", "tomahawk", "ai networking"],
+            on_task_queries=[
+                "Broadcom AI semiconductor revenue most recent quarter",
+                "Broadcom custom AI accelerator XPU revenue growth",
+                "Broadcom AI networking Tomahawk Ethernet revenue",
+                "Broadcom AI revenue year over year growth latest quarter",
+            ],
+            distractors=[
+                Distractor("vmware", "Broadcom's VMware software business",
+                           ["vmware", "software", "subscription", "licensing"], "Broadcom VMware infrastructure software revenue"),
+                Distractor("wireless", "Broadcom's wireless chips for Apple",
+                           ["wireless", "iphone", "apple", "wi-fi"], "Broadcom wireless chip revenue Apple contract"),
+                Distractor("dividends", "Broadcom's dividends and share buybacks",
+                           ["dividend", "buyback", "repurchase"], "Broadcom dividend and share repurchase program"),
+            ],
+            detours=[
+                Detour("segment_definition", "what Broadcom counts as AI semiconductor revenue",
+                       ["counts as", "defines", "definition", "included in"], "What does Broadcom include in its reported AI semiconductor revenue"),
+                Detour("fiscal_calendar", "Broadcom's fiscal calendar (its fiscal year ends in early November)",
+                       ["fiscal year end", "fiscal calendar", "quarter end"], "Broadcom fiscal year end date and fiscal quarter dates"),
+            ],
+            updated_directive="Directive update from the orchestrator: switch to analyzing Broadcom's semiconductor segment operating margin.",
+            updated_keywords=["margin", "operating income"],
+            unsupported_metric="Broadcom's AI semiconductor revenue for the next fiscal year",
+        ),
+        TaskTemplate(
+            family="micron_hbm",
+            agent_id="agent_mu",
+            swarm_objective=SUPPLY_CHAIN_OBJECTIVE,
+            directive="Investigate Micron's high-bandwidth memory (HBM) and data-center memory revenue driven by AI demand, with cited figures.",
+            constraints=[_CITE, _RECENT, "Focus on HBM and data-center memory."],
+            success_criteria=[
+                "Report HBM or data-center revenue figures for recent quarters",
+                "Explain the AI demand drivers",
+                "Provide traceable sources",
+            ],
+            on_task_keywords=["hbm", "high-bandwidth memory", "high bandwidth memory", "data center", "cloud memory", "hbm3e", "hbm4"],
+            on_task_queries=[
+                "Micron HBM revenue most recent quarter",
+                "Micron data center memory revenue growth AI demand",
+                "Micron HBM3E HBM4 customer demand and sold out capacity",
+                "Micron cloud memory business unit revenue latest quarter",
+            ],
+            distractors=[
+                Distractor("consumer", "Micron's consumer SSDs and PC/smartphone memory",
+                           ["ssd", "consumer", "pc dram", "smartphone", "crucial"], "Micron consumer SSD and PC smartphone memory revenue"),
+                Distractor("subsidies", "CHIPS Act subsidies for Micron's US fab construction",
+                           ["chips act", "subsidy", "grant", "idaho", "new york fab"], "Micron CHIPS Act grant US fab construction"),
+                Distractor("stock", "Micron's stock price and valuation",
+                           ["stock price", "share price", "valuation", "price target", "market cap"], "Micron stock price performance and analyst price targets"),
+            ],
+            detours=[
+                Detour("bu_definition", "how Micron's business units are organized for reporting",
+                       ["business unit", "reorganization", "segment structure"], "How does Micron organize its business units for financial reporting"),
+                Detour("fiscal_calendar", "Micron's fiscal calendar (its fiscal year ends around the start of September)",
+                       ["fiscal year end", "fiscal calendar", "quarter end"], "Micron fiscal year end date and fiscal quarter dates"),
+            ],
+            updated_directive="Directive update from the orchestrator: switch to analyzing Micron's gross margin trend.",
+            updated_keywords=["margin"],
+            unsupported_metric="Micron's HBM revenue for the next fiscal year",
+        ),
+        TaskTemplate(
+            family="intel_dcai",
+            agent_id="agent_intc",
+            swarm_objective=SUPPLY_CHAIN_OBJECTIVE,
+            directive="Investigate Intel's Data Center and AI (DCAI) segment revenue and its AI accelerator (Gaudi) efforts, with cited figures.",
+            constraints=[_CITE, _RECENT, "Focus on the Data Center and AI segment."],
+            success_criteria=[
+                "Report DCAI revenue for recent quarters",
+                "Assess Intel's AI accelerator traction",
+                "Provide traceable sources",
+            ],
+            on_task_keywords=["dcai", "data center and ai", "data center", "xeon", "gaudi", "ai accelerator"],
+            on_task_queries=[
+                "Intel Data Center and AI segment revenue most recent quarter",
+                "Intel Xeon server CPU revenue trend latest quarter",
+                "Intel Gaudi AI accelerator revenue and adoption",
+                "Intel DCAI segment year over year growth most recent quarter",
+            ],
+            distractors=[
+                Distractor("pc_client", "Intel's PC client business (Core Ultra laptops)",
+                           ["client computing", "core ultra", "laptop", "pc client"], "Intel client computing group revenue Core Ultra laptops"),
+                Distractor("mobileye", "Intel's Mobileye autonomous driving unit",
+                           ["mobileye", "autonomous driving", "self-driving"], "Mobileye revenue autonomous driving Intel stake"),
+                Distractor("stock", "Intel's stock price and valuation",
+                           ["stock price", "share price", "valuation", "price target", "market cap"], "Intel stock price performance and analyst price targets"),
+            ],
+            detours=[
+                Detour("segment_definition", "how Intel's segments were reorganized and what DCAI includes",
+                       ["reorganized", "reorganization", "segment change", "includes"], "Intel segment reorganization what does the DCAI segment include"),
+                Detour("gaap_vs_nongaap", "Intel's GAAP versus non-GAAP reporting differences",
+                       ["gaap", "non-gaap", "adjusted"], "Intel GAAP versus non-GAAP reporting differences"),
+            ],
+            updated_directive="Directive update from the orchestrator: switch to analyzing Intel Foundry's operating loss and external foundry customers.",
+            updated_keywords=["foundry", "operating loss"],
+            unsupported_metric="Intel's Gaudi AI accelerator revenue next year",
+        ),
+        # ---- AI cloud infrastructure swarm ----
+        TaskTemplate(
+            family="oracle_oci",
+            agent_id="agent_orcl",
+            swarm_objective=AI_CLOUD_OBJECTIVE,
+            directive="Investigate Oracle Cloud Infrastructure (OCI) revenue growth and remaining performance obligations (RPO) driven by AI contracts, with cited figures.",
+            constraints=[_CITE, _RECENT, "Focus on OCI and AI infrastructure demand."],
+            success_criteria=[
+                "Report OCI revenue growth for recent quarters",
+                "Report RPO and its AI-driven growth",
+                "Provide traceable sources",
+            ],
+            on_task_keywords=["oci", "cloud infrastructure", "rpo", "remaining performance obligation", "ai infrastructure", "ai contracts"],
+            on_task_queries=[
+                "Oracle Cloud Infrastructure revenue growth most recent quarter",
+                "Oracle remaining performance obligations RPO latest quarter",
+                "Oracle AI infrastructure contracts OpenAI OCI demand",
+                "Oracle OCI revenue year over year growth latest quarter",
+            ],
+            distractors=[
+                Distractor("database", "Oracle's database license business",
+                           ["database license", "license revenue", "license support", "on-premise"], "Oracle database license and support revenue"),
+                Distractor("healthcare", "Oracle Health (Cerner) electronic health records",
+                           ["cerner", "oracle health", "healthcare", "health records"], "Oracle Health Cerner revenue electronic health records"),
+                Distractor("ellison", "Larry Ellison's wealth and outside ventures",
+                           ["ellison", "billionaire", "net worth", "paramount"], "Larry Ellison net worth and outside investments"),
+            ],
+            detours=[
+                Detour("rpo_definition", "what remaining performance obligations mean and how they convert to revenue",
+                       ["rpo definition", "means", "convert", "recognized"], "What are remaining performance obligations and how do they convert to revenue"),
+                Detour("fiscal_calendar", "Oracle's fiscal calendar (its fiscal year ends May 31)",
+                       ["fiscal year end", "fiscal calendar", "quarter end"], "Oracle fiscal year end date and fiscal quarter dates"),
+            ],
+            updated_directive="Directive update from the orchestrator: switch to analyzing Oracle's capital expenditure and free cash flow.",
+            updated_keywords=["capex", "capital expenditure", "free cash flow"],
+            unsupported_metric="Oracle's OCI revenue two fiscal years from now",
+        ),
+        TaskTemplate(
+            family="coreweave",
+            agent_id="agent_crwv",
+            swarm_objective=AI_CLOUD_OBJECTIVE,
+            directive="Investigate CoreWeave's revenue growth, contracted backlog, and customer concentration as an AI cloud provider, with cited figures.",
+            constraints=[_CITE, _RECENT, "Focus on revenue, backlog and customers."],
+            success_criteria=[
+                "Report revenue for recent quarters",
+                "Report contracted backlog and major customers",
+                "Provide traceable sources",
+            ],
+            on_task_keywords=["revenue", "backlog", "customer", "contracted", "microsoft", "openai"],
+            on_task_queries=[
+                "CoreWeave revenue most recent quarter",
+                "CoreWeave revenue backlog latest quarter",
+                "CoreWeave customer concentration Microsoft OpenAI",
+                "CoreWeave revenue year over year growth latest quarter",
+            ],
+            distractors=[
+                Distractor("crypto", "CoreWeave's origins in cryptocurrency mining",
+                           ["crypto", "bitcoin", "ethereum", "mining"], "CoreWeave history as Ethereum cryptocurrency mining company"),
+                Distractor("stock", "CoreWeave's stock price, IPO and lockups",
+                           ["stock price", "share price", "ipo", "lockup", "valuation"], "CoreWeave stock price since IPO and lockup expiration"),
+                Distractor("acquisitions", "CoreWeave's acquisitions of other companies",
+                           ["acquisition", "acquire", "merger", "core scientific", "weights & biases"], "CoreWeave acquisitions Core Scientific Weights and Biases"),
+            ],
+            detours=[
+                Detour("backlog_definition", "how CoreWeave defines and recognizes its contracted backlog",
+                       ["backlog definition", "defines", "recognized", "recognition"], "How does CoreWeave define and recognize revenue backlog"),
+                Detour("power", "CoreWeave's contracted data-center power capacity, which limits revenue growth",
+                       ["power capacity", "megawatts", "contracted power", "mw"], "CoreWeave contracted data center power capacity megawatts"),
+            ],
+            updated_directive="Directive update from the orchestrator: switch to analyzing CoreWeave's debt load and interest expense.",
+            updated_keywords=["debt", "interest expense", "borrowing", "financing"],
+            unsupported_metric="CoreWeave's revenue two years from now",
         ),
     ]
 }
