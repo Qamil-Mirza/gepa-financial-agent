@@ -1,0 +1,20 @@
+{
+  "query": "What is the difference between Arm royalty revenue and licensing revenue recognition",
+  "normalized": "arm between difference licensing recognition revenue royalty",
+  "fetched_at": "2026-10-17T20:59:37Z",
+  "elapsed_s": 13.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Arm royalty revenue** is usage-based, downstream revenue: Arm generally earns a royalty when a customer ships a product containing Arm IP, and accrues that revenue in the shipment quarter. Because reporting/payment data may arrive later, Arm estimates the accrual using historical sales, customer royalty reports and forecasts, macro factors, and industry data such as units, ASPs, product mix, market share, and penetration. [[1]]\n\n**Licensing revenue** is consideration for granting access to Arm\u2019s IP and related obligations, so recognition follows when Arm transfers the promised license or service\u2014not when the customer\u2019s chip ships. Revenue for a specified IP license, or a distinct specified release/version extension, is recognized at a point in time upon delivery or the start of the license term, whichever occurs later. [[1]] \n\nThere are important licensing-revenue exceptions: arrangements providing ongoing access to a current-and-future-IP library, or unspecified future IP on a when-and-if-available basis, are stand-ready obligations recognized ratably over the contract/delivery period; support and maintenance is recognized straight-line over the support term; and professional/design services are recognized over time based on engineering labor hours. [[1]] \n\nIn short: **royalties track licensees\u2019 product shipments and are estimated/accrued each quarter; license revenue tracks Arm\u2019s delivery of IP access, updates, support, or services and can be point-in-time or spread over time depending on the contractual promise.** [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1973239/000197323925000024/arm-20250630.htm",
+          "title": "arm-20250630"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

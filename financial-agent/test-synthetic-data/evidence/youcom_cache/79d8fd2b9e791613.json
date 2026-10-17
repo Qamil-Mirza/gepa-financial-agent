@@ -1,0 +1,20 @@
+{
+  "query": "AWS AI contribution triple digit growth Q2 2026 annual revenue run rate $25 billion",
+  "normalized": "2026 25 ai annual aws billion contribution digit growth q2 rate revenue run triple",
+  "fetched_at": "2026-10-17T21:05:34Z",
+  "elapsed_s": 7.0,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Yes\u2014Amazon said in its Q2 2026 earnings commentary that AWS\u2019s AI revenue run rate had surpassed **$25 billion annually** and was growing at **triple-digit year-over-year percentages**. [[1]] \n\nDo not confuse that AI figure with total AWS revenue: AWS itself was operating at a **$169 billion annualized revenue run rate** at the time. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.aboutamazon.com/news/company-news/amazon-ceo-andy-jassy-aws-revenue-growth-q2-2026-earnings",
+          "title": "Q2 earnings: CEO Andy Jassy on why AWS is booming and what it means for customers"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

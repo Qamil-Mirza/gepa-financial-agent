@@ -1,0 +1,44 @@
+{
+  "query": "Equinix Q2 2026 xScale leasing AI customer sovereign private batch training inference",
+  "normalized": "2026 ai batch customer equinix inference leasing private q2 sovereign training xscale",
+  "fetched_at": "2026-10-17T21:13:38Z",
+  "elapsed_s": 17.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Equinix Q2 2026: AI-demand and xScale read-through**\n\n- Equinix reported Q2 2026 revenue of **$2.625 billion**, up **16% year over year**, with the reported growth aided by strong underlying performance and one-time xScale fees. [[1]]\n- The company closed **134 MW of xScale leases** in the quarter, including the Hampton transaction, which generated approximately **$120 million of non-recurring fees**. [[2]]\n- Thus, the 134 MW is an important indicator of hyperscale/large-footprint leasing demand, but the associated $120 million should be treated as **non-recurring transaction revenue**, rather than as recurring colocation revenue. [[2]] [[1]]\n\n**Management\u2019s four AI customer-demand categories**\n\n1. **Private-AI \u201cstack\u201d deployments:** Enterprises are running open models on private AI infrastructure, a use case that fits Equinix\u2019s AI-ready facilities, cloud connectivity and OEM relationships. [[3]] \n2. **Sovereign AI:** Customers deploy sovereign AI stacks to meet data-residency and compliance requirements; Equinix highlighted its presence in **36 countries** and Fabric\u2019s ability to geo-fence traffic within a country. [[4]] \n3. **Batch workloads:** Customers are establishing AI-factory-style centers of excellence for **model training** and for **batch inference** at Equinix. [[2]] [[5]] \n4. **Latency-sensitive inference:** Customers place inference infrastructure in a metro when low latency and lower data-backhaul costs matter. [[6]]\n\n**What this means for the leasing story**\n\n- The Q2 commentary suggests Equinix is pursuing AI demand beyond a single hyperscaler-training thesis: private enterprise stacks, sovereign deployments, centralized training/batch inference, and distributed real-time inference each have different location, connectivity and power-density needs. [[7]] [[6]]\n- Sovereignty is particularly strategic because it aligns with Equinix\u2019s geographically distributed, neutral interconnection model rather than requiring only a few very large centralized AI campuses. [[4]]\n- Equinix said Fabric Geo Zones, its sovereignty-oriented network offering, was in preview with approximately **80 enterprises** during Q2, signaling tangible customer interest in geographically constrained networking. [[6]]\n- A concrete sovereign-inference example cited by management was FCX AI\u2019s partnership with Equinix to build Australia\u2019s first sovereign AI inferencing node using Equinix\u2019s Sydney operations. [[7]]\n- Management also cited Orion VM selecting Equinix for a fully managed private agentic-AI bundle, illustrating the private-AI-stack opportunity rather than only traditional wholesale capacity leasing. [[7]]\n\n**Bottom line:** Q2\u2019s **134 MW** xScale closure validates substantial large-scale leasing activity, while management\u2019s AI discussion frames the longer-duration opportunity as a mix of private AI, sovereign infrastructure, training/batch workloads and metro-edge inference; investors should separate the quarter\u2019s one-time xScale fee benefit from the recurring revenue potential of those deployments. [[2]] [[1]] [[6]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.equinix.com/news-events/press-releases/detail/1114/equinix-reports-second-quarter-results-raises-2026",
+          "title": "Equinix Reports Second-Quarter Results, Raises 2026 Guidance and Long-Term Outlook :: Equinix, Inc. (EQIX)"
+        },
+        {
+          "url": "https://www.theglobeandmail.com/investing/markets/stocks/EQIX/pressreleases/3730144/equinix-eqix-q2-2026-earnings-call-transcript/",
+          "title": "Equinix (EQIX) Q2 2026 Earnings Call Transcript - The Globe and Mail"
+        },
+        {
+          "url": "https://www.investing.com/news/transcripts/earnings-call-transcript-equinix-tops-q2-2026-estimates-and-lifts-outlook-93CH-4822017",
+          "title": "Earnings call transcript: Equinix tops Q2 2026 estimates and lifts outlook By Investing.com"
+        },
+        {
+          "url": "https://gloom.sh/stocks/eqix/transcripts/q2-2026",
+          "title": "Equinix (EQIX) Q2 2026 Earnings Call Transcript and Summary"
+        },
+        {
+          "url": "https://in.investing.com/news/transcripts/earnings-call-transcript-equinix-tops-q2-2026-estimates-and-lifts-outlook-93CH-5522197",
+          "title": "Earnings call transcript: Equinix tops Q2 2026 estimates and lifts outlook By Investing.com"
+        },
+        {
+          "url": "https://www.roic.ai/quote/EQIX:UW/transcripts/2026-year/2-quarter",
+          "title": "Equinix, Inc. (EQIX UW) Q2 FY2026 Earnings Call Transcript - July 29, 2026"
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/equinix-eqix-q2-2026-earnings-call-transcript/",
+          "title": "Equinix (EQIX) Q2 2026 Earnings Call Transcript"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

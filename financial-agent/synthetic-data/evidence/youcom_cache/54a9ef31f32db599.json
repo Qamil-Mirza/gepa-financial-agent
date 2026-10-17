@@ -1,0 +1,28 @@
+{
+  "query": "NVIDIA Data Center revenue full fiscal year 2027 guidance",
+  "normalized": "2027 center data fiscal full guidance nvidia revenue year",
+  "fetched_at": "2026-10-17T19:39:38Z",
+  "elapsed_s": 8.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA has **not provided full-fiscal-year FY2027 guidance for Data Center revenue**; it reported Data Center revenue of **$89.0 billion in Q2 FY2027** and guided only consolidated **Q3 FY2027 revenue to $108.0 billion \u00b12%**. [[1]] \n\nFor context, NVIDIA reported Data Center revenue of **$75.2 billion in Q1 FY2027**, while its Q2 outlook was for total company revenue of **$91.0 billion \u00b12%**, rather than a Data Center-specific or annual forecast. [[2]] \n\nThus, any FY2027 Data Center revenue number would be an external estimate or a sum of reported and forecast quarterly results\u2014not NVIDIA management guidance. [[1]] [[3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2027",
+          "title": "NVIDIA Announces Financial Results for Second Quarter Fiscal 2027"
+        },
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2027",
+          "title": "NVIDIA Announces Financial Results for First Quarter Fiscal 2027"
+        },
+        {
+          "url": "https://investor.nvidia.com/financial-info/financial-reports/default.aspx",
+          "title": "NVIDIA Corporation - Financial Reports"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

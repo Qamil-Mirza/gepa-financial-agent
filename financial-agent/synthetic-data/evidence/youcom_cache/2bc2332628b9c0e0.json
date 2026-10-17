@@ -1,0 +1,32 @@
+{
+  "query": "NVIDIA Data Center revenue Q4 FY2026 growth drivers Blackwell inference networking",
+  "normalized": "blackwell center data drivers fy2026 growth inference networking nvidia q4 revenue",
+  "fetched_at": "2026-10-17T19:42:24Z",
+  "elapsed_s": 13.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**NVIDIA Data Center revenue reached a record $62.3 billion in Q4 FY2026** (quarter ended January 2026), increasing **22% sequentially** and **75% year over year**; total company revenue was $68.1 billion. [[1]]\n\n**The principal growth driver was the sustained ramp of Blackwell and Blackwell Ultra systems.** NVIDIA said Data Center revenue grew by roughly $11 billion versus Q3, with Blackwell architecture demand broadening across cloud providers, hyperscalers, AI-model developers, enterprises and sovereign customers. [[2]] Grace Blackwell systems represented approximately **two-thirds of quarterly Data Center revenue**, while nearly **nine gigawatts** of Blackwell infrastructure had been deployed and consumed by major cloud and hyperscale customers. [[2]]\n\n**Inference was central to the demand thesis, rather than only training.** Management characterized agentic AI as an inflection point and positioned Grace Blackwell with NVLink as an inference platform with an order-of-magnitude lower cost per token. [[3]] NVIDIA also cited Blackwell Ultra performance of up to **50x higher** and cost up to **35x lower** for agentic AI relative to Hopper, while selected inference providers reported up to a **10x reduction in AI costs** using open-source models on Blackwell. [[3]] These economics matter because higher token throughput and lower per-token cost can improve AI-service-provider monetization and support continued infrastructure deployment. [[2]]\n\n**Networking was the second major incremental contributor.** Q4 Data Center networking revenue was **$11 billion**, more than **3.5x** its year-earlier level. [[2]] NVIDIA attributed the year-over-year networking increase primarily to **NVLink 72 scale-up switches**, and its FY2026 10-K said Data Center networking revenue grew **142%** on the NVLink compute-fabric ramp for GB200 and GB300 systems plus growth in Ethernet and InfiniBand platforms. [[2]] [[4]]\n\n**Bottom line:** Q4 FY2026 Data Center growth reflected a platform sale\u2014Blackwell/Blackwell Ultra compute systems, inference-driven customer ROI, and tightly coupled scale-up and scale-out networking\u2014not simply stand-alone GPU shipments. [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2026",
+          "title": "NVIDIA Announces Financial Results for Fourth Quarter and Fiscal 2026"
+        },
+        {
+          "url": "https://s201.q4cdn.com/141608511/files/doc_financials/2026/q4/NVDA-Q4-2026-Earnings-Call-25-February-2026-5_00-PM-ET.pdf",
+          "title": "NVIDIA Corp. (NVDA)"
+        },
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2026/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Fourth Quarter and Fiscal 2026"
+        },
+        {
+          "url": "https://investor.nvidia.com/files/doc_financials/2026/q4/10K-NVDA.pdf",
+          "title": "Table of Contents UNITED STATES SECURITIES AND EXCHANGE COMMISSION"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

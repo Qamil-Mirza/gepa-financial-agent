@@ -1,0 +1,20 @@
+{
+  "query": "Super Micro revenue guidance next quarter fiscal year",
+  "normalized": "fiscal guidance micro next quarter revenue super year",
+  "fetched_at": "2026-10-17T21:00:10Z",
+  "elapsed_s": 9.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Super Micro Computer\u2019s latest **next-quarter revenue guidance** is **$14.5 billion\u2013$15.5 billion** for fiscal Q1 2027, which ends September 30, 2026. [[1]] \n\nFor the full fiscal year 2027, Supermicro guided to **$65.0 billion\u2013$72.0 billion** of net sales. [[1]] \n\nThe guidance was issued with its FY2026 results on August 11, 2026; FY2026 revenue was $39.1 billion. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.supermicro.com/news/news-details/2026/Supermicro-Announces-Fourth-Quarter-and-Full-Fiscal-Year-2026-Financial-Results/default.aspx",
+          "title": "Super Micro Computer, Inc. - Supermicro Announces Fourth Quarter and Full Fiscal Year 2026 Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

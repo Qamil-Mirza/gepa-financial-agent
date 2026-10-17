@@ -1,0 +1,20 @@
+{
+  "query": "Arm Holdings licensing revenue most recent quarter",
+  "normalized": "arm holdings licensing quarter revenue",
+  "fetched_at": "2026-10-17T21:02:00Z",
+  "elapsed_s": 11.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Arm Holdings\u2019 most recently reported quarter is Q1 fiscal 2027, ended June 30, 2026, and it generated **$574 million of licensing revenue**, up **23% year over year**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://newsroom.arm.com/news/arm-q1-fye27-results",
+          "title": "Arm delivers record first-quarter for total revenue\u00a0 - Arm Newsroom"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "query": "custom silicon AI accelerator market share Google TPU AWS Trainium 2025 2026",
+  "normalized": "2025 2026 accelerator ai aws custom google market share silicon tpu trainium",
+  "fetched_at": "2026-10-17T19:46:20Z",
+  "elapsed_s": 26.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Bottom line:** Google and Amazon do not disclose standalone TPU or Trainium revenue, respectively, so there is no company-reported, auditable market-share figure for either accelerator in 2025 or 2026. Amazon\u2019s disclosed figure combines Trainium with Graviton\u2014more than a $10 billion annual revenue run rate at Q4 2025\u2014rather than separating Trainium. [[1]]\n\n| Market-share measure | 2025 | 2026 estimate |\n|---|---:|---:|\n| Google TPU | Not disclosed / no robust independent 2025 figure found | ~6\u20138% of data-center AI-accelerator revenue or deployed-FLOPS-based market, depending on the methodology used. [[2]]|\n| AWS Trainium / Inferentia | Not disclosed / no robust independent 2025 figure found | ~2\u20133% in one 2026 estimate; a separate August 2026 analyst-based estimate puts the combined Trainium/Inferentia share near 5%. [[2]] [[3]]|\n\nThe appropriate 2026 takeaway is therefore **TPU roughly 6\u20138% and Trainium/Inferentia roughly 2\u20135%**, but these are third-party estimates rather than reported results and should not be treated as precise, directly comparable revenue shares. [[2]] [[3]]\n\n**What supports the direction of share gains:** AWS stated that Trainium2 was fully subscribed, with **1.4 million chips landed** by its Q4 2025 results, and that it powered most Bedrock inference; this demonstrates rapid adoption but does not establish Trainium-only revenue or market share. [[4]] [[1]] Google\u2019s TPU scale was also reinforced by Anthropic\u2019s commitment for access to up to **one million TPUs**, with capacity coming online through 2026, although that is a capacity commitment rather than TPU revenue recognized by Google. [[3]]\n\n**Market context:** ASIC-based AI-server shipments are projected to reach **27.8%** of the server market in 2026, with custom-ASIC shipments forecast to grow **44.6% year over year**, versus **16.1%** for merchant GPUs; that expansion is the structural reason TPU and Trainium can gain share even while Nvidia remains dominant. [[5]] Estimates still place Nvidia at roughly **73\u201380%** of AI-accelerator revenue in mid-2026, so TPU and Trainium remain meaningful but distinctly secondary platforms in the overall market. [[3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://s2.q4cdn.com/299287126/files/doc_earnings/2025/q4/earnings-result/AMZN-Q4-2025-Earnings-Release.pdf",
+          "title": "AMAZON.COM ANNOUNCES FOURTH QUARTER RESULTS"
+        },
+        {
+          "url": "https://presenc.ai/research/ai-chip-market-share-2026",
+          "title": "AI Chip Market Share 2026"
+        },
+        {
+          "url": "https://valueaddvc.com/blog/ai-hardware-wars-nvidia-h200-vs-amd-mi300-vs-google-tpu-v5-who-s-winning",
+          "title": "80% Nvidia vs AMD vs Google TPU \u2014 AI Chip Wars (2026)"
+        },
+        {
+          "url": "https://www.aboutamazon.com/news/company-news/amazon-earnings-q4-2025-report",
+          "title": "Amazon Q4 2025 earnings report: Read the release"
+        },
+        {
+          "url": "https://www.tomshardware.com/tech-industry/semiconductors/custom-ai-asics-examined-from-broadcom-to-mtia",
+          "title": "The custom AI ASIC state of play (May 2026) \u2014 Broadcom deals, Google TPUs, Meta MTIA & beyond"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

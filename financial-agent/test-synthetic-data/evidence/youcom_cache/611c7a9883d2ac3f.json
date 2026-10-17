@@ -1,0 +1,32 @@
+{
+  "query": "Equinix FY 2025 full year revenue and AI xScale leasing",
+  "normalized": "2025 ai equinix full fy leasing revenue xscale year",
+  "fetched_at": "2026-10-17T21:15:03Z",
+  "elapsed_s": 13.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Equinix generated FY2025 revenue of **$9.217 billion**, up **5% year over year as reported** and **6% on a normalized, constant-currency basis**, for the year ended December 31, 2025. [[1]] \n\nIts xScale hyperscale/AI platform had **more than 430 MW leased** across **23 operational facilities in 13 metros** at Q4 2025; Equinix also delivered **more than 90 MW of xScale capacity during 2025**. [[2]] [[3]] \n\nThe reported xScale leasing figure is platform-wide leased power capacity rather than a separately disclosed FY2025 AI-only leasing subtotal. [[2]] [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.equinix.com/news-events/press-releases/detail/1096/equinix-provides-robust-2026-outlook-driven-by-strong",
+          "title": "Equinix Provides Robust 2026 Outlook Driven by Strong Fourth-Quarter Results and Accelerating Business Momentum :: Equinix, Inc. (EQIX)"
+        },
+        {
+          "url": "https://d1io3yog0oux5.cloudfront.net/_ba869986ad322fb21537df4eea7e069d/equinix/db/2183/27011/earnings_presentation/Equinix+Q4+25+Earnings+Presentation+Final.pdf",
+          "title": "\u00a9 2026 Equinix, Inc. Q4 2025 Earnings Conference Call NASDAQ: EQIX"
+        },
+        {
+          "url": "https://investor.equinix.com/sec-filings/current-reports/content/0001101239-26-000030/0001101239-26-000030.pdf",
+          "title": "UNITED STATES SECURITIES AND EXCHANGE COMMISSION WASHINGTON, DC 20549 FORM 8-K"
+        },
+        {
+          "url": "https://investor.equinix.com/sec-filings/all-sec-filings/content/0001101239-26-000032/0001101239-26-000032.pdf",
+          "title": "UNITED STATES SECURITIES AND EXCHANGE COMMISSION WASHINGTON, D.C. 20549"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

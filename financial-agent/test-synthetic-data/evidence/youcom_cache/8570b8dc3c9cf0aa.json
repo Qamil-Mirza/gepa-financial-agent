@@ -1,0 +1,28 @@
+{
+  "query": "Microsoft Azure AI contribution revenue growth fiscal Q3 2026",
+  "normalized": "2026 ai azure contribution fiscal growth microsoft q3 revenue",
+  "fetched_at": "2026-10-17T21:08:35Z",
+  "elapsed_s": 14.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "In Microsoft\u2019s fiscal Q3 2026 (quarter ended March 31, 2026), Azure and other cloud-services revenue grew **40% year over year** (**39% in constant currency**). [[1]] \n\nAI services contributed approximately **12 percentage points** of that Azure growth, versus roughly **9 points** in the prior-year quarter; therefore, AI was about **30% of Azure\u2019s reported 40% growth rate** (12 \u00f7 40), with non-AI services accounting for the remaining ~28 points. [[2]] \n\nSeparately, Microsoft said its total AI business reached a **$37 billion annual revenue run rate**, up **123% year over year**. [[3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.microsoft.com/en-us/investor/events/fy-2026/earnings-fy-2026-q3",
+          "title": "Microsoft Fiscal Year 2026 Third Quarter Earnings Conference Call"
+        },
+        {
+          "url": "https://windowsnews.ai/article/microsoft-q3-2026-earnings-azure-growth-copilot-seats-and-the-capex-ai-debate.417537",
+          "title": "Microsoft Q3 2026 Earnings: Azure Growth, Copilot Seats, and the Capex AI Debate - Windows News"
+        },
+        {
+          "url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q3/press-release-webcast",
+          "title": "FY26 Q3 - Press Releases - Investor Relations - Microsoft"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

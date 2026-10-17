@@ -1,0 +1,32 @@
+{
+  "query": "Microsoft Alphabet Amazon Meta capital expenditures most recent quarter",
+  "normalized": "alphabet amazon capital expenditures meta microsoft quarter",
+  "fetched_at": "2026-10-17T19:28:07Z",
+  "elapsed_s": 14.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Using each company\u2019s most recently reported quarter, capital expenditures were: \n\n| Company | Most recent quarter | Capital expenditures | Definition / disclosure basis |\n|---|---:|---:|---|\n| Microsoft | FY2026 Q2, ended Dec. 31, 2025 | **$37.5bn** | Capex plus finance leases; this includes **$29.9bn** of cash paid for PP&E and **$6.7bn** of finance leases. [[1]]|\n| Alphabet | Q2 2026 | **$44.9bn** | CapEx, with the vast majority directed to technical infrastructure; approximately 60% was servers and 40% data centers/networking. [[2]]|\n| Amazon | Q2 2026, ended June 30, 2026 | **$54.2bn** | Cash purchases of property and equipment; Amazon separately reported $0.6bn of equipment acquired under finance leases. [[3]]|\n| Meta | Q2 2026 | **$31.08bn** | Capex including principal payments on finance leases. [[4]]|\n\nAmazon was the largest quarterly spender on the cash-purchases measure at **$54.2bn**, followed by Alphabet at **$44.9bn**, Microsoft at **$37.5bn**, and Meta at **$31.1bn**. [[3]] [[2]] [[1]] [[4]] \n\nThe figures are not perfectly like-for-like: Microsoft\u2019s and Meta\u2019s headline measures explicitly include finance-lease-related spending, whereas Amazon\u2019s $54.2bn is purchases of PP&E and Alphabet reports its CapEx figure directly. [[1]] [[4]] [[3]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.microsoft.com/en-us/investor/events/fy-2026/earnings-fy-2026-q2",
+          "title": "Microsoft Fiscal Year 2026 Second Quarter Earnings Conference Call"
+        },
+        {
+          "url": "https://abc.xyz/investor/events/event-details/2026/2026-Q2-Earnings-Call-2026-GgTAq7Is0z/default.aspx",
+          "title": "Alphabet Investor Relations - 2026 Q2 Earnings Call"
+        },
+        {
+          "url": "https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-Second-Quarter-Results/",
+          "title": "Amazon.com, Inc. - Amazon.com Announces Second Quarter Results"
+        },
+        {
+          "url": "https://investor.atmeta.com/investor-news/press-release-details/2026/Meta-Reports-Second-Quarter-2026-Results/default.aspx",
+          "title": "Meta - Meta Reports Second Quarter 2026 Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

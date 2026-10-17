@@ -1,0 +1,40 @@
+{
+  "query": "Meta capital expenditure guidance AI infrastructure",
+  "normalized": "ai capital expenditure guidance infrastructure meta",
+  "fetched_at": "2026-10-17T19:28:29Z",
+  "elapsed_s": 21.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Meta\u2019s latest FY2026 capital-expenditure guidance is $130 billion\u2013$145 billion**, inclusive of principal payments on finance leases; this is the outlook issued with Q2 results for the quarter ended June 30, 2026. [[1]] \n\nThe range was narrowed upward from **$125 billion\u2013$145 billion** following Q1, implying a **$5 billion increase at the midpoint**, while the $145 billion upper bound was retained. [[2, 3]] \n\nFor context, Meta initially guided to **$115 billion\u2013$135 billion** for 2026, with year-over-year growth attributed to investment supporting Meta Superintelligence Labs and the core business. [[4]] \n\nMeta spent **$31.08 billion in Q2 2026** and **$19.84 billion in Q1**, with spending directed to servers, data centers, and network infrastructure. [[1, 5, 2]] \n\nManagement\u2019s stated uses for the AI-infrastructure build include model training, scaling the core advertising/business platform, personal agents and new products, and eventually serving large external customers; it also is laying data-center and network foundations for compute expansion in 2028 and beyond. [[2]] \n\nThe Q1 guidance increase reflected expected higher component prices and, to a lesser extent, incremental data-center costs for future-year capacity. [[6, 3]] \n\nA useful scale comparison is that Meta\u2019s FY2025 capex was **$72.22 billion**, so the current FY2026 guidance implies an approximately **80%\u2013101% increase year over year**. [[4, 1]] \n\nThe principal analytical takeaway is that Meta is explicitly accepting a near-term cash-flow and depreciation burden to secure AI capacity ahead of demand, rather than sizing infrastructure solely to current utilization; investors should therefore track capex execution, infrastructure-driven operating-expense growth, and evidence of monetization in ads, AI products, and enterprise offerings. [[2, 4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.atmeta.com/investor-news/press-release-details/2026/Meta-Reports-Second-Quarter-2026-Results/default.aspx",
+          "title": "Meta - Meta Reports Second Quarter 2026 Results"
+        },
+        {
+          "url": "https://s21.q4cdn.com/399680738/files/doc_financials/2026/q2/META-Q2-2026-Earnings-Call-Transcript.pdf",
+          "title": "1 Meta Platforms, Inc. (META) Second Quarter 2026 Results Conference Call"
+        },
+        {
+          "url": "https://s21.q4cdn.com/399680738/files/doc_financials/2026/q1/Meta-03-31-2026-Exhibit-99-1_final.pdf",
+          "title": "Meta Reports First Quarter 2026 Results"
+        },
+        {
+          "url": "https://investor.atmeta.com/investor-news/press-release-details/2026/Meta-Reports-Fourth-Quarter-and-Full-Year-2025-Results/default.aspx",
+          "title": "Meta - Meta Reports Fourth Quarter and Full Year 2025 Results"
+        },
+        {
+          "url": "https://s21.q4cdn.com/399680738/files/doc_financials/2026/q1/META-Q1-2026-Earnings-Call-Transcript.pdf",
+          "title": "1 Meta Platforms, Inc. (META) First Quarter 2026 Results Conference Call"
+        },
+        {
+          "url": "https://investor.atmeta.com/investor-news/press-release-details/2026/Meta-Reports-First-Quarter-2026-Results/default.aspx",
+          "title": "Meta - Meta Reports First Quarter 2026 Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

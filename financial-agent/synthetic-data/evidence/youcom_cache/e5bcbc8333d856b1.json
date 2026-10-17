@@ -1,0 +1,36 @@
+{
+  "query": "Micron data center memory revenue growth AI demand",
+  "normalized": "ai center data demand growth memory micron revenue",
+  "fetched_at": "2026-10-17T20:04:35Z",
+  "elapsed_s": 23.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Micron\u2019s AI/data-center memory growth is exceptionally strong and accelerating.** In fiscal Q4 2026 (ended September 3, 2026), Core Data Center Business Unit (CDBU) revenue reached a record **$18.0 billion**, up **56% sequentially** from $11.5 billion and roughly **1,042% year over year** from $1.58 billion; it represented **33% of company revenue**. [[1, 2]] \n\nThe broader data-center exposure is larger than CDBU alone: Cloud Memory Business Unit revenue was **$16.3 billion** in FQ4, meaning CDBU plus Cloud Memory revenue was about **$34.3 billion**, or roughly **63%** of Micron\u2019s $54.23 billion quarterly revenue. [[1]] \n\nFor the full fiscal year 2026, Micron said total data-center revenue increased **fourfold**, while total company revenue rose **256%** to a record **$133.2 billion**. [[3]]\n\n**AI is driving both volume and pricing, not merely unit demand.** Micron attributes CDBU\u2019s FQ4 sequential growth to higher pricing and bit shipments, while CDBU gross margin rose to **90%**, up 290 basis points sequentially, reflecting favorable mix as well as pricing. [[3]] \n\nThe strongest AI-linked categories are DRAM/HBM and data-center SSDs: FQ4 DRAM revenue was **$39.8 billion**, up **343% year over year**, and data-center SSD revenue was nearly **$10 billion**, more than **10\u00d7** the prior-year quarter. [[3]] \n\nManagement\u2019s demand thesis is that AI infrastructure requires substantially more memory across accelerator and CPU-based systems; it expects industry data-center DRAM and NAND bit shipments in calendar 2026 to be more than double their level two years earlier. [[4]]\n\n**Investment takeaway:** Micron has shifted from a cyclical PC/mobile-memory recovery to a data-center-led earnings cycle, with AI demand supporting higher memory content, premium HBM/SSD mix, constrained industry supply, and unusually high margins. [[5, 3]] \n\nThe principal risk is that these results depend materially on continued AI-capex strength and tight DRAM/NAND supply-demand conditions; Micron explicitly linked recent price increases to tight industry conditions. [[3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.micron.com/news/press-release/2026/Micron-Technology-Inc--Reports-Record-Fiscal-Fourth-Quarter-and-Full-Year-2026-Results/",
+          "title": "Micron Technology, Inc. - Micron Technology, Inc. Reports Record Fiscal Fourth-Quarter and Full-Year 2026 Results"
+        },
+        {
+          "url": "https://s25.q4cdn.com/621799436/files/doc_financials/2026/q4/Q4-FY26-Prepared-Remarks.pdf",
+          "title": "Micron Technology, Inc. Fiscal Q4 2026 Earnings Call Prepared Remarks"
+        },
+        {
+          "url": "https://investors.micron.com/files/doc_financials/2026/q4/Q4-FY26-Prepared-Remarks.pdf",
+          "title": "Micron Technology, Inc. Fiscal Q4 2026 Earnings Call Prepared Remarks"
+        },
+        {
+          "url": "https://investors.micron.com/static-files/2354ecda-77a0-4ddd-8462-a631eb491356",
+          "title": "Financial results FQ3 2026"
+        },
+        {
+          "url": "https://investors.micron.com/static-files/631b1a32-5537-46ae-8f40-82e42fc79dfe",
+          "title": "Micron Technology, Inc. Fiscal Q3 2026 Earnings Call Prepared Remarks"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

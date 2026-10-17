@@ -1,0 +1,24 @@
+{
+  "query": "Arm Holdings Q1 fiscal 2026 royalty licensing revenue data center Neoverse",
+  "normalized": "2026 arm center data fiscal holdings licensing neoverse q1 revenue royalty",
+  "fetched_at": "2026-10-17T21:07:53Z",
+  "elapsed_s": 16.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Arm\u2019s Q1 FY2026 (quarter ended June 30, 2025; reported July 30, 2025) revenue was **$1.053 billion**, up **12% year over year** and its best first quarter to date. [[1]] [[2]]\n\n- **Royalty revenue:** **$585 million**, up **25% YoY** from **$467 million** in Q1 FY2025. [[1]]\n- **License and other revenue:** **$468 million**, down **1% YoY** from **$472 million**, which Arm attributed to normal timing and size variation in high-value license agreements and backlog contributions. [[1]]\n- **License pipeline indicator:** annualized contract value was **$1.528 billion**, up **28% YoY**, while remaining performance obligations were **$2.232 billion**, up **3% YoY**. [[1]] \n\nData-center demand was a stated contributor to royalty growth, alongside Armv9 adoption and the ramp of Arm Compute Subsystems (CSS); Arm did **not** disclose a dollar amount or separate growth rate for data-center royalties in its Q1 FY2026 release. [[1]] \n\nFor **Neoverse**, Arm said it expected Arm Neoverse-based chips\u2019 share at the top hyperscalers to reach **nearly 50% during calendar 2025**, supported by demand for high-performance, energy-efficient cloud and AI compute. [[2]] \n\nCSS licensing adds an important leading indicator for future royalties: Arm had signed **16 CSS licenses with 10 companies**, more than double the prior-year count; five companies were already shipping CSS-based chips, and Q1 added **three** licenses\u2014**two data-center** and **one PC**. [[1]] \n\nThe key read-through is that FY2026 Q1 growth was royalty-led rather than licensing-led: royalties rose $118 million year over year while licensing declined $4 million, with data-center/Neoverse deployment and higher-value Armv9/CSS content identified as principal drivers. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1973239/000197323925000023/exhibit992fye26q130-junx25.htm",
+          "title": "Document"
+        },
+        {
+          "url": "https://investors.arm.com/static-files/57a99953-427a-4cfb-ade8-634d3564c008",
+          "title": "Corrected Transcript 1-877-FACTSET www.callstreet.com Total Pages: 14"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

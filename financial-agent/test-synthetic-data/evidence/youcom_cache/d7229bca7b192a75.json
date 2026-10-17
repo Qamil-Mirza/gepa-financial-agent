@@ -1,0 +1,40 @@
+{
+  "query": "Marvell Technology custom AI silicon revenue fiscal 2026 quarterly",
+  "normalized": "2026 ai custom fiscal marvell quarterly revenue silicon technology",
+  "fetched_at": "2026-10-17T21:09:57Z",
+  "elapsed_s": 26.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Marvell did **not publicly report custom AI-silicon revenue as a quarterly standalone line item in fiscal 2026**; it disclosed end-market **data-center revenue** quarterly and later stated that its **custom business generated $1.5 billion for FY2026** (year ended January 31, 2026), approximately double the prior year. [[1]]\n\n| Marvell fiscal 2026 quarter | Quarter end | Data-center revenue | Commentary on custom AI silicon |\n|---|---:|---:|---|\n| Q1 | May 3, 2025 | **$1.441bn** | Management said results and Q2 outlook were driven by the rapid scaling of AI-silicon programs into high-volume production; this is not a separately quantified custom-silicon figure. [[2]]|\n| Q2 | Aug. 2, 2025 | **$1.491bn** | Marvell identified strong AI demand for custom silicon and electro-optics as a driver, but did not disclose custom-silicon revenue alone. [[3]]|\n| Q3 | Nov. 1, 2025 | Not separately retrieved here | The company reported total revenue of **$2.075bn** and said data-center-product demand drove the quarter; it did not provide a disclosed standalone custom-AI-silicon revenue figure in the cited results. [[4]]|\n| Q4 | Jan. 31, 2026 | **$1.650bn** | Management subsequently characterized the full-year custom business as **$1.5bn**, but Q4 custom revenue itself was not separately reported. [[1]]|\n\nFor context, total company revenue rose from **$1.895bn in Q1** to **$2.006bn in Q2**, **$2.075bn in Q3**, and **$2.219bn in Q4**; FY2026 revenue was **$8.195bn**. [[5, 3, 4, 6]] \n\nThe key interpretation is that **$1.5bn is a full-year custom-business figure, not a quarterly series**, and it should not be equated with Marvell\u2019s broader data-center revenue because that end market also includes electro-optics and other products. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.alphaspread.com/security/nasdaq/mrvl/investor-relations/earnings-call/q4-2026",
+          "title": "MRVL Q4-2026 Earnings Call - Alpha Spread"
+        },
+        {
+          "url": "https://www.alphaspread.com/security/nasdaq/mrvl/investor-relations/earnings-call/q1-2026",
+          "title": "MRVL Q1-2026 Earnings Call - Alpha Spread"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/989/marvell-technology-inc-reports-second-quarter-of-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports Second Quarter of Fiscal Year 2026 Financial Results"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/999/marvell-technology-inc-reports-third-quarter-of-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports Third Quarter of Fiscal Year 2026 Financial Results"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/95/marvell-technology-inc-reports-first-quarter-of-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports First Quarter of Fiscal Year 2026 Financial Results"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/1011/marvell-technology-inc-reports-fourth-quarter-and-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports Fourth Quarter and Fiscal Year 2026 Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

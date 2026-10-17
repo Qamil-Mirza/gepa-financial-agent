@@ -1,0 +1,20 @@
+{
+  "query": "AWS segment revenue and operating income Q1 2026 Amazon earnings",
+  "normalized": "2026 amazon aws earnings income operating q1 revenue segment",
+  "fetched_at": "2026-10-17T21:06:02Z",
+  "elapsed_s": 7.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AWS generated **$37.587 billion of net sales (revenue)** and **$14.161 billion of operating income** in Amazon\u2019s **Q1 2026** (three months ended March 31, 2026). [[1]] \nThat represents **28% year-over-year revenue growth**, from $29.267 billion in Q1 2025, and approximately **23% growth in AWS operating income**, from $11.547 billion. [[1]] \nAWS\u2019s Q1 2026 operating margin was approximately **37.7%** ($14.161 billion divided by $37.587 billion). [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000012/amzn-20260331xex991.htm",
+          "title": "Document 2 - file: amzn-20260331xex991.htm"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

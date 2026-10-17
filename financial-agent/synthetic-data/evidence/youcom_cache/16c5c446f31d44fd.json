@@ -1,0 +1,24 @@
+{
+  "query": "Microsoft capital expenditure data center AI spending latest quarter",
+  "normalized": "ai capital center data expenditure microsoft quarter spending",
+  "fetched_at": "2026-10-17T19:28:26Z",
+  "elapsed_s": 17.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Microsoft\u2019s latest reported quarter is **FY2026 Q4, ended June 30, 2026**. [[1]]\n\n- **Capital expenditures were $41.0 billion** in the quarter, including the impact of higher component pricing. [[2]]\n- About **two-thirds of capex\u2014approximately $27.3 billion\u2014went to short-lived assets**, primarily CPUs and GPUs; management said this reflected customer demand for both AI and non-AI infrastructure. [[2]]\n- The remaining roughly **$13.7 billion** was directed to long-lived assets, while **finance leases totaled $5.6 billion**, primarily for large data-center sites. [[2]]\n- **Cash paid for property, plant and equipment was $35.8 billion**, and free cash flow was **$19.6 billion**, with elevated capex cited as the reason for the lower conversion. [[2]]\n- For the following quarter, Microsoft guided to **more than $50 billion of capex**, inclusive of the effect of a lease reclassification tied to changes in data-center asset useful lives. [[2]]\n- Management said its **calendar-2026 capex expectation is approximately $175 billion** after the expected migration of some future data-center leases from finance to operating leases; the underlying investment outlook was otherwise unchanged. [[2]]\n- The spending supports a cloud-and-AI business that reached **$59.3 billion of Microsoft Cloud revenue in the quarter, up 27% year over year**, while Azure exceeded **$100 billion of annual revenue** in FY2026. [[1]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast",
+          "title": "FY26 Q4 - Press Releases - Investor Relations - Microsoft"
+        },
+        {
+          "url": "https://www.microsoft.com/en-us/investor/events/fy-2026/earnings-fy-2026-q4",
+          "title": "Microsoft Fiscal Year 2026 Fourth Quarter Earnings Conference Call"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

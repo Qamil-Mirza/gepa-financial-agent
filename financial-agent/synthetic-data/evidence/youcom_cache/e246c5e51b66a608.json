@@ -1,0 +1,20 @@
+{
+  "query": "Intel Data Center and AI segment revenue Q3 2026 fiscal year",
+  "normalized": "2026 ai center data fiscal intel q3 revenue segment year",
+  "fetched_at": "2026-10-17T20:10:29Z",
+  "elapsed_s": 9.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Intel has not yet reported Q3 FY2026 results: the company scheduled its release for October 29, 2026, after market close. Therefore, Data Center and AI (DCAI) segment revenue for Q3 FY2026 is not yet available. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.intc.com/news-events/press-releases/detail/1782/intel-to-report-third-quarter-2026-financial-results",
+          "title": "Intel to Report Third-Quarter 2026 Financial Results :: Intel Corporation (INTC)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

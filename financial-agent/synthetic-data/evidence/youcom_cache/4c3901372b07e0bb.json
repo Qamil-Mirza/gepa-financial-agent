@@ -1,0 +1,20 @@
+{
+  "query": "Oracle Cloud Infrastructure Q3 FY2026 revenue growth",
+  "normalized": "cloud fy2026 growth infrastructure oracle q3 revenue",
+  "fetched_at": "2026-10-17T20:07:57Z",
+  "elapsed_s": 5.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Oracle Cloud Infrastructure (IaaS) revenue was **$4.9 billion in Q3 FY2026**, growing **84% year over year in U.S. dollars** and **81% in constant currency**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.oracle.com/investor-news/news-details/2026/Oracle-Announces-Fiscal-Year-2026-Third-Quarter-Financial-Results/default.aspx",
+          "title": "Oracle - Oracle Announces Fiscal Year 2026 Third Quarter Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

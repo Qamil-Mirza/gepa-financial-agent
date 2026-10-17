@@ -1,0 +1,24 @@
+{
+  "query": "Super Micro Computer fiscal year end date and quarters",
+  "normalized": "computer date end fiscal micro quarters super year",
+  "fetched_at": "2026-10-17T21:01:24Z",
+  "elapsed_s": 6.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Super Micro Computer\u2019s fiscal year ends **June 30**; accordingly, FY2026 ran from July 1, 2025 through June 30, 2026. [[1]] \n\nIts fiscal quarters are: **Q1 ended September 30; Q2 ended December 31; Q3 ended March 31; and Q4 ended June 30**. The company\u2019s FY2025 filing announcement, for example, identifies Q1 as ending September 30, 2024 and Q2 as ending December 31, 2024. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.supermicro.com/news/news-details/2026/Supermicro-Announces-Fourth-Quarter-and-Full-Fiscal-Year-2026-Financial-Results/default.aspx",
+          "title": "Super Micro Computer, Inc. - Supermicro Announces Fourth Quarter and Full Fiscal Year 2026 Financial Results"
+        },
+        {
+          "url": "https://ir.supermicro.com/news/news-details/2025/Supermicro-Files-Form-10-K-for-Fiscal-2024-and-Forms-10-Q-for-the-First-and-Second-Quarters-of-Fiscal-2025/default.aspx",
+          "title": "Super Micro Computer, Inc. - Supermicro Files Form 10-K for Fiscal 2024 and Forms 10-Q for the First and Second Quarters of Fiscal 2025"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

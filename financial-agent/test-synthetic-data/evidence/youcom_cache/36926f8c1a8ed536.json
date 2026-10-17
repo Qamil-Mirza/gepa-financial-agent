@@ -1,0 +1,40 @@
+{
+  "query": "SoftBank ownership stake in Arm and margin loan",
+  "normalized": "arm loan margin ownership softbank stake",
+  "fetched_at": "2026-10-17T21:02:14Z",
+  "elapsed_s": 25.0,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "- **Ownership:** SoftBank Group remains Arm\u2019s controlling shareholder, owning roughly **86%\u201390%** of Arm; a May 2026 filing-based figure cited **922.7 million shares, or 86.4%**, held indirectly through its wholly owned Kronos II LLC, while contemporaneous reporting characterized the stake as \u201calmost 90%.\u201d [[1]] [[2]]\n\n- **Margin-loan balance at FY2025 year-end:** At **March 31, 2026**, SoftBank reported **$14.1 billion (\u00a52.2 trillion)** outstanding under margin loans collateralized by Arm shares. [[3]] [[4]]\n\n- **Borrowing increase during FY2025:** SoftBank\u2019s Arm-share margin borrowing increased by **$11.5 billion** in the year ended March 31, 2026; its consolidated financial report recorded **\u00a53.1685 trillion** of borrowings using Arm shares at that date. [[5]]\n\n- **Facility versus amount drawn:** The Arm-backed facility had been expanded from **$13.5 billion to $20.0 billion** in November 2025, whereas the March 2026 **$14.1 billion** figure was the outstanding balance\u2014not the full facility size. [[6]] [[3]]\n\n- **Subsequent update:** In September 2026, Bloomberg reported that SoftBank increased the facility by **$5 billion to $25 billion**; it said **$20 billion had been drawn as of December**, the loan matures in **September 2027**, and it was secured by **769 million Arm shares (72% of Arm)** as of May. [[2]]\n\n- **Analytical implication:** SoftBank has retained control of Arm while monetizing part of the stake\u2019s collateral value rather than selling shares, but the structure increases exposure to Arm-share-price volatility and potential collateral/margin requirements. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://note.com/medicalconsult/n/nf5d58738099b?hl=en",
+          "title": "Arm Part 3: A Public Company with Approximately 86% of Shares Held by SoftBank\uff5c\u534a\u5c0e\u4f53\u30fb\u533b\u7642\u696d\u754c\u3092\u5206\u6790\uff5c\u9ad8\u91ce\u8056\u7fa9"
+        },
+        {
+          "url": "https://finance.yahoo.com/technology/ai/articles/softbank-raises-arm-margin-loan-054546224.html",
+          "title": "SoftBank Raises Arm Margin Loan to $25 Billion as AI Bets Grow"
+        },
+        {
+          "url": "https://group.softbank/media/Project/sbg/sbg/pdf/ir/presentations/2025/investor-presentation_q4fy2025_01_en.pdf",
+          "title": "FY2025 Earnings Results Investor Briefing May 13, 2026 SoftBank Group Corp."
+        },
+        {
+          "url": "https://group.softbank/media/Project/sbg/sbg/pdf/ir/financials/annual_reports/annual-report_fy2026_en.pdf",
+          "title": "2026 ANNUAL REPORT 2026"
+        },
+        {
+          "url": "https://group.softbank/media/Project/sbg/sbg/pdf/ir/financials/financial_reports/financial-report_q4fy2025_01_en.pdf",
+          "title": "Tokyo, May 13, 2026 1. Financial Highlights"
+        },
+        {
+          "url": "https://group.softbank/media/Project/sbg/sbg/pdf/ir/financials/financial_reports/financial-report_q2fy2025_01_en.pdf",
+          "title": "1. Financial Highlights"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

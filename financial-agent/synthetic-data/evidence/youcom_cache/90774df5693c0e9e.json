@@ -1,0 +1,40 @@
+{
+  "query": "AMD Instinct GPU data center revenue growth",
+  "normalized": "amd center data gpu growth instinct revenue",
+  "fetched_at": "2026-10-17T19:25:34Z",
+  "elapsed_s": 19.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD does not separately report a full annual revenue line for **AMD Instinct data-center GPUs**, so a precise 2024\u20132025 Instinct GPU growth rate cannot be calculated from disclosed figures. [[1, 2]] \n\nThe clearest disclosed figure is that Instinct accelerator revenue exceeded **$5 billion in FY2024**, following the MI300 launch and ramp; AMD characterized the product as having ramped in 2024 rather than publishing a comparable FY2023 Instinct-only revenue figure. [[1, 3]] \n\nAs the broader, reported proxy, AMD\u2019s Data Center revenue rose from **$6.5 billion in FY2023** to **$12.6 billion in FY2024**, a **94% year-over-year increase**, driven by both Instinct GPUs and EPYC server CPUs. [[4, 1]] \n\nIn FY2025, Data Center revenue increased another **32% to $16.6 billion**, while AMD said Instinct GPU revenue reached a record, driven by the MI350-series ramp and expanding customer engagements; however, it again did not disclose the Instinct-only dollar total or growth percentage. [[5, 2]] \n\nQuarterly momentum also remained positive in 2025: Data Center revenue was **$4.3 billion in Q3 2025 (+22% YoY)** and **$5.4 billion in Q4 2025 (+39% YoY)**, with AMD attributing growth partly to Instinct MI350 shipments. [[6, 5]]\n\n**Bottom line:** Instinct GPU revenue scaled from an early MI300 launch/ramp in 2023 to **more than $5 billion in 2024**, and reached another record in 2025, while the encompassing Data Center segment expanded from **$6.5 billion to $12.6 billion to $16.6 billion** across FY2023\u2013FY2025. [[3, 1, 2, 4, 5]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1236/amd-reports-fourth-quarter-and-full-year-2024-financial-results",
+          "title": "AMD Reports Fourth Quarter and Full Year 2024 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        },
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0001193125-26-129106/0001193125-26-129106.pdf",
+          "title": "BUILDING THE COMPUTE FOUNDATION FOR THE AI ERA 2025 ANNUAL REPORT"
+        },
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1180/amd-reports-fourth-quarter-and-full-year-2023-financial-results",
+          "title": "AMD Reports Fourth Quarter and Full Year 2023 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        },
+        {
+          "url": "https://www.amd.com/en/newsroom/press-releases/2024-1-30-amd-reports-fourth-quarter-and-full-year-2023-fina.html",
+          "title": "AMD Reports Fourth Quarter and Full Year 2023 Financial Results"
+        },
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1276/amd-reports-fourth-quarter-and-full-year-2025-financial-results",
+          "title": "AMD Reports Fourth Quarter and Full Year 2025 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        },
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1265/amd-reports-third-quarter-2025-financial-results",
+          "title": "AMD Reports Third Quarter 2025 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

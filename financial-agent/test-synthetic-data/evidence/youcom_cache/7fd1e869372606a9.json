@@ -1,0 +1,24 @@
+{
+  "query": "Arm Neoverse data center infrastructure royalty growth",
+  "normalized": "arm center data growth infrastructure neoverse royalty",
+  "fetched_at": "2026-10-17T20:56:24Z",
+  "elapsed_s": 133.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Arm\u2019s Neoverse-led data-center royalty business is growing at a **triple-digit year-over-year rate**: data-center royalties **more than doubled** in Q1 fiscal 2027, continuing the same \u201cmore than doubled\u201d performance reported in the preceding period. [[1]] \n\nThe company does not disclose the absolute dollar amount of data-center royalties, so an exact segment revenue growth rate cannot be calculated; \u201cmore than doubled\u201d implies growth of **over 100% year over year**. [[1]] \n\nThe broader royalty base grew **22% year over year to $715 million** in Q1 FY2027, supported by higher royalty rates from Armv9 and Arm Compute Subsystems (CSS), plus greater deployment of Arm-based chips in data centers. [[1]] \n\nNeoverse adoption is the central driver: cumulative Neoverse shipments exceeded **1.5 billion cores**, while the latest 500 million cores shipped in only **nine months**, versus six years for the initial one billion. [[1]] \n\nFor context, in Q3 FY2026 Arm\u2019s total royalty revenue grew **27% to $737 million**, and management attributed growth partly to AI and general-purpose data-center demand; it characterized data-center royalty growth as triple digit. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.arm.com/static-files/d8db20bd-7b96-486a-b99b-23315627d1ec",
+          "title": "Exhibit 99.2 FYE27 Q1 (30-Jun-26) Shareholder Letter"
+        },
+        {
+          "url": "https://investors.arm.com/static-files/759b8233-bfab-4d24-822c-b517e447e809",
+          "title": "Exhibit 99.2 FYE26 Q3 (31-Dec-25) Shareholder Letter"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

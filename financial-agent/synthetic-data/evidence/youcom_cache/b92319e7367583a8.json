@@ -1,0 +1,20 @@
+{
+  "query": "Broadcom VMware infrastructure software revenue",
+  "normalized": "broadcom infrastructure revenue software vmware",
+  "fetched_at": "2026-10-17T20:03:54Z",
+  "elapsed_s": 7.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Broadcom reported **$8.752 billion of infrastructure-software revenue** in fiscal Q3 2026 (quarter ended August 2, 2026), up **29% year over year** from $6.786 billion. [[1]] \n\nThis is the reported segment that includes VMware, but Broadcom\u2019s quarterly release does **not** separately disclose VMware-only revenue; therefore, $8.752 billion should not be interpreted as VMware revenue alone. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Third Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

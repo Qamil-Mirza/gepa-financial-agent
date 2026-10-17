@@ -1,0 +1,20 @@
+{
+  "query": "AWS operating income Q2 2026 Amazon",
+  "normalized": "2026 amazon aws income operating q2",
+  "fetched_at": "2026-10-17T21:04:35Z",
+  "elapsed_s": 4.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AWS operating income was **$16.6 billion** in Amazon\u2019s **Q2 2026** (the quarter ended June 30, 2026), versus **$10.2 billion** in Q2 2025. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.aboutamazon.com/files/doc_earnings/2026/q2/earnings-result/AMZN-Q2-2026-Earnings-Release.pdf",
+          "title": "AMAZON.COM ANNOUNCES SECOND QUARTER RESULTS"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

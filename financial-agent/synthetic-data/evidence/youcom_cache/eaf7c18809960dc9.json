@@ -1,0 +1,36 @@
+{
+  "query": "NVIDIA and AMD fiscal quarter end dates comparison",
+  "normalized": "amd comparison dates end fiscal nvidia quarter",
+  "fetched_at": "2026-10-17T19:28:08Z",
+  "elapsed_s": 26.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**NVIDIA\u2019s fiscal calendar runs about one month later than AMD\u2019s for the same underlying calendar quarter.** NVIDIA\u2019s FY2026 Q4 ended January 25, 2026, while AMD\u2019s FY2025 ended December 27, 2025; in other words, NVIDIA assigns the December-ending quarter to the following fiscal year. [[1]] [[2]]\n\n| Same calendar-period quarter | NVIDIA fiscal label and quarter end | AMD fiscal label and quarter end | Difference |\n|---|---:|---:|---:|\n| Mar./Apr. 2025 | Q1 FY2026 \u2014 Apr. 27, 2025 | Q1 FY2025 \u2014 Mar. 29, 2025 | NVIDIA ends 29 days later. [[3]] [[2]]|\n| Jun./Jul. 2025 | Q2 FY2026 \u2014 Jul. 27, 2025 | Q2 FY2025 \u2014 Jun. 28, 2025 | NVIDIA ends 29 days later. [[4]] [[2]]|\n| Sep./Oct. 2025 | Q3 FY2026 \u2014 Oct. 26, 2025 | Q3 FY2025 \u2014 Sep. 27, 2025 | NVIDIA ends 29 days later. [[1]] [[2]]|\n| Dec. 2025/Jan. 2026 | Q4 FY2026 \u2014 Jan. 25, 2026 | Q4 FY2025 \u2014 Dec. 27, 2025 | NVIDIA ends 29 days later. [[1]] [[2]]|\n\nAMD explicitly uses a 52- or 53-week fiscal year ending on the last Saturday in December. [[5]] NVIDIA\u2019s reported quarter ends in this comparison fall on Sundays\u2014April 27, July 27, October 26, and January 25\u2014so its fiscal reporting period is effectively shifted roughly four weeks later than AMD\u2019s. [[3]] [[4]] [[1]]\n\n**Practical comparison rule:** compare NVIDIA **FY2026** quarters with AMD **FY2025** quarters, rather than matching fiscal-year labels; this aligns the companies\u2019 underlying calendar periods most closely. [[1]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2026",
+          "title": "NVIDIA Announces Financial Results for Fourth Quarter and Fiscal 2026"
+        },
+        {
+          "url": "https://ir.amd.com/financial-information/financial-results",
+          "title": "Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm",
+          "title": "nvda-20260426"
+        },
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2025/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2026/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Second Quarter Fiscal 2026"
+        },
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000123/amd-20260627.htm",
+          "title": "August 5, 2026 - 10-Q: Quarterly report [Sections 13 or 15(d)]"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

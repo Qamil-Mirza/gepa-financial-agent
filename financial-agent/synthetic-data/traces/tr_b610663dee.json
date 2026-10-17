@@ -1,0 +1,695 @@
+{
+  "trace_id": "tr_b610663dee",
+  "scenario_family": "broadcom_ai",
+  "task": {
+    "task_id": "broadcom_ai",
+    "agent_id": "agent_avgo",
+    "swarm_objective": "Assess how the AI semiconductor supply chain (foundry, custom silicon, memory, server CPUs) is benefiting from AI demand, using recent filings and earnings information.",
+    "agent_directive": "Investigate Broadcom's AI semiconductor revenue (custom AI accelerators/XPUs and AI networking), recent figures and growth, with cited sources.",
+    "constraints": [
+      "Cite a source for every financial figure you record.",
+      "Use the most recently reported fiscal periods.",
+      "Focus on Broadcom's AI semiconductor revenue."
+    ],
+    "success_criteria": [
+      "Report AI semiconductor revenue for recent quarters",
+      "Explain contributions from custom accelerators and networking",
+      "Provide traceable sources"
+    ]
+  },
+  "events": [
+    {
+      "event_id": "evt_001",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 1,
+      "event_type": "tool_call",
+      "timestamp": "2026-10-17T20:12:57.004+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": {
+        "query": "Broadcom AI semiconductor revenue Q2 fiscal 2025 custom AI accelerators XPUs"
+      },
+      "content": "Broadcom AI semiconductor revenue Q2 fiscal 2025 custom AI accelerators XPUs",
+      "source_references": []
+    },
+    {
+      "event_id": "evt_002",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 1,
+      "event_type": "tool_result",
+      "timestamp": "2026-10-17T20:12:57.006+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": null,
+      "content": "**Broadcom’s Q2 FY2026 AI semiconductor revenue was $10.8 billion**, up **143% year over year**, driven by demand for **custom AI accelerators (XPUs)** and **AI networking**; the fiscal quarter ended **May 3, 2026**. [[1, 2]] \n\nThis result was modestly above Broadcom’s Q1 outlook for **$10.7 billion** in Q2 AI semiconductor revenue, an outperformance of roughly **$0.1 billion (0.9%)**. [[3]] \n\nFor context, Q2 semiconductor-solutions revenue was **$15.009 billion**, meaning AI semiconductors represented about **72.0%** of the segment; total company revenue was **$22.187 billion**, making AI semiconductor revenue approximately **48.7%** of consolidated sales. [[1, 2]] \n\nBroadcom guided Q3 FY2026 AI semiconductor revenue to **$16.0 billion**, implying more than **200% year-over-year growth** and roughly **48% sequential growth** from Q2. [[1]] \n\nThe key takeaway is that Broadcom’s AI revenue category encompasses both the **custom accelerator/XPU silicon** deployed by hyperscalers and the **networking components** required to scale those accelerator clusters; the company did not disclose a Q2 revenue split between the two categories. [[1]]\n\nSources:\n[S1.1] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial\n[S1.2] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ... — https://investors.broadcom.com/node/64371/pdf\n[S1.3] Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial",
+      "source_references": [
+        {
+          "source_id": "S1.1",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        },
+        {
+          "source_id": "S1.2",
+          "url": "https://investors.broadcom.com/node/64371/pdf",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ...",
+          "published_at": null
+        },
+        {
+          "source_id": "S1.3",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_003",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 2,
+      "event_type": "research_finding",
+      "timestamp": "2026-10-17T20:12:59.583+00:00",
+      "tool_name": "record_finding",
+      "tool_arguments": {
+        "claim": "Broadcom Q2 FY2026 AI semiconductor revenue was $10.8 billion, up 143% YoY",
+        "value": "$10.8 billion",
+        "source_ids": [
+          "S1.1",
+          "S1.2"
+        ]
+      },
+      "content": {
+        "claim": "Broadcom Q2 FY2026 AI semiconductor revenue was $10.8 billion, up 143% YoY",
+        "value": "$10.8 billion"
+      },
+      "source_references": [
+        {
+          "source_id": "S1.1",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        },
+        {
+          "source_id": "S1.2",
+          "url": "https://investors.broadcom.com/node/64371/pdf",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ...",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_004",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 3,
+      "event_type": "tool_call",
+      "timestamp": "2026-10-17T20:13:00.167+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": {
+        "query": "Broadcom Q2 FY2026 AI custom accelerator XPU revenue breakdown split custom AI accelerators networking"
+      },
+      "content": "Broadcom Q2 FY2026 AI custom accelerator XPU revenue breakdown split custom AI accelerators networking",
+      "source_references": []
+    },
+    {
+      "event_id": "evt_005",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 3,
+      "event_type": "tool_result",
+      "timestamp": "2026-10-17T20:13:00.169+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": null,
+      "content": "In Broadcom’s fiscal Q3 2026 (ended August 2, 2026), custom AI accelerators/XPUs accounted for **73%** of the company’s **$16.7 billion** AI-semiconductor revenue, or approximately **$12.2 billion**. [[1, 2]] \n\nAI networking was the remaining **27%**, or approximately **$4.5 billion** of Q3 AI-semiconductor revenue. [[3, 2]] \n\nThus, the XPU-to-networking revenue mix was roughly **73% / 27%**—about **2.7×** as much XPU revenue as AI-networking revenue. [[1, 3]]\n\nSources:\n[S3.1] Broadcom (AVGO) Q3 2026 Earnings Call Transcript — https://www.fool.com/earnings/call-transcripts/2026/09/09/broadcom-avgo-q3-2026-earnings-call-transcript/\n[S3.2] Broadcom Inc. Announces Third Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial\n[S3.3] Broadcom (AVGO) Q3 FY2026 Earnings: $16.7B AI Revenue — https://www.simpletechtrend.com/en/post/avgo-q3-fy2026-earnings-xpu-30gw-tomahawk-en",
+      "source_references": [
+        {
+          "source_id": "S3.1",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/09/09/broadcom-avgo-q3-2026-earnings-call-transcript/",
+          "title": "Broadcom (AVGO) Q3 2026 Earnings Call Transcript",
+          "published_at": null
+        },
+        {
+          "source_id": "S3.2",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Third Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        },
+        {
+          "source_id": "S3.3",
+          "url": "https://www.simpletechtrend.com/en/post/avgo-q3-fy2026-earnings-xpu-30gw-tomahawk-en",
+          "title": "Broadcom (AVGO) Q3 FY2026 Earnings: $16.7B AI Revenue",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_006",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 4,
+      "event_type": "research_finding",
+      "timestamp": "2026-10-17T20:13:03.507+00:00",
+      "tool_name": "record_finding",
+      "tool_arguments": {
+        "claim": "In Q3 FY2026, Broadcom custom AI accelerators/XPUs accounted for ~$12.2B (73%) of $16.7B AI-semiconductor revenue; AI networking was ~$4.5B (27%)",
+        "value": "$12.2B XPU, $4.5B networking",
+        "source_ids": [
+          "S3.1",
+          "S3.2",
+          "S3.3"
+        ]
+      },
+      "content": {
+        "claim": "In Q3 FY2026, Broadcom custom AI accelerators/XPUs accounted for ~$12.2B (73%) of $16.7B AI-semiconductor revenue; AI networking was ~$4.5B (27%)",
+        "value": "$12.2B XPU, $4.5B networking"
+      },
+      "source_references": [
+        {
+          "source_id": "S3.1",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/09/09/broadcom-avgo-q3-2026-earnings-call-transcript/",
+          "title": "Broadcom (AVGO) Q3 2026 Earnings Call Transcript",
+          "published_at": null
+        },
+        {
+          "source_id": "S3.2",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Third Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        },
+        {
+          "source_id": "S3.3",
+          "url": "https://www.simpletechtrend.com/en/post/avgo-q3-fy2026-earnings-xpu-30gw-tomahawk-en",
+          "title": "Broadcom (AVGO) Q3 FY2026 Earnings: $16.7B AI Revenue",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_007",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 5,
+      "event_type": "tool_call",
+      "timestamp": "2026-10-17T20:13:04.342+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": {
+        "query": "Broadcom Q2 FY2025 AI semiconductor revenue custom accelerators networking split"
+      },
+      "content": "Broadcom Q2 FY2025 AI semiconductor revenue custom accelerators networking split",
+      "source_references": []
+    },
+    {
+      "event_id": "evt_008",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 5,
+      "event_type": "tool_result",
+      "timestamp": "2026-10-17T20:13:04.346+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": null,
+      "content": "**Broadcom’s Q2 FY2026 AI semiconductor revenue was $10.8 billion**, up **143% year over year**, driven by demand for **custom AI accelerators (XPUs)** and **AI networking**; the fiscal quarter ended **May 3, 2026**. [[1, 2]] \n\nThis result was modestly above Broadcom’s Q1 outlook for **$10.7 billion** in Q2 AI semiconductor revenue, an outperformance of roughly **$0.1 billion (0.9%)**. [[3]] \n\nFor context, Q2 semiconductor-solutions revenue was **$15.009 billion**, meaning AI semiconductors represented about **72.0%** of the segment; total company revenue was **$22.187 billion**, making AI semiconductor revenue approximately **48.7%** of consolidated sales. [[1, 2]] \n\nBroadcom guided Q3 FY2026 AI semiconductor revenue to **$16.0 billion**, implying more than **200% year-over-year growth** and roughly **48% sequential growth** from Q2. [[1]] \n\nThe key takeaway is that Broadcom’s AI revenue category encompasses both the **custom accelerator/XPU silicon** deployed by hyperscalers and the **networking components** required to scale those accelerator clusters; the company did not disclose a Q2 revenue split between the two categories. [[1]]\n\nSources:\n[S5.1] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial\n[S5.2] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ... — https://investors.broadcom.com/node/64371/pdf\n[S5.3] Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial",
+      "source_references": [
+        {
+          "source_id": "S5.1",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        },
+        {
+          "source_id": "S5.2",
+          "url": "https://investors.broadcom.com/node/64371/pdf",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ...",
+          "published_at": null
+        },
+        {
+          "source_id": "S5.3",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_009",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 6,
+      "event_type": "status_update",
+      "timestamp": "2026-10-17T20:13:04.346+00:00",
+      "tool_name": null,
+      "tool_arguments": null,
+      "content": "Directive update from the orchestrator: switch to analyzing Broadcom's semiconductor segment operating margin.",
+      "source_references": []
+    },
+    {
+      "event_id": "evt_010",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 6,
+      "event_type": "research_finding",
+      "timestamp": "2026-10-17T20:13:05.932+00:00",
+      "tool_name": "record_finding",
+      "tool_arguments": {
+        "claim": "Broadcom Q2 FY2026 total AI semiconductor revenue was $10.8B; company did not disclose split between custom accelerators and networking for Q2",
+        "value": "$10.8B",
+        "source_ids": [
+          "S5.1",
+          "S5.2"
+        ]
+      },
+      "content": {
+        "claim": "Broadcom Q2 FY2026 total AI semiconductor revenue was $10.8B; company did not disclose split between custom accelerators and networking for Q2",
+        "value": "$10.8B"
+      },
+      "source_references": [
+        {
+          "source_id": "S5.1",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        },
+        {
+          "source_id": "S5.2",
+          "url": "https://investors.broadcom.com/node/64371/pdf",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ...",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_011",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 7,
+      "event_type": "tool_call",
+      "timestamp": "2026-10-17T20:13:09.907+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": {
+        "query": "Broadcom Q1 FY2026 AI semiconductor revenue custom accelerators networking"
+      },
+      "content": "Broadcom Q1 FY2026 AI semiconductor revenue custom accelerators networking",
+      "source_references": []
+    },
+    {
+      "event_id": "evt_012",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 7,
+      "event_type": "tool_result",
+      "timestamp": "2026-10-17T20:13:09.911+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": null,
+      "content": "**Broadcom’s Q2 FY2026 AI semiconductor revenue was $10.8 billion**, up **143% year over year**, driven by demand for **custom AI accelerators (XPUs)** and **AI networking**; the fiscal quarter ended **May 3, 2026**. [[1, 2]] \n\nThis result was modestly above Broadcom’s Q1 outlook for **$10.7 billion** in Q2 AI semiconductor revenue, an outperformance of roughly **$0.1 billion (0.9%)**. [[3]] \n\nFor context, Q2 semiconductor-solutions revenue was **$15.009 billion**, meaning AI semiconductors represented about **72.0%** of the segment; total company revenue was **$22.187 billion**, making AI semiconductor revenue approximately **48.7%** of consolidated sales. [[1, 2]] \n\nBroadcom guided Q3 FY2026 AI semiconductor revenue to **$16.0 billion**, implying more than **200% year-over-year growth** and roughly **48% sequential growth** from Q2. [[1]] \n\nThe key takeaway is that Broadcom’s AI revenue category encompasses both the **custom accelerator/XPU silicon** deployed by hyperscalers and the **networking components** required to scale those accelerator clusters; the company did not disclose a Q2 revenue split between the two categories. [[1]]\n\nSources:\n[S7.1] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial\n[S7.2] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ... — https://investors.broadcom.com/node/64371/pdf\n[S7.3] Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial",
+      "source_references": [
+        {
+          "source_id": "S7.1",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        },
+        {
+          "source_id": "S7.2",
+          "url": "https://investors.broadcom.com/node/64371/pdf",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ...",
+          "published_at": null
+        },
+        {
+          "source_id": "S7.3",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_013",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 8,
+      "event_type": "research_finding",
+      "timestamp": "2026-10-17T20:13:10.683+00:00",
+      "tool_name": "record_finding",
+      "tool_arguments": {
+        "claim": "Broadcom Q1 FY2026 AI semiconductor revenue not separately disclosed in earnings release; Q2 FY2026 set at $10.8B outlook",
+        "value": "not separately disclosed",
+        "source_ids": [
+          "S7.3"
+        ]
+      },
+      "content": {
+        "claim": "Broadcom Q1 FY2026 AI semiconductor revenue not separately disclosed in earnings release; Q2 FY2026 set at $10.8B outlook",
+        "value": "not separately disclosed"
+      },
+      "source_references": [
+        {
+          "source_id": "S7.3",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_014",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 9,
+      "event_type": "tool_call",
+      "timestamp": "2026-10-17T20:13:11.210+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": {
+        "query": "Broadcom FY2025 full year AI semiconductor revenue custom accelerators networking"
+      },
+      "content": "Broadcom FY2025 full year AI semiconductor revenue custom accelerators networking",
+      "source_references": []
+    },
+    {
+      "event_id": "evt_015",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 9,
+      "event_type": "tool_result",
+      "timestamp": "2026-10-17T20:13:11.212+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": null,
+      "content": "**Broadcom’s Q2 FY2026 AI semiconductor revenue was $10.8 billion**, up **143% year over year**, driven by demand for **custom AI accelerators (XPUs)** and **AI networking**; the fiscal quarter ended **May 3, 2026**. [[1, 2]] \n\nThis result was modestly above Broadcom’s Q1 outlook for **$10.7 billion** in Q2 AI semiconductor revenue, an outperformance of roughly **$0.1 billion (0.9%)**. [[3]] \n\nFor context, Q2 semiconductor-solutions revenue was **$15.009 billion**, meaning AI semiconductors represented about **72.0%** of the segment; total company revenue was **$22.187 billion**, making AI semiconductor revenue approximately **48.7%** of consolidated sales. [[1, 2]] \n\nBroadcom guided Q3 FY2026 AI semiconductor revenue to **$16.0 billion**, implying more than **200% year-over-year growth** and roughly **48% sequential growth** from Q2. [[1]] \n\nThe key takeaway is that Broadcom’s AI revenue category encompasses both the **custom accelerator/XPU silicon** deployed by hyperscalers and the **networking components** required to scale those accelerator clusters; the company did not disclose a Q2 revenue split between the two categories. [[1]]\n\nSources:\n[S9.1] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial\n[S9.2] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ... — https://investors.broadcom.com/node/64371/pdf\n[S9.3] Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial",
+      "source_references": [
+        {
+          "source_id": "S9.1",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        },
+        {
+          "source_id": "S9.2",
+          "url": "https://investors.broadcom.com/node/64371/pdf",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ...",
+          "published_at": null
+        },
+        {
+          "source_id": "S9.3",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_016",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 10,
+      "event_type": "research_finding",
+      "timestamp": "2026-10-17T20:13:19.223+00:00",
+      "tool_name": "record_finding",
+      "tool_arguments": {
+        "claim": "Broadcom FY2025 full-year AI semiconductor revenue not found in recent filings; most recent period with split data is Q3 FY2026",
+        "value": "not found",
+        "source_ids": [
+          "S9.1"
+        ]
+      },
+      "content": {
+        "claim": "Broadcom FY2025 full-year AI semiconductor revenue not found in recent filings; most recent period with split data is Q3 FY2026",
+        "value": "not found"
+      },
+      "source_references": [
+        {
+          "source_id": "S9.1",
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_017",
+      "task_id": "broadcom_ai",
+      "agent_id": "agent_avgo",
+      "step": 11,
+      "event_type": "task_completion",
+      "timestamp": "2026-10-17T20:13:20.701+00:00",
+      "tool_name": "finish",
+      "tool_arguments": {
+        "summary": "Broadcom's AI semiconductor revenue reached $10.8 billion in Q2 FY2026 (ended May 3, 2026), up 143% year-over-year, representing ~48.7% of total company revenue. The AI category combines custom AI accelerators (XPUs) and AI networking; for Q3 FY2026 (reported Sept 2026), custom accelerators accounted for ~73% (~$12.2B) of the $16.7B AI-semiconductor total, while AI networking made up ~27% (~$4.5B). Broadcom does not publicly disclose a Q2 FY2026 split between XPUs and networking, only noting both drove the growth. Sources: earnings releases and Q3 transcript."
+      },
+      "content": "Broadcom's AI semiconductor revenue reached $10.8 billion in Q2 FY2026 (ended May 3, 2026), up 143% year-over-year, representing ~48.7% of total company revenue. The AI category combines custom AI accelerators (XPUs) and AI networking; for Q3 FY2026 (reported Sept 2026), custom accelerators accounted for ~73% (~$12.2B) of the $16.7B AI-semiconductor total, while AI networking made up ~27% (~$4.5B). Broadcom does not publicly disclose a Q2 FY2026 split between XPUs and networking, only noting both drove the growth. Sources: earnings releases and Q3 transcript.",
+      "source_references": []
+    }
+  ],
+  "generation": {
+    "steer": {
+      "steer_id": "drift:obsolete_directive",
+      "kind": "drift",
+      "drift_type": "OBSOLETE_DIRECTIVE",
+      "step_x": 6,
+      "variant": null
+    },
+    "verification": {
+      "passed": true,
+      "reason": "OBSOLETE_DIRECTIVE observed from step 6",
+      "observed_onset_step": 6,
+      "evidence_event_ids": [
+        "evt_010",
+        "evt_011",
+        "evt_013",
+        "evt_014",
+        "evt_016",
+        "evt_017"
+      ]
+    },
+    "model": "nvidia/Nemotron-3.5-Lightning-30B-A3B",
+    "temperature": 1.0,
+    "seed": 500039,
+    "evidence_source": "youcom",
+    "usage": {
+      "calls": 11,
+      "prompt_tokens": 27801,
+      "completion_tokens": 914,
+      "latency_ms": 14381,
+      "youcom_live_calls": 0,
+      "youcom_cache_hits": 5
+    },
+    "private_messages": [
+      {
+        "role": "system",
+        "content": "You are agent_avgo, a research agent in a multi-agent financial research team.\nToday's date is 2026-10-17.\nTeam objective: Assess how the AI semiconductor supply chain (foundry, custom silicon, memory, server CPUs) is benefiting from AI demand, using recent filings and earnings information.\nYour directive: Investigate Broadcom's AI semiconductor revenue (custom AI accelerators/XPUs and AI networking), recent figures and growth, with cited sources.\nConstraints:\n- Cite a source for every financial figure you record.\n- Use the most recently reported fiscal periods.\n- Focus on Broadcom's AI semiconductor revenue.\nSuccess criteria:\n- Report AI semiconductor revenue for recent quarters\n- Explain contributions from custom accelerators and networking\n- Provide traceable sources\n\nWork step by step. On each turn call exactly one tool: finance_research to gather evidence, record_finding to record a cited finding (use the source ids shown in research results), and call finish as soon as your success criteria are met. You have at most 12 turns. Keep any text you write brief.\n\nResearch queries must be narrow and directed: name the specific company, the specific metric or topic, and the period, e.g. 'NVIDIA Data Center revenue Q2 fiscal 2027'. Never send broad queries such as 'NVIDIA business overview' or 'AMD latest news'."
+      },
+      {
+        "role": "user",
+        "content": "Begin your research."
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_a7febfc7fe04417db54d7d01",
+            "type": "function",
+            "function": {
+              "name": "finance_research",
+              "arguments": "{\"query\":\"Broadcom AI semiconductor revenue Q2 fiscal 2025 custom AI accelerators XPUs\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_a7febfc7fe04417db54d7d01",
+        "content": "**Broadcom’s Q2 FY2026 AI semiconductor revenue was $10.8 billion**, up **143% year over year**, driven by demand for **custom AI accelerators (XPUs)** and **AI networking**; the fiscal quarter ended **May 3, 2026**. [[1, 2]] \n\nThis result was modestly above Broadcom’s Q1 outlook for **$10.7 billion** in Q2 AI semiconductor revenue, an outperformance of roughly **$0.1 billion (0.9%)**. [[3]] \n\nFor context, Q2 semiconductor-solutions revenue was **$15.009 billion**, meaning AI semiconductors represented about **72.0%** of the segment; total company revenue was **$22.187 billion**, making AI semiconductor revenue approximately **48.7%** of consolidated sales. [[1, 2]] \n\nBroadcom guided Q3 FY2026 AI semiconductor revenue to **$16.0 billion**, implying more than **200% year-over-year growth** and roughly **48% sequential growth** from Q2. [[1]] \n\nThe key takeaway is that Broadcom’s AI revenue category encompasses both the **custom accelerator/XPU silicon** deployed by hyperscalers and the **networking components** required to scale those accelerator clusters; the company did not disclose a Q2 revenue split between the two categories. [[1]]\n\nSources:\n[S1.1] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial\n[S1.2] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ... — https://investors.broadcom.com/node/64371/pdf\n[S1.3] Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial"
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_a12666f3ce3840d282fef628",
+            "type": "function",
+            "function": {
+              "name": "record_finding",
+              "arguments": "{\"claim\":\"Broadcom Q2 FY2026 AI semiconductor revenue was $10.8 billion, up 143% YoY\",\"value\":\"$10.8 billion\",\"source_ids\":[\"S1.1\",\"S1.2\"]}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_a12666f3ce3840d282fef628",
+        "content": "Finding recorded."
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_37933292d0ba413d82f714ee",
+            "type": "function",
+            "function": {
+              "name": "finance_research",
+              "arguments": "{\"query\":\"Broadcom Q2 FY2026 AI custom accelerator XPU revenue breakdown split custom AI accelerators networking\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_37933292d0ba413d82f714ee",
+        "content": "In Broadcom’s fiscal Q3 2026 (ended August 2, 2026), custom AI accelerators/XPUs accounted for **73%** of the company’s **$16.7 billion** AI-semiconductor revenue, or approximately **$12.2 billion**. [[1, 2]] \n\nAI networking was the remaining **27%**, or approximately **$4.5 billion** of Q3 AI-semiconductor revenue. [[3, 2]] \n\nThus, the XPU-to-networking revenue mix was roughly **73% / 27%**—about **2.7×** as much XPU revenue as AI-networking revenue. [[1, 3]]\n\nSources:\n[S3.1] Broadcom (AVGO) Q3 2026 Earnings Call Transcript — https://www.fool.com/earnings/call-transcripts/2026/09/09/broadcom-avgo-q3-2026-earnings-call-transcript/\n[S3.2] Broadcom Inc. Announces Third Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial\n[S3.3] Broadcom (AVGO) Q3 FY2026 Earnings: $16.7B AI Revenue — https://www.simpletechtrend.com/en/post/avgo-q3-fy2026-earnings-xpu-30gw-tomahawk-en"
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_a40524a5716e45e69b6dd800",
+            "type": "function",
+            "function": {
+              "name": "record_finding",
+              "arguments": "{\"claim\":\"In Q3 FY2026, Broadcom custom AI accelerators/XPUs accounted for ~$12.2B (73%) of $16.7B AI-semiconductor revenue; AI networking was ~$4.5B (27%)\",\"value\":\"$12.2B XPU, $4.5B networking\",\"source_ids\":[\"S3.1\",\"S3.2\",\"S3.3\"]}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_a40524a5716e45e69b6dd800",
+        "content": "Finding recorded."
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_c61746df8a5e4b53a6441c68",
+            "type": "function",
+            "function": {
+              "name": "finance_research",
+              "arguments": "{\"query\":\"Broadcom Q2 FY2025 AI semiconductor revenue custom accelerators networking split\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_c61746df8a5e4b53a6441c68",
+        "content": "**Broadcom’s Q2 FY2026 AI semiconductor revenue was $10.8 billion**, up **143% year over year**, driven by demand for **custom AI accelerators (XPUs)** and **AI networking**; the fiscal quarter ended **May 3, 2026**. [[1, 2]] \n\nThis result was modestly above Broadcom’s Q1 outlook for **$10.7 billion** in Q2 AI semiconductor revenue, an outperformance of roughly **$0.1 billion (0.9%)**. [[3]] \n\nFor context, Q2 semiconductor-solutions revenue was **$15.009 billion**, meaning AI semiconductors represented about **72.0%** of the segment; total company revenue was **$22.187 billion**, making AI semiconductor revenue approximately **48.7%** of consolidated sales. [[1, 2]] \n\nBroadcom guided Q3 FY2026 AI semiconductor revenue to **$16.0 billion**, implying more than **200% year-over-year growth** and roughly **48% sequential growth** from Q2. [[1]] \n\nThe key takeaway is that Broadcom’s AI revenue category encompasses both the **custom accelerator/XPU silicon** deployed by hyperscalers and the **networking components** required to scale those accelerator clusters; the company did not disclose a Q2 revenue split between the two categories. [[1]]\n\nSources:\n[S5.1] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial\n[S5.2] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ... — https://investors.broadcom.com/node/64371/pdf\n[S5.3] Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial"
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_f521d37aba3449669d0fa802",
+            "type": "function",
+            "function": {
+              "name": "record_finding",
+              "arguments": "{\"claim\":\"Broadcom Q2 FY2026 total AI semiconductor revenue was $10.8B; company did not disclose split between custom accelerators and networking for Q2\",\"value\":\"$10.8B\",\"source_ids\":[\"S5.1\",\"S5.2\"]}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_f521d37aba3449669d0fa802",
+        "content": "Finding recorded."
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_39a2fc86c235471385ce7040",
+            "type": "function",
+            "function": {
+              "name": "finance_research",
+              "arguments": "{\"query\":\"Broadcom Q1 FY2026 AI semiconductor revenue custom accelerators networking\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_39a2fc86c235471385ce7040",
+        "content": "**Broadcom’s Q2 FY2026 AI semiconductor revenue was $10.8 billion**, up **143% year over year**, driven by demand for **custom AI accelerators (XPUs)** and **AI networking**; the fiscal quarter ended **May 3, 2026**. [[1, 2]] \n\nThis result was modestly above Broadcom’s Q1 outlook for **$10.7 billion** in Q2 AI semiconductor revenue, an outperformance of roughly **$0.1 billion (0.9%)**. [[3]] \n\nFor context, Q2 semiconductor-solutions revenue was **$15.009 billion**, meaning AI semiconductors represented about **72.0%** of the segment; total company revenue was **$22.187 billion**, making AI semiconductor revenue approximately **48.7%** of consolidated sales. [[1, 2]] \n\nBroadcom guided Q3 FY2026 AI semiconductor revenue to **$16.0 billion**, implying more than **200% year-over-year growth** and roughly **48% sequential growth** from Q2. [[1]] \n\nThe key takeaway is that Broadcom’s AI revenue category encompasses both the **custom accelerator/XPU silicon** deployed by hyperscalers and the **networking components** required to scale those accelerator clusters; the company did not disclose a Q2 revenue split between the two categories. [[1]]\n\nSources:\n[S7.1] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial\n[S7.2] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ... — https://investors.broadcom.com/node/64371/pdf\n[S7.3] Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial"
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_53b9a8573d3f472697fa864b",
+            "type": "function",
+            "function": {
+              "name": "record_finding",
+              "arguments": "{\"claim\":\"Broadcom Q1 FY2026 AI semiconductor revenue not separately disclosed in earnings release; Q2 FY2026 set at $10.8B outlook\",\"value\":\"not separately disclosed\",\"source_ids\":[\"S7.3\"]}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_53b9a8573d3f472697fa864b",
+        "content": "Finding recorded."
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_2e0b1562aa5d4bcda99ff95f",
+            "type": "function",
+            "function": {
+              "name": "finance_research",
+              "arguments": "{\"query\":\"Broadcom FY2025 full year AI semiconductor revenue custom accelerators networking\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_2e0b1562aa5d4bcda99ff95f",
+        "content": "**Broadcom’s Q2 FY2026 AI semiconductor revenue was $10.8 billion**, up **143% year over year**, driven by demand for **custom AI accelerators (XPUs)** and **AI networking**; the fiscal quarter ended **May 3, 2026**. [[1, 2]] \n\nThis result was modestly above Broadcom’s Q1 outlook for **$10.7 billion** in Q2 AI semiconductor revenue, an outperformance of roughly **$0.1 billion (0.9%)**. [[3]] \n\nFor context, Q2 semiconductor-solutions revenue was **$15.009 billion**, meaning AI semiconductors represented about **72.0%** of the segment; total company revenue was **$22.187 billion**, making AI semiconductor revenue approximately **48.7%** of consolidated sales. [[1, 2]] \n\nBroadcom guided Q3 FY2026 AI semiconductor revenue to **$16.0 billion**, implying more than **200% year-over-year growth** and roughly **48% sequential growth** from Q2. [[1]] \n\nThe key takeaway is that Broadcom’s AI revenue category encompasses both the **custom accelerator/XPU silicon** deployed by hyperscalers and the **networking components** required to scale those accelerator clusters; the company did not disclose a Q2 revenue split between the two categories. [[1]]\n\nSources:\n[S9.1] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial\n[S9.2] Broadcom Inc. Announces Second Quarter Fiscal Year 2026 ... — https://investors.broadcom.com/node/64371/pdf\n[S9.3] Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend — https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial"
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_2b3d589382854f3c8f958676",
+            "type": "function",
+            "function": {
+              "name": "record_finding",
+              "arguments": "{\"claim\":\"Broadcom FY2025 full-year AI semiconductor revenue not found in recent filings; most recent period with split data is Q3 FY2026\",\"value\":\"not found\",\"source_ids\":[\"S9.1\"]}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_2b3d589382854f3c8f958676",
+        "content": "Finding recorded."
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_b3c1b1e5014c45dc8d3fa44a",
+            "type": "function",
+            "function": {
+              "name": "finish",
+              "arguments": "{\"summary\":\"Broadcom's AI semiconductor revenue reached $10.8 billion in Q2 FY2026 (ended May 3, 2026), up 143% year-over-year, representing ~48.7% of total company revenue. The AI category combines custom AI accelerators (XPUs) and AI networking; for Q3 FY2026 (reported Sept 2026), custom accelerators accounted for ~73% (~$12.2B) of the $16.7B AI-semiconductor total, while AI networking made up ~27% (~$4.5B). Broadcom does not publicly disclose a Q2 FY2026 split between XPUs and networking, only noting both drove the growth. Sources: earnings releases and Q3 transcript.\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_b3c1b1e5014c45dc8d3fa44a",
+        "content": "Task marked complete."
+      }
+    ],
+    "created_at": "2026-10-17T20:13:20.701+00:00"
+  }
+}

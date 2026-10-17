@@ -1,0 +1,20 @@
+{
+  "query": "Oracle Cloud Infrastructure remaining performance obligations Q3 FY2026 RPO growth YoY percentage",
+  "normalized": "cloud fy2026 growth infrastructure obligations oracle percentage performance q3 remaining rpo yoy",
+  "fetched_at": "2026-10-17T20:08:34Z",
+  "elapsed_s": 7.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Oracle\u2019s remaining performance obligations (RPO) were **$553 billion** at the end of Q3 FY2026, representing **325% year-over-year growth** in U.S. dollars. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.oracle.com/investor-news/news-details/2026/Oracle-Announces-Fiscal-Year-2026-Third-Quarter-Financial-Results/default.aspx",
+          "title": "Oracle - Oracle Announces Fiscal Year 2026 Third Quarter Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

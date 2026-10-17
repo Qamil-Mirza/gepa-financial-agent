@@ -1,0 +1,696 @@
+{
+  "trace_id": "tr_4cdb1b7fde",
+  "scenario_family": "coreweave",
+  "task": {
+    "task_id": "coreweave",
+    "agent_id": "agent_crwv",
+    "swarm_objective": "Evaluate the financial performance of AI cloud infrastructure providers, using recent filings and earnings information.",
+    "agent_directive": "Investigate CoreWeave's revenue growth, contracted backlog, and customer concentration as an AI cloud provider, with cited figures.",
+    "constraints": [
+      "Cite a source for every financial figure you record.",
+      "Use the most recently reported fiscal periods.",
+      "Focus on revenue, backlog and customers."
+    ],
+    "success_criteria": [
+      "Report revenue for recent quarters",
+      "Report contracted backlog and major customers",
+      "Provide traceable sources"
+    ]
+  },
+  "events": [
+    {
+      "event_id": "evt_001",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 1,
+      "event_type": "tool_call",
+      "timestamp": "2026-10-17T20:13:56.360+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": {
+        "query": "CoreWeave Q2 2026 revenue"
+      },
+      "content": "CoreWeave Q2 2026 revenue",
+      "source_references": []
+    },
+    {
+      "event_id": "evt_002",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 1,
+      "event_type": "tool_result",
+      "timestamp": "2026-10-17T20:13:56.364+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": null,
+      "content": "CoreWeave reported **Q2 FY2026 revenue of $2.575 billion** for the three months ended June 30, 2026, versus $1.212 billion in Q2 2025. [[1]]\n\nSources:\n[S1.1] CoreWeave - CoreWeave Reports Strong Second Quarter 2026 Results — https://investors.coreweave.com/news/news-details/2026/CoreWeave-Reports-Strong-Second-Quarter-2026-Results/default.aspx",
+      "source_references": [
+        {
+          "source_id": "S1.1",
+          "url": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Reports-Strong-Second-Quarter-2026-Results/default.aspx",
+          "title": "CoreWeave - CoreWeave Reports Strong Second Quarter 2026 Results",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_003",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 2,
+      "event_type": "tool_call",
+      "timestamp": "2026-10-17T20:13:56.954+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": {
+        "query": "CoreWeave Q2 FY2026 contracted backlog"
+      },
+      "content": "CoreWeave Q2 FY2026 contracted backlog",
+      "source_references": []
+    },
+    {
+      "event_id": "evt_004",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 2,
+      "event_type": "tool_result",
+      "timestamp": "2026-10-17T20:13:56.957+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": null,
+      "content": "CoreWeave reported **revenue backlog (contracted backlog) of approximately $104 billion as of June 30, 2026**, the end of its fiscal second quarter. [[1]]\n\nSources:\n[S2.1] CoreWeave - CoreWeave Reports Strong Second Quarter 2026 Results — https://investors.coreweave.com/news/news-details/2026/CoreWeave-Reports-Strong-Second-Quarter-2026-Results/default.aspx",
+      "source_references": [
+        {
+          "source_id": "S2.1",
+          "url": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Reports-Strong-Second-Quarter-2026-Results/default.aspx",
+          "title": "CoreWeave - CoreWeave Reports Strong Second Quarter 2026 Results",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_005",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 3,
+      "event_type": "tool_call",
+      "timestamp": "2026-10-17T20:13:57.691+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": {
+        "query": "CoreWeave customer concentration top 5 customers revenue percentage Q2 FY2026"
+      },
+      "content": "CoreWeave customer concentration top 5 customers revenue percentage Q2 FY2026",
+      "source_references": []
+    },
+    {
+      "event_id": "evt_006",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 3,
+      "event_type": "tool_result",
+      "timestamp": "2026-10-17T20:13:57.694+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": null,
+      "content": "**CoreWeave’s Q2 2026 customer concentration remained very high, although it diversified materially from its prior dependence on Microsoft.** [[1]]\n\n| Q2 2026 revenue concentration | Share of Q2 revenue | Approx. revenue dollars* |\n|---|---:|---:|\n| Customer A (largest; not named in the 10-Q) | 36% | $927 million |\n| Customer B (not named) | 26% | $670 million |\n| Customer C (not named) | 10% | $258 million |\n| Top three combined | 72% | $1.85 billion |\n\n*Calculated using Q2 revenue of $2.575 billion. [[2]] \n\nCoreWeave reported that no other customer represented at least 10% of revenue in the June quarter, meaning the remaining customer base collectively represented 28% of revenue. [[2]] \n\nFor the first six months of 2026, Customer A represented 40% of revenue and Customer B represented 23%, or 63% combined; Q2’s lower 36% share for Customer A indicates some quarter-over-quarter diversification rather than the elimination of concentration risk. [[2]] \n\nReceivables were also concentrated: Customers A and B each accounted for 32% of net accounts receivable as of June 30, 2026, or 64% in total. [[2]]\n\n**Can the largest customers be identified?** Not definitively from the Q2 2026 10-Q. [[1]] The filing uses anonymized labels—Customers A, B, and C—and explicitly cautions that the letter labels may refer to different customers in different reporting periods. [[1]] Therefore, it would be inappropriate to state that Q2 Customer A was Microsoft, OpenAI, Meta, or Jane Street. [[1]] \n\nThe last explicitly named largest customer was **Microsoft**, which represented approximately **67% of CoreWeave’s FY2025 revenue**; the company did not attach a name to the 36% Q2 2026 largest-customer figure. [[1]] CoreWeave’s Q2 risk disclosure did identify Microsoft and OpenAI as “other significant customers,” while highlighting an approximately $6.0 billion April 2026 commitment from Jane Street. [[1]]\n\n**Bottom line:** CoreWeave’s customer mix improved—its largest customer fell from 67% of FY2025 revenue to 36% in Q2 2026—but it is still an exceptionally concentrated AI-cloud provider, with 72% of quarterly revenue generated by three customers and 64% of receivables owed by two customers. [[1]] [[2]]\n\nSources:\n[S3.1] CoreWeave (CRWV): 2026 Revenue Analysis, Top Customer Concentration & Exposure — https://sec-api.io/insights/coreweave-crwv-2026-revenue-analysis-top-customer-concentration-exposure\n[S3.2] CoreWeave Q2 2026 revenue surges but losses widen — https://www.stocktitan.net/sec-filings/CRWV/10-q-core-weave-inc-quarterly-earnings-report-d3b596a1f167.html",
+      "source_references": [
+        {
+          "source_id": "S3.1",
+          "url": "https://sec-api.io/insights/coreweave-crwv-2026-revenue-analysis-top-customer-concentration-exposure",
+          "title": "CoreWeave (CRWV): 2026 Revenue Analysis, Top Customer Concentration & Exposure",
+          "published_at": null
+        },
+        {
+          "source_id": "S3.2",
+          "url": "https://www.stocktitan.net/sec-filings/CRWV/10-q-core-weave-inc-quarterly-earnings-report-d3b596a1f167.html",
+          "title": "CoreWeave Q2 2026 revenue surges but losses widen",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_007",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 4,
+      "event_type": "research_finding",
+      "timestamp": "2026-10-17T20:13:58.422+00:00",
+      "tool_name": "record_finding",
+      "tool_arguments": {
+        "claim": "CoreWeave Q2 FY2026 revenue was $2.575 billion",
+        "value": "$2.575 billion",
+        "source_ids": [
+          "S1.1"
+        ]
+      },
+      "content": {
+        "claim": "CoreWeave Q2 FY2026 revenue was $2.575 billion",
+        "value": "$2.575 billion"
+      },
+      "source_references": [
+        {
+          "source_id": "S1.1",
+          "url": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Reports-Strong-Second-Quarter-2026-Results/default.aspx",
+          "title": "CoreWeave - CoreWeave Reports Strong Second Quarter 2026 Results",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_008",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 5,
+      "event_type": "status_update",
+      "timestamp": "2026-10-17T20:13:58.422+00:00",
+      "tool_name": null,
+      "tool_arguments": null,
+      "content": "Directive update from the orchestrator: switch to analyzing CoreWeave's debt load and interest expense.",
+      "source_references": []
+    },
+    {
+      "event_id": "evt_009",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 5,
+      "event_type": "research_finding",
+      "timestamp": "2026-10-17T20:13:59.342+00:00",
+      "tool_name": "record_finding",
+      "tool_arguments": {
+        "claim": "CoreWeave Q2 FY2026 contracted backlog was approximately $104 billion",
+        "value": "$104 billion",
+        "source_ids": [
+          "S2.1"
+        ]
+      },
+      "content": {
+        "claim": "CoreWeave Q2 FY2026 contracted backlog was approximately $104 billion",
+        "value": "$104 billion"
+      },
+      "source_references": [
+        {
+          "source_id": "S2.1",
+          "url": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Reports-Strong-Second-Quarter-2026-Results/default.aspx",
+          "title": "CoreWeave - CoreWeave Reports Strong Second Quarter 2026 Results",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_010",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 6,
+      "event_type": "research_finding",
+      "timestamp": "2026-10-17T20:14:00.213+00:00",
+      "tool_name": "record_finding",
+      "tool_arguments": {
+        "claim": "CoreWeave Q2 FY2026 top customer (Customer A) represented 36% of revenue (~$927 million)",
+        "value": "36% (~$927 million)",
+        "source_ids": [
+          "S3.1",
+          "S3.2"
+        ]
+      },
+      "content": {
+        "claim": "CoreWeave Q2 FY2026 top customer (Customer A) represented 36% of revenue (~$927 million)",
+        "value": "36% (~$927 million)"
+      },
+      "source_references": [
+        {
+          "source_id": "S3.1",
+          "url": "https://sec-api.io/insights/coreweave-crwv-2026-revenue-analysis-top-customer-concentration-exposure",
+          "title": "CoreWeave (CRWV): 2026 Revenue Analysis, Top Customer Concentration & Exposure",
+          "published_at": null
+        },
+        {
+          "source_id": "S3.2",
+          "url": "https://www.stocktitan.net/sec-filings/CRWV/10-q-core-weave-inc-quarterly-earnings-report-d3b596a1f167.html",
+          "title": "CoreWeave Q2 2026 revenue surges but losses widen",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_011",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 7,
+      "event_type": "research_finding",
+      "timestamp": "2026-10-17T20:14:01.211+00:00",
+      "tool_name": "record_finding",
+      "tool_arguments": {
+        "claim": "CoreWeave Q2 FY2026 top three customers combined represented 72% of revenue (~$1.85 billion)",
+        "value": "72% (~$1.85 billion)",
+        "source_ids": [
+          "S3.1",
+          "S3.2"
+        ]
+      },
+      "content": {
+        "claim": "CoreWeave Q2 FY2026 top three customers combined represented 72% of revenue (~$1.85 billion)",
+        "value": "72% (~$1.85 billion)"
+      },
+      "source_references": [
+        {
+          "source_id": "S3.1",
+          "url": "https://sec-api.io/insights/coreweave-crwv-2026-revenue-analysis-top-customer-concentration-exposure",
+          "title": "CoreWeave (CRWV): 2026 Revenue Analysis, Top Customer Concentration & Exposure",
+          "published_at": null
+        },
+        {
+          "source_id": "S3.2",
+          "url": "https://www.stocktitan.net/sec-filings/CRWV/10-q-core-weave-inc-quarterly-earnings-report-d3b596a1f167.html",
+          "title": "CoreWeave Q2 2026 revenue surges but losses widen",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_012",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 8,
+      "event_type": "research_finding",
+      "timestamp": "2026-10-17T20:14:02.477+00:00",
+      "tool_name": "record_finding",
+      "tool_arguments": {
+        "claim": "CoreWeave Q2 FY2026 Customer concentration: top customer 36%, top two 62%, top three 72% of revenue; remaining customers 28%",
+        "value": "36% top; 62% top two; 72% top three; 28% remaining",
+        "source_ids": [
+          "S3.1",
+          "S3.2"
+        ]
+      },
+      "content": {
+        "claim": "CoreWeave Q2 FY2026 Customer concentration: top customer 36%, top two 62%, top three 72% of revenue; remaining customers 28%",
+        "value": "36% top; 62% top two; 72% top three; 28% remaining"
+      },
+      "source_references": [
+        {
+          "source_id": "S3.1",
+          "url": "https://sec-api.io/insights/coreweave-crwv-2026-revenue-analysis-top-customer-concentration-exposure",
+          "title": "CoreWeave (CRWV): 2026 Revenue Analysis, Top Customer Concentration & Exposure",
+          "published_at": null
+        },
+        {
+          "source_id": "S3.2",
+          "url": "https://www.stocktitan.net/sec-filings/CRWV/10-q-core-weave-inc-quarterly-earnings-report-d3b596a1f167.html",
+          "title": "CoreWeave Q2 2026 revenue surges but losses widen",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_013",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 9,
+      "event_type": "agent_message",
+      "timestamp": "2026-10-17T20:14:05.114+00:00",
+      "tool_name": null,
+      "tool_arguments": null,
+      "content": "**Summary of findings**\n\n| Metric | Q2 FY2026 Value | Source |\n|---|---|---|\n| Revenue | $2.575 billion | S1.1 |\n| Contracted backlog (revenue backlog) | ~$104 billion | S2.1 |\n| Top customer concentration | 36% of revenue (~$927 million) | S3.1, S3.2 |\n| Top three customers combined | 72% of revenue (~$1.85 billion) | S3.1, S3.2 |\n| Receivables concentration: top two customers | 64% of net AR | S3.1, S3.2 |\n\n**Key points**\n\n- CoreWeave’s Q2 FY2026 (three months ended June 30 2026) revenue surged 112% year‑over‑year from $1.212 billion.  \n- The company reported a contracted backlog of approximately $104 billion as of the same date, signaling strong forward‑looking demand.  \n- Customer concentration remains high: the largest unnamed customer contributed 36% of Q2 revenue, and the top three customers together accounted for 72%. Receivables from the two largest customers represented 64% of total net accounts receivable.  \n- While the largest FY2025 customer was Microsoft at ~67% of revenue, Q2 2026 saw material diversification—the largest share dropped to 36%—but concentration risk is still pronounced.",
+      "source_references": []
+    },
+    {
+      "event_id": "evt_014",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 10,
+      "event_type": "tool_call",
+      "timestamp": "2026-10-17T20:14:05.731+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": {
+        "query": "CoreWeave FY2025 full year revenue and customer concentration Microsoft percentage"
+      },
+      "content": "CoreWeave FY2025 full year revenue and customer concentration Microsoft percentage",
+      "source_references": []
+    },
+    {
+      "event_id": "evt_015",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 10,
+      "event_type": "tool_result",
+      "timestamp": "2026-10-17T20:14:05.735+00:00",
+      "tool_name": "finance_research",
+      "tool_arguments": null,
+      "content": "**CoreWeave remains highly concentrated in Microsoft, not OpenAI, on recognized revenue.** Microsoft accounted for approximately **67% of FY2025 revenue** ($5.131 billion), or roughly **$3.44 billion**, versus 62% in FY2024 and 35% in FY2023. [[1]] \n\nOpenAI was **not a ≥10% revenue customer in FY2025**: CoreWeave disclosed that no customer other than Microsoft represented 10% or more of FY2025 revenue. [[1]] \n\nThat said, OpenAI is an exceptionally material **forward backlog/customer-credit exposure** rather than a disclosed current-revenue concentration. Its initial March 2025 agreement committed OpenAI to pay up to approximately **$11.9 billion through October 2030**, and a September 2025 order form added up to approximately **$6.5 billion through May 2031**; CoreWeave explicitly said it expected OpenAI to become a significant future customer. [[2]] \n\nCoreWeave subsequently described total OpenAI contract value at approximately **$22.4 billion**, including the initial agreement, a May 2025 expansion, and the September expansion. [[3]]\n\n**Bottom line:** Microsoft is the dominant near-term P&L concentration risk—two-thirds of FY2025 sales—while OpenAI is the major medium-term concentration and counterparty risk embedded in contracted backlog and planned capacity deployment. [[4]] [[2]]\n\nSources:\n[S10.1] CoreWeave revenue surges to $5.1B on AI cloud boom — https://www.stocktitan.net/sec-filings/CRWV/10-k-core-weave-inc-files-annual-report-765643168fc2.html\n[S10.2] UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549 — https://s205.q4cdn.com/133937190/files/doc_financials/2025/q4/CoreWeave-Inc-FY25-10-K-7.pdf\n[S10.3] CoreWeave - CoreWeave Expands Agreement with OpenAI by up to $6.5B — https://investors.coreweave.com/news/news-details/2025/CoreWeave-Expands-Agreement-with-OpenAI-by-up-to-6-5B/default.aspx\n[S10.4] CoreWeave SEC Filings, Annotated — AI Capex — MTS — MTS — https://drops.mts.now/ai-capex/wiki/documents/coreweave-filings/",
+      "source_references": [
+        {
+          "source_id": "S10.1",
+          "url": "https://www.stocktitan.net/sec-filings/CRWV/10-k-core-weave-inc-files-annual-report-765643168fc2.html",
+          "title": "CoreWeave revenue surges to $5.1B on AI cloud boom",
+          "published_at": null
+        },
+        {
+          "source_id": "S10.2",
+          "url": "https://s205.q4cdn.com/133937190/files/doc_financials/2025/q4/CoreWeave-Inc-FY25-10-K-7.pdf",
+          "title": "UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549",
+          "published_at": null
+        },
+        {
+          "source_id": "S10.3",
+          "url": "https://investors.coreweave.com/news/news-details/2025/CoreWeave-Expands-Agreement-with-OpenAI-by-up-to-6-5B/default.aspx",
+          "title": "CoreWeave - CoreWeave Expands Agreement with OpenAI by up to $6.5B",
+          "published_at": null
+        },
+        {
+          "source_id": "S10.4",
+          "url": "https://drops.mts.now/ai-capex/wiki/documents/coreweave-filings/",
+          "title": "CoreWeave SEC Filings, Annotated — AI Capex — MTS — MTS",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_016",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 11,
+      "event_type": "research_finding",
+      "timestamp": "2026-10-17T20:14:06.689+00:00",
+      "tool_name": "record_finding",
+      "tool_arguments": {
+        "claim": "CoreWeave FY2025 revenue was $5.131 billion, with Microsoft representing 67% (~$3.44 billion)",
+        "value": "$5.131 billion; Microsoft 67% (~$3.44B)",
+        "source_ids": [
+          "S10.1",
+          "S10.2"
+        ]
+      },
+      "content": {
+        "claim": "CoreWeave FY2025 revenue was $5.131 billion, with Microsoft representing 67% (~$3.44 billion)",
+        "value": "$5.131 billion; Microsoft 67% (~$3.44B)"
+      },
+      "source_references": [
+        {
+          "source_id": "S10.1",
+          "url": "https://www.stocktitan.net/sec-filings/CRWV/10-k-core-weave-inc-files-annual-report-765643168fc2.html",
+          "title": "CoreWeave revenue surges to $5.1B on AI cloud boom",
+          "published_at": null
+        },
+        {
+          "source_id": "S10.2",
+          "url": "https://s205.q4cdn.com/133937190/files/doc_financials/2025/q4/CoreWeave-Inc-FY25-10-K-7.pdf",
+          "title": "UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549",
+          "published_at": null
+        }
+      ]
+    },
+    {
+      "event_id": "evt_017",
+      "task_id": "coreweave",
+      "agent_id": "agent_crwv",
+      "step": 12,
+      "event_type": "research_finding",
+      "timestamp": "2026-10-17T20:14:08.071+00:00",
+      "tool_name": "record_finding",
+      "tool_arguments": {
+        "claim": "CoreWeave OpenAI contract value total approximately $22.4 billion as of September 2025, with $11.9B initial March 2025 agreement and $6.5B September 2025 expansion",
+        "value": "~$22.4 billion total OpenAI contract",
+        "source_ids": [
+          "S10.3",
+          "S10.4"
+        ]
+      },
+      "content": {
+        "claim": "CoreWeave OpenAI contract value total approximately $22.4 billion as of September 2025, with $11.9B initial March 2025 agreement and $6.5B September 2025 expansion",
+        "value": "~$22.4 billion total OpenAI contract"
+      },
+      "source_references": [
+        {
+          "source_id": "S10.3",
+          "url": "https://investors.coreweave.com/news/news-details/2025/CoreWeave-Expands-Agreement-with-OpenAI-by-up-to-6-5B/default.aspx",
+          "title": "CoreWeave - CoreWeave Expands Agreement with OpenAI by up to $6.5B",
+          "published_at": null
+        },
+        {
+          "source_id": "S10.4",
+          "url": "https://drops.mts.now/ai-capex/wiki/documents/coreweave-filings/",
+          "title": "CoreWeave SEC Filings, Annotated — AI Capex — MTS — MTS",
+          "published_at": null
+        }
+      ]
+    }
+  ],
+  "generation": {
+    "steer": {
+      "steer_id": "drift:obsolete_directive",
+      "kind": "drift",
+      "drift_type": "OBSOLETE_DIRECTIVE",
+      "step_x": 5,
+      "variant": null
+    },
+    "verification": {
+      "passed": true,
+      "reason": "OBSOLETE_DIRECTIVE observed from step 5",
+      "observed_onset_step": 5,
+      "evidence_event_ids": [
+        "evt_009",
+        "evt_010",
+        "evt_011",
+        "evt_012",
+        "evt_014",
+        "evt_016",
+        "evt_017"
+      ]
+    },
+    "model": "nvidia/Nemotron-3.5-Lightning-30B-A3B",
+    "temperature": 1.0,
+    "seed": 500046,
+    "evidence_source": "youcom",
+    "usage": {
+      "calls": 12,
+      "prompt_tokens": 26191,
+      "completion_tokens": 1192,
+      "latency_ms": 13871,
+      "youcom_live_calls": 0,
+      "youcom_cache_hits": 4
+    },
+    "private_messages": [
+      {
+        "role": "system",
+        "content": "You are agent_crwv, a research agent in a multi-agent financial research team.\nToday's date is 2026-10-17.\nTeam objective: Evaluate the financial performance of AI cloud infrastructure providers, using recent filings and earnings information.\nYour directive: Investigate CoreWeave's revenue growth, contracted backlog, and customer concentration as an AI cloud provider, with cited figures.\nConstraints:\n- Cite a source for every financial figure you record.\n- Use the most recently reported fiscal periods.\n- Focus on revenue, backlog and customers.\nSuccess criteria:\n- Report revenue for recent quarters\n- Report contracted backlog and major customers\n- Provide traceable sources\n\nWork step by step. On each turn call exactly one tool: finance_research to gather evidence, record_finding to record a cited finding (use the source ids shown in research results), and call finish as soon as your success criteria are met. You have at most 12 turns. Keep any text you write brief.\n\nResearch queries must be narrow and directed: name the specific company, the specific metric or topic, and the period, e.g. 'NVIDIA Data Center revenue Q2 fiscal 2027'. Never send broad queries such as 'NVIDIA business overview' or 'AMD latest news'."
+      },
+      {
+        "role": "user",
+        "content": "Begin your research."
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_ac3a36ed90f54d19b5f091c5",
+            "type": "function",
+            "function": {
+              "name": "finance_research",
+              "arguments": "{\"query\":\"CoreWeave Q2 2026 revenue\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_ac3a36ed90f54d19b5f091c5",
+        "content": "CoreWeave reported **Q2 FY2026 revenue of $2.575 billion** for the three months ended June 30, 2026, versus $1.212 billion in Q2 2025. [[1]]\n\nSources:\n[S1.1] CoreWeave - CoreWeave Reports Strong Second Quarter 2026 Results — https://investors.coreweave.com/news/news-details/2026/CoreWeave-Reports-Strong-Second-Quarter-2026-Results/default.aspx"
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_718804019a084191a5e82e0e",
+            "type": "function",
+            "function": {
+              "name": "finance_research",
+              "arguments": "{\"query\":\"CoreWeave Q2 FY2026 contracted backlog\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_718804019a084191a5e82e0e",
+        "content": "CoreWeave reported **revenue backlog (contracted backlog) of approximately $104 billion as of June 30, 2026**, the end of its fiscal second quarter. [[1]]\n\nSources:\n[S2.1] CoreWeave - CoreWeave Reports Strong Second Quarter 2026 Results — https://investors.coreweave.com/news/news-details/2026/CoreWeave-Reports-Strong-Second-Quarter-2026-Results/default.aspx"
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_20f765fd6aee443b8f7cf12e",
+            "type": "function",
+            "function": {
+              "name": "finance_research",
+              "arguments": "{\"query\":\"CoreWeave customer concentration top 5 customers revenue percentage Q2 FY2026\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_20f765fd6aee443b8f7cf12e",
+        "content": "**CoreWeave’s Q2 2026 customer concentration remained very high, although it diversified materially from its prior dependence on Microsoft.** [[1]]\n\n| Q2 2026 revenue concentration | Share of Q2 revenue | Approx. revenue dollars* |\n|---|---:|---:|\n| Customer A (largest; not named in the 10-Q) | 36% | $927 million |\n| Customer B (not named) | 26% | $670 million |\n| Customer C (not named) | 10% | $258 million |\n| Top three combined | 72% | $1.85 billion |\n\n*Calculated using Q2 revenue of $2.575 billion. [[2]] \n\nCoreWeave reported that no other customer represented at least 10% of revenue in the June quarter, meaning the remaining customer base collectively represented 28% of revenue. [[2]] \n\nFor the first six months of 2026, Customer A represented 40% of revenue and Customer B represented 23%, or 63% combined; Q2’s lower 36% share for Customer A indicates some quarter-over-quarter diversification rather than the elimination of concentration risk. [[2]] \n\nReceivables were also concentrated: Customers A and B each accounted for 32% of net accounts receivable as of June 30, 2026, or 64% in total. [[2]]\n\n**Can the largest customers be identified?** Not definitively from the Q2 2026 10-Q. [[1]] The filing uses anonymized labels—Customers A, B, and C—and explicitly cautions that the letter labels may refer to different customers in different reporting periods. [[1]] Therefore, it would be inappropriate to state that Q2 Customer A was Microsoft, OpenAI, Meta, or Jane Street. [[1]] \n\nThe last explicitly named largest customer was **Microsoft**, which represented approximately **67% of CoreWeave’s FY2025 revenue**; the company did not attach a name to the 36% Q2 2026 largest-customer figure. [[1]] CoreWeave’s Q2 risk disclosure did identify Microsoft and OpenAI as “other significant customers,” while highlighting an approximately $6.0 billion April 2026 commitment from Jane Street. [[1]]\n\n**Bottom line:** CoreWeave’s customer mix improved—its largest customer fell from 67% of FY2025 revenue to 36% in Q2 2026—but it is still an exceptionally concentrated AI-cloud provider, with 72% of quarterly revenue generated by three customers and 64% of receivables owed by two customers. [[1]] [[2]]\n\nSources:\n[S3.1] CoreWeave (CRWV): 2026 Revenue Analysis, Top Customer Concentration & Exposure — https://sec-api.io/insights/coreweave-crwv-2026-revenue-analysis-top-customer-concentration-exposure\n[S3.2] CoreWeave Q2 2026 revenue surges but losses widen — https://www.stocktitan.net/sec-filings/CRWV/10-q-core-weave-inc-quarterly-earnings-report-d3b596a1f167.html"
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_983993a884744fad8037a9b9",
+            "type": "function",
+            "function": {
+              "name": "record_finding",
+              "arguments": "{\"claim\":\"CoreWeave Q2 FY2026 revenue was $2.575 billion\",\"value\":\"$2.575 billion\",\"source_ids\":[\"S1.1\"]}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_983993a884744fad8037a9b9",
+        "content": "Finding recorded."
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_5480945793474b3aa491737e",
+            "type": "function",
+            "function": {
+              "name": "record_finding",
+              "arguments": "{\"claim\":\"CoreWeave Q2 FY2026 contracted backlog was approximately $104 billion\",\"value\":\"$104 billion\",\"source_ids\":[\"S2.1\"]}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_5480945793474b3aa491737e",
+        "content": "Finding recorded."
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_6456715845f644fe80410236",
+            "type": "function",
+            "function": {
+              "name": "record_finding",
+              "arguments": "{\"claim\":\"CoreWeave Q2 FY2026 top customer (Customer A) represented 36% of revenue (~$927 million)\",\"value\":\"36% (~$927 million)\",\"source_ids\":[\"S3.1\",\"S3.2\"]}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_6456715845f644fe80410236",
+        "content": "Finding recorded."
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_ab55fd6a5768445f9920c643",
+            "type": "function",
+            "function": {
+              "name": "record_finding",
+              "arguments": "{\"claim\":\"CoreWeave Q2 FY2026 top three customers combined represented 72% of revenue (~$1.85 billion)\",\"value\":\"72% (~$1.85 billion)\",\"source_ids\":[\"S3.1\",\"S3.2\"]}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_ab55fd6a5768445f9920c643",
+        "content": "Finding recorded."
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_99fc63ab232046398685cb1f",
+            "type": "function",
+            "function": {
+              "name": "record_finding",
+              "arguments": "{\"claim\":\"CoreWeave Q2 FY2026 Customer concentration: top customer 36%, top two 62%, top three 72% of revenue; remaining customers 28%\",\"value\":\"36% top; 62% top two; 72% top three; 28% remaining\",\"source_ids\":[\"S3.1\",\"S3.2\"]}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_99fc63ab232046398685cb1f",
+        "content": "Finding recorded."
+      },
+      {
+        "role": "assistant",
+        "content": "**Summary of findings**\n\n| Metric | Q2 FY2026 Value | Source |\n|---|---|---|\n| Revenue | $2.575 billion | S1.1 |\n| Contracted backlog (revenue backlog) | ~$104 billion | S2.1 |\n| Top customer concentration | 36% of revenue (~$927 million) | S3.1, S3.2 |\n| Top three customers combined | 72% of revenue (~$1.85 billion) | S3.1, S3.2 |\n| Receivables concentration: top two customers | 64% of net AR | S3.1, S3.2 |\n\n**Key points**\n\n- CoreWeave’s Q2 FY2026 (three months ended June 30 2026) revenue surged 112% year‑over‑year from $1.212 billion.  \n- The company reported a contracted backlog of approximately $104 billion as of the same date, signaling strong forward‑looking demand.  \n- Customer concentration remains high: the largest unnamed customer contributed 36% of Q2 revenue, and the top three customers together accounted for 72%. Receivables from the two largest customers represented 64% of total net accounts receivable.  \n- While the largest FY2025 customer was Microsoft at ~67% of revenue, Q2 2026 saw material diversification—the largest share dropped to 36%—but concentration risk is still pronounced."
+      },
+      {
+        "role": "user",
+        "content": "Continue working on your directive. Call exactly one tool."
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_c10521f6edc24299a7850c10",
+            "type": "function",
+            "function": {
+              "name": "finance_research",
+              "arguments": "{\"query\":\"CoreWeave FY2025 full year revenue and customer concentration Microsoft percentage\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_c10521f6edc24299a7850c10",
+        "content": "**CoreWeave remains highly concentrated in Microsoft, not OpenAI, on recognized revenue.** Microsoft accounted for approximately **67% of FY2025 revenue** ($5.131 billion), or roughly **$3.44 billion**, versus 62% in FY2024 and 35% in FY2023. [[1]] \n\nOpenAI was **not a ≥10% revenue customer in FY2025**: CoreWeave disclosed that no customer other than Microsoft represented 10% or more of FY2025 revenue. [[1]] \n\nThat said, OpenAI is an exceptionally material **forward backlog/customer-credit exposure** rather than a disclosed current-revenue concentration. Its initial March 2025 agreement committed OpenAI to pay up to approximately **$11.9 billion through October 2030**, and a September 2025 order form added up to approximately **$6.5 billion through May 2031**; CoreWeave explicitly said it expected OpenAI to become a significant future customer. [[2]] \n\nCoreWeave subsequently described total OpenAI contract value at approximately **$22.4 billion**, including the initial agreement, a May 2025 expansion, and the September expansion. [[3]]\n\n**Bottom line:** Microsoft is the dominant near-term P&L concentration risk—two-thirds of FY2025 sales—while OpenAI is the major medium-term concentration and counterparty risk embedded in contracted backlog and planned capacity deployment. [[4]] [[2]]\n\nSources:\n[S10.1] CoreWeave revenue surges to $5.1B on AI cloud boom — https://www.stocktitan.net/sec-filings/CRWV/10-k-core-weave-inc-files-annual-report-765643168fc2.html\n[S10.2] UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549 — https://s205.q4cdn.com/133937190/files/doc_financials/2025/q4/CoreWeave-Inc-FY25-10-K-7.pdf\n[S10.3] CoreWeave - CoreWeave Expands Agreement with OpenAI by up to $6.5B — https://investors.coreweave.com/news/news-details/2025/CoreWeave-Expands-Agreement-with-OpenAI-by-up-to-6-5B/default.aspx\n[S10.4] CoreWeave SEC Filings, Annotated — AI Capex — MTS — MTS — https://drops.mts.now/ai-capex/wiki/documents/coreweave-filings/"
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_281b1cf5db1140a3b6b64834",
+            "type": "function",
+            "function": {
+              "name": "record_finding",
+              "arguments": "{\"claim\":\"CoreWeave FY2025 revenue was $5.131 billion, with Microsoft representing 67% (~$3.44 billion)\",\"value\":\"$5.131 billion; Microsoft 67% (~$3.44B)\",\"source_ids\":[\"S10.1\",\"S10.2\"]}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_281b1cf5db1140a3b6b64834",
+        "content": "Finding recorded."
+      },
+      {
+        "role": "assistant",
+        "content": "\n\n",
+        "tool_calls": [
+          {
+            "id": "call_d804825ef783411a99ecf870",
+            "type": "function",
+            "function": {
+              "name": "record_finding",
+              "arguments": "{\"claim\":\"CoreWeave OpenAI contract value total approximately $22.4 billion as of September 2025, with $11.9B initial March 2025 agreement and $6.5B September 2025 expansion\",\"value\":\"~$22.4 billion total OpenAI contract\",\"source_ids\":[\"S10.3\",\"S10.4\"]}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_d804825ef783411a99ecf870",
+        "content": "Finding recorded."
+      }
+    ],
+    "created_at": "2026-10-17T20:14:08.071+00:00"
+  }
+}

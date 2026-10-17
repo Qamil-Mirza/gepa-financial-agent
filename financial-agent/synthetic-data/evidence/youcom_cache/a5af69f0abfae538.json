@@ -1,0 +1,24 @@
+{
+  "query": "NVIDIA Data Center revenue Q1 fiscal 2027 growth drivers quarter over quarter",
+  "normalized": "2027 center data drivers fiscal growth nvidia over q1 quarter revenue",
+  "fetched_at": "2026-10-17T19:30:40Z",
+  "elapsed_s": 20.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Q1 FY2027 Data Center revenue was $75.2 billion, up 21% sequentially from approximately $62.2 billion in Q4 FY2026\u2014an increase of roughly $13.1 billion\u2014and up 92% year over year.** [[1]] [[2]] \n\nThe principal driver was **continued, broad-based demand for Blackwell-based AI infrastructure**; NVIDIA specifically attributed the sequential Data Center growth to sustained strength in its Blackwell architecture. [[2]]\n\n* **Compute:** Data Center compute revenue reached **$60.4 billion**, up **18% QoQ**; this implies an approximately **$9.2 billion** sequential revenue contribution, or about 71% of the Data Center increase. [[1]]\n* **Networking:** Data Center networking revenue reached **$14.8 billion**, up **35% QoQ**; this implies an approximately **$3.8 billion** sequential contribution, making networking the faster-growing component. [[1]]\n* **Customer/channel mix:** Hyperscale revenue was **$38 billion**, up **12% QoQ**, while the AI-cloud, industrial and enterprise (\u201cACIE\u201d) category was **$37 billion**, up **31% QoQ**; thus, the stronger sequential acceleration came from ACIE rather than hyperscalers. [[2]]\n* **AI-cloud and capacity deployment:** NVIDIA said AI-cloud revenue more than tripled year over year, and the number of partner data-center sites larger than 10MW nearly doubled over the preceding year to more than 80, indicating rapid build-out and monetization of AI-compute capacity. [[2]]\n* **Networking product momentum:** NVIDIA characterized Spectrum-X as larger than all Ethernet-networking peers combined and said InfiniBand revenue rose more than fourfold year over year, helped by deployments of next-generation XDR technology; these trends support the outsized 35% QoQ networking increase. [[2]]\n\n**Bottom line:** Q1\u2019s 21% Data Center QoQ growth was primarily a **Blackwell compute ramp**, supplemented by an even faster **networking ramp** and unusually strong **AI-cloud/enterprise/industrial demand**, with ACIE materially outgrowing hyperscaler revenue sequentially. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2027",
+          "title": "NVIDIA Announces Financial Results for First Quarter Fiscal 2027"
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/05/20/nvidia-nvda-q1-2027-earnings-transcript/",
+          "title": "Nvidia (NVDA) Q1 2027 Earnings Transcript"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

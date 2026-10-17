@@ -1,0 +1,20 @@
+{
+  "query": "Oracle Cloud Infrastructure OCI revenue Q2 fiscal 2027",
+  "normalized": "2027 cloud fiscal infrastructure oci oracle q2 revenue",
+  "fetched_at": "2026-10-17T20:08:09Z",
+  "elapsed_s": 12.0,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Oracle has not yet reported OCI (Cloud Infrastructure/IaaS) revenue for Q2 FY2027; the company said Q2 results are scheduled for announcement on December 14, 2026. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/09/11/oracle-orcl-q1-2027-earnings-call-transcript/",
+          "title": "Oracle (ORCL) Q1 2027 Earnings Call Transcript"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

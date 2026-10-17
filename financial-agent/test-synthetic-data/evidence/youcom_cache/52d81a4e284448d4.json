@@ -1,0 +1,24 @@
+{
+  "query": "AWS revenue growth year over year latest quarter AI workloads",
+  "normalized": "ai aws growth over quarter revenue workloads year",
+  "fetched_at": "2026-10-17T20:34:35Z",
+  "elapsed_s": 22.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "In Amazon\u2019s latest reported quarter, **Q2 2026 ended June 30, AWS revenue was $42.2 billion, up 36.7% year over year** (reported as 37%), its fastest growth rate in 18 quarters; this equates to a **$169 billion annualized run rate**. [[1]] [[2]] \n\nAI workloads appear to be a material driver: Amazon said AWS\u2019s AI business exceeded a **$25 billion annual revenue run rate** and grew at a **triple-digit year-over-year rate**. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-Second-Quarter-Results/",
+          "title": "Amazon.com, Inc. - Amazon.com Announces Second Quarter Results"
+        },
+        {
+          "url": "https://ir.aboutamazon.com/files/doc_earnings/2026/q2/earnings-result/AMZN-Q2-2026-Earnings-Release.pdf",
+          "title": "AMAZON.COM ANNOUNCES SECOND QUARTER RESULTS"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

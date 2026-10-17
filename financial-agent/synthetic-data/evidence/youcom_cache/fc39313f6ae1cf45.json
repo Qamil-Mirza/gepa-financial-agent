@@ -1,0 +1,28 @@
+{
+  "query": "Alphabet FY2025 Q3 capital expenditure AI data center spending",
+  "normalized": "ai alphabet capital center data expenditure fy2025 q3 spending",
+  "fetched_at": "2026-10-17T19:46:10Z",
+  "elapsed_s": 20.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Alphabet\u2019s Q3 FY2025 AI-infrastructure spending accelerated sharply:** reported capital expenditure was **$24.0 billion** for the quarter ended September 30, 2025, versus **$13.0 billion** in Q3 2024\u2014an increase of approximately **85% year over year**. [[1, 2]]\n\n- The \u201cvast majority\u201d of Q3 capex went to **technical infrastructure**, with roughly **60% ($14.4 billion)** directed to **servers** and **40% ($9.6 billion)** to **data-center and networking equipment**. [[1]]\n- Alphabet\u2019s 10-Q defines technical infrastructure as servers and network equipment supporting computing, storage, networking\u2014including AI\u2014and data-center land and building construction; therefore, the $24 billion is best viewed as AI-enabled infrastructure spending rather than a company-disclosed, AI-only capex figure. [[3]]\n- Google Cloud\u2019s Q3 revenue rose **34% to $15.2 billion**, with growth driven in part by enterprise AI infrastructure and AI solutions, while Cloud backlog increased by **$49 billion sequentially**. [[1]]\n- Management said supply would remain tight in Q4 2025 and 2026 despite faster server deployments and data-center construction, underpinning continued aggressive capacity investment. [[1]]\n\n**FY2025 outlook:** Alphabet raised expected full-year capex to **$91\u2013$93 billion**, from its prior **$85 billion** outlook. [[1]] Through the first nine months of 2025, purchases of property and equipment were **$63.596 billion**, compared with **$38.259 billion** in the comparable 2024 period. [[3]]\n\n**Profit-and-cash-flow implications:** Q3 depreciation rose **$1.6 billion year over year to $5.6 billion**, or **41%**, and Alphabet expected depreciation growth to accelerate modestly in Q4 as the enlarged infrastructure base enters service. [[1]] Management also indicated that 2026 capex would increase significantly, with specifics to follow at its Q4 results. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://abc.xyz/investor/events/event-details/2025/2025-Q3-Earnings-Call-2025-4OI4Bac_Q9/default.aspx",
+          "title": "Alphabet Investor Relations - 2025 Q3 Earnings Call"
+        },
+        {
+          "url": "https://abc.xyz/investor/events/event-details/2024/2024-q3-earnings-call/",
+          "title": "Alphabet Investor Relations - 2024 Q3 Earnings Call"
+        },
+        {
+          "url": "https://s206.q4cdn.com/479360582/files/doc_financials/2025/q3/GOOG-10-Q-Q3-2025.pdf",
+          "title": "UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

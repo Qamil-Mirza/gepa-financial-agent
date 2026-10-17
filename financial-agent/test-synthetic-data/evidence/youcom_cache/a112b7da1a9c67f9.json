@@ -1,0 +1,24 @@
+{
+  "query": "Arm Qualcomm Nuvia licensing lawsuit outcome",
+  "normalized": "arm lawsuit licensing nuvia outcome qualcomm",
+  "fetched_at": "2026-10-17T20:59:24Z",
+  "elapsed_s": 11.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Outcome:** Qualcomm and Nuvia won at the trial-court level. On September 30, 2025, the U.S. District Court for the District of Delaware entered final judgment for Qualcomm and Nuvia, dismissing Arm\u2019s remaining claim that Nuvia had breached its Architecture License Agreement (ALA). [[1]] \n\nThe ruling preserved the December 2024 unanimous jury findings that Qualcomm had not breached Nuvia\u2019s ALA and that Qualcomm\u2019s CPUs using technology acquired through Nuvia were properly licensed under Qualcomm\u2019s own ALA. [[1]] \n\nJudge Maryellen Noreika also rejected Arm\u2019s effort to overturn the verdict and denied its request for a new trial. [[1]]\n\n**Practical implication:** Qualcomm can continue using Nuvia-derived Oryon CPU designs in Snapdragon products under its existing Arm architecture license, rather than needing a replacement Nuvia license or halting those products. [[2]]\n\n**Procedural caveat:** Arm reportedly said it would appeal the September 2025 judgment; therefore, the district-court case ended in Qualcomm/Nuvia\u2019s favor, but appellate litigation may still affect the ultimate finality of the result. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.qualcomm.com/news-events/press-releases/news-details/2025/Qualcomm-Achieves-Complete-Victory-Over-Arm-in-Litigation-Challenging-Licensing-Agreements/default.aspx",
+          "title": "Qualcomm - Qualcomm Achieves Complete Victory Over Arm in Litigation Challenging Licensing Agreements"
+        },
+        {
+          "url": "https://rcrwireless.com/20251001/business/qualcomm-arm-2",
+          "title": "\u2018Full and final judgment\u2019 reached in Qualcomm vs. Arm case"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

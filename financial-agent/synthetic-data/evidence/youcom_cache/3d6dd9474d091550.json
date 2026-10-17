@@ -1,0 +1,20 @@
+{
+  "query": "AMD gross margin Q2 fiscal 2027",
+  "normalized": "2027 amd fiscal gross margin q2",
+  "fetched_at": "2026-10-17T19:44:06Z",
+  "elapsed_s": 10.0,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD\u2019s Q2 fiscal 2027 gross margin was **54% on a GAAP basis** and **56% on a non-GAAP basis**; AMD reported the quarter as Q2 2026, ended June 27, 2026, under its calendar fiscal-year convention. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1295/amd-reports-second-quarter-2026-financial-results",
+          "title": "AMD Reports Second Quarter 2026 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

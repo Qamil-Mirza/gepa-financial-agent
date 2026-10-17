@@ -1,0 +1,24 @@
+{
+  "query": "Oracle Cloud Infrastructure OCI remaining performance obligations RPO fiscal 2025 quarter ended May 2025",
+  "normalized": "2025 cloud ended fiscal infrastructure may obligations oci oracle performance quarter remaining rpo",
+  "fetched_at": "2026-10-17T20:08:58Z",
+  "elapsed_s": 9.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Oracle reported **$138 billion of total remaining performance obligations (RPO)** at the end of fiscal Q4 2025, the quarter ended **May 31, 2025**\u2014an increase of **41% year over year**. [[1]] \n\nOCI is not disclosed with a standalone RPO balance in Oracle\u2019s earnings release; however, Oracle\u2019s cloud RPO grew **56% year over year** and represented nearly **80% of total RPO**, implying that cloud commitments were the principal driver of the $138 billion backlog. [[2]] \n\nFor context, OCI/IaaS revenue was **$3.0 billion** in the May 2025 quarter, up **52% year over year**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.oracle.com/investor-news/news-details/2025/Oracle-Announces-Fiscal-2025-Fourth-Quarter-and-Fiscal-Full-Year-Financial-Results/default.aspx",
+          "title": "Oracle - Oracle Announces Fiscal 2025 Fourth Quarter and Fiscal Full Year Financial Results"
+        },
+        {
+          "url": "https://futurumgroup.com/insights/oracle-delivers-q4-fy-2025-results-with-27-cloud-growth-rpo-hits-138-billion/",
+          "title": "Oracle Delivers Q4 FY 2025 Results With 27% Cloud Growth, RPO Hits $138 Billion"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

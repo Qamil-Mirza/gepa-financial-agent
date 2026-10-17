@@ -1,0 +1,24 @@
+{
+  "query": "NVIDIA Data Center segment definition fiscal 2026",
+  "normalized": "2026 center data definition fiscal nvidia segment",
+  "fetched_at": "2026-10-17T19:38:33Z",
+  "elapsed_s": 9.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA defines **Data Center** as a market platform\u2014not one of its reportable operating segments; its two operating segments are **Compute & Networking** and **Graphics**. [[1]] \n\nIn fiscal 2026, the Data Center platform targeted compute-intensive AI, data processing, graphics, robotics, and scientific-computing workloads across cloud, hyperscale, on-premises, and edge data centers. [[2]] It comprised data-center compute and networking infrastructure\u2014typically supplied as rack-scale systems, subsystems, or modules\u2014plus software and services. [[2]] \n\nIts networking scope includes NVLink interconnects and switches; InfiniBand and Ethernet platforms; network adapters, cables, DPUs, switch chips and systems; and related software. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+          "title": "nvda-20260125"
+        },
+        {
+          "url": "https://investor.nvidia.com/files/doc_financials/2026/q4/10K-NVDA.pdf",
+          "title": "FORM 10-K NVIDIA CORPORATION"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "query": "Arm Q3 fiscal 2026 data-center royalty revenue Neoverse CPU fiscal Q3 2026 ended December 2025",
+  "normalized": "2025 2026 arm center cpu data december ended fiscal neoverse q3 revenue royalty",
+  "fetched_at": "2026-10-17T21:12:44Z",
+  "elapsed_s": 11.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "For Arm\u2019s fiscal Q3 2026, ended December 31, 2025, total royalty revenue was a record **$737 million**, up **27% year over year** from $580 million. [[1]] \n\nArm did **not disclose a dollar amount** for data-center royalty revenue; it reported that data-center royalty revenue grew at a **triple-digit year-over-year rate**. [[1]] \n\nThe growth reflected increased deployment of Arm-based data-center chips as well as higher royalty rates from Armv9 and Compute Subsystems (CSS). [[1]] \n\nArm also said its Neoverse CPUs had surpassed **1 billion cores deployed**, while it expected its share at top hyperscalers to approach **50%**. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.arm.com/node/7826/html",
+          "title": "SEC Filing"
+        },
+        {
+          "url": "https://newsroom.arm.com/news/arm-q3-fye26-results",
+          "title": "Arm delivers fourth consecutive billion-dollar revenue quarter, extending record-breaking momentum - Arm Newsroom"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

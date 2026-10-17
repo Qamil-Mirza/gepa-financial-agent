@@ -1,0 +1,36 @@
+{
+  "query": "AI accelerator market share NVIDIA AMD custom silicon",
+  "normalized": "accelerator ai amd custom market nvidia share silicon",
+  "fetched_at": "2026-10-17T19:26:00Z",
+  "elapsed_s": 15.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**AI accelerator market share depends materially on the denominator**\u2014GPU-only versus all AI chips, and revenue versus server shipments. [[1]]\n\n| 2024 global AI-server market measure | NVIDIA | AMD | Custom silicon / ASICs |\n|---|---:|---:|---:|\n| **GPU-equipped AI servers: chip-supplier share** | **Nearly 90%** | **~8%** | Not applicable to the GPU-only denominator |\n| **All AI-server chips (GPU, ASIC, FPGA): chip-supplier share** | **~64%** | Not separately disclosed in this measure | The balance is largely ASICs, FPGAs and other suppliers |\n| **AI-server mix by system type** | GPUs: **~71%** of AI servers | Included in GPU category | ASIC servers: **~26%** |\n\nTrendForce\u2019s 2024 estimate puts NVIDIA at nearly 90% of the GPU-equipped AI-server market and AMD at roughly 8%; once proprietary ASICs and FPGAs are included, NVIDIA\u2019s share falls to about 64%. [[1]] GPU-based servers represented about 71% of AI servers in 2024, versus approximately 26% for ASIC-based servers, reflecting sizeable deployment of proprietary accelerators by AWS, Meta and other North American cloud providers, as well as Chinese developers. [[1]]\n\n**Bottom line:** NVIDIA retains overwhelming leadership in merchant AI GPUs, while AMD is the principal merchant GPU challenger but remains much smaller. [[1]] Custom silicon\u2014such as Google TPUs and cloud-provider in-house ASICs\u2014is the principal source of NVIDIA share dilution when the market is defined to include all accelerators rather than GPUs alone. [[2]] [[1]]\n\n**Direction of travel:** TrendForce estimated NVIDIA would still hold approximately 70% of the broader AI-chip market in 2025, but expected greater custom-ASIC deployment to reduce that share over time. [[3]] Its 2026 shipment forecast has GPUs still leading at 69.7% of AI-server shipments, while ASIC-based systems rise to 27.8%, their highest share since 2023, with ASIC shipment growth outpacing GPU-system growth. [[4]] \n\nThese figures should not be treated as interchangeable with revenue share: NVIDIA\u2019s premium systems mean that its revenue share can exceed its shipment or unit share. [[5]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.trendforce.com/presscenter/news/20240717-12227.html",
+          "title": "Global AI Server Demand Surge Expected to Drive 2024 Market Value to US$187 Billion; Represents 65% of Server Market, Says TrendForce"
+        },
+        {
+          "url": "https://omdia.tech.informa.com/pr/2025/aug/ai-data-center-chip-market-to-hit-286bn-growth-likely-peaking-as-custom-asics-gain-ground",
+          "title": "New Omdia forecast: AI data center chip market to hit $286bn, growth likely peaking as custom ASICs gain ground"
+        },
+        {
+          "url": "https://www.trendforce.com/presscenter/news/20251030-12762.html",
+          "title": "Strong Demand from CSPs and Sovereign Cloud to Drive Over 20% Growth in AI Server Shipments by 2026, Says TrendForce"
+        },
+        {
+          "url": "https://www.trendforce.com/presscenter/news/20260120-12887.html",
+          "title": "Global AI Server Shipments Forecast to Grow Over 28% YoY in 2026, with a Rising Share of ASIC-Based Systems, Says TrendForce"
+        },
+        {
+          "url": "https://siliconanalysts.com/analysis/amd-vs-nvidia-ai-gpu-market-share-2026",
+          "title": "AMD vs NVIDIA AI GPU Market Share 2026: MI350X vs B200 Competitive Analysis"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "query": "AMD Q1 2026 Data Center segment revenue Instinct EPYC",
+  "normalized": "2026 amd center data epyc instinct q1 revenue segment",
+  "fetched_at": "2026-10-17T19:45:50Z",
+  "elapsed_s": 6.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD\u2019s **Q1 2026 Data Center revenue was $5.8 billion**, up **57% year over year**, for the quarter ended March 28, 2026. [[1]] \n\nAMD attributed the growth to strong demand for **EPYC server processors** and the continued ramp in **Instinct GPU shipments**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1284/amd-reports-first-quarter-2026-financial-results",
+          "title": "AMD Reports First Quarter 2026 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

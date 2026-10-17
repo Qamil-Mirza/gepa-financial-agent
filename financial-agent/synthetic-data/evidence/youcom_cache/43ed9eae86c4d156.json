@@ -1,0 +1,24 @@
+{
+  "query": "NVIDIA Data Center revenue Q1 fiscal 2027 growth drivers",
+  "normalized": "2027 center data drivers fiscal growth nvidia q1 revenue",
+  "fetched_at": "2026-10-17T19:38:51Z",
+  "elapsed_s": 14.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s Data Center revenue was **$75.2 billion in Q1 fiscal 2027** (quarter ended April 26, 2026), rising **92% year over year** and **21% sequentially**; it represented the principal source of the company\u2019s overall growth. [[1]]\n\n**Primary growth driver \u2014 Blackwell ramp and inference demand.** NVIDIA attributed the result to sustained strength in its Blackwell architecture, specifically noting particularly strong demand for **GB300 NVL72** systems from frontier-model customers. The company said it captured an \u201cinflection in inference demand\u201d by ramping Blackwell systems across hyperscalers, model makers, AI-cloud providers, and sovereign customers. [[2]]\n\n**Compute and networking both contributed.** Data Center compute revenue reached **$60.4 billion**, up **77% YoY** and **18% QoQ**, while networking revenue reached **$14.8 billion**, up **199% YoY** and **35% QoQ**. Thus, the rapid networking expansion\u2014alongside GPU/system demand\u2014was an important incremental contributor to Data Center growth. [[1]]\n\n**Hyperscalers remained the largest demand pool.** Hyperscale revenue was **$38 billion**, about **half of Data Center revenue**, and increased **12% sequentially**, reflecting ongoing large-cloud investment in AI capacity. [[2]]\n\n**Demand broadened beyond hyperscalers.** NVIDIA reported that sovereign revenue increased by **more than 80% YoY**, while its AI infrastructure had been deployed across nearly **40 countries**; this diversification supported the Blackwell ramp across a wider customer set. [[2]]\n\n**Bottom line:** Q1 FY2027 Data Center growth was principally a Blackwell-led AI-infrastructure cycle, powered by higher inference demand and GB300 deployments, with hyperscaler spending providing scale and networking plus sovereign/AI-cloud customers adding substantial growth breadth. [[2, 1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-First-Quarter-Fiscal-2027/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for First Quarter Fiscal 2027"
+        },
+        {
+          "url": "https://s201.q4cdn.com/141608511/files/doc_financials/2027/q1/NVDA-Q1-2027-Earnings-Call-20-May-2026-5_00-PM-ET.pdf",
+          "title": "NVIDIA Corp. (NVDA)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

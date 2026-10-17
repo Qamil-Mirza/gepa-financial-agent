@@ -1,0 +1,32 @@
+{
+  "query": "NVIDIA Data Center revenue growth drivers fiscal 2027",
+  "normalized": "2027 center data drivers fiscal growth nvidia revenue",
+  "fetched_at": "2026-10-17T19:36:42Z",
+  "elapsed_s": 18.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**NVIDIA\u2019s Data Center growth in fiscal 2027 is being driven primarily by an AI-infrastructure capacity buildout and a product-cycle upgrade, rather than by China recovery.** Data Center revenue reached **$75.2 billion in Q1 FY27** (+92% year over year) and **$89.0 billion in Q2** (+117% year over year and +18% sequentially), taking first-half revenue to **$164.3 billion**, versus $80.2 billion in the prior-year half. [[1]] [[2]]\n\n* **Blackwell/Blackwell Ultra system ramp:** Blackwell accounted for the majority of NVIDIA system shipments, while the Q2 increase was specifically attributed to the Blackwell Ultra infrastructure ramp; this is the core near-term accelerator-compute driver. [[2]]\n\n* **Hyperscaler spending and deployment:** Hyperscale Data Center revenue was **$48.7 billion in Q2**, up **13% sequentially** and **102% year over year**, propelled by Blackwell demand as customers add GPU capacity. [[2]] [[3]] NVIDIA also cited expected 2026 and 2027 capital expenditure by the five largest hyperscalers of nearly **$800 billion** and **$1.3 trillion**, respectively, as the demand backdrop. [[3]]\n\n* **Faster expansion outside the traditional hyperscalers:** AI Clouds, Industrial & Enterprise (\u201cACIE\u201d) revenue was **$40.3 billion in Q2**, rising **25% sequentially** and **138% year over year**, exceeding the hyperscale segment\u2019s sequential rate. [[2]] NVIDIA attributes this to neocloud capacity additions for enterprises, AI startups and sovereign customers, plus hyperscalers buying external capacity to supplement their own buildouts. [[3]]\n\n* **Networking and higher system content:** In Q1, Data Center networking revenue rose **199% year over year to $14.8 billion** and **35% sequentially**, alongside $60.4 billion of compute revenue. [[1]] The platform opportunity increasingly includes GPU, CPU, NVLink, InfiniBand/Ethernet networking, systems and software\u2014not solely accelerators\u2014which expands NVIDIA\u2019s revenue captured per data-center deployment. [[3]]\n\n* **Vera Rubin begins the next upgrade cycle:** NVIDIA began Vera Rubin production shipments in FY27 Q3 and said it had purchase orders from every major hyperscaler, AI cloud and system OEM. [[2]] [[3]] Management estimates the revenue opportunity per gigawatt of data-center capacity increased from roughly **$18 billion for Hopper** to **$25 billion for Blackwell** and **$40 billion for Vera Rubin**, reflecting greater platform content. [[3]] NVIDIA said Q3 sequential Data Center growth should be led by ACIE, while hyperscale growth should reaccelerate in Q4 and FY28 as Vera Rubin supply expands. [[3]]\n\n* **Inference/agentic-AI demand and software ecosystem:** NVIDIA links rising agentic-AI adoption to accelerating demand for data-center CPUs, while its full-stack platform and CUDA ecosystem are intended to broaden workload coverage and expand its share of Data Center total addressable market. [[3]] NVIDIA also said its Dynamo 1.0 software can increase generative- and agentic-inference performance on Blackwell GPUs by up to seven times, supporting the economic case for additional deployments. [[1]]\n\n**Key caveat:** FY27 growth is not predicated on China Data Center compute sales; NVIDIA\u2019s Q1, Q2 and Q3 outlooks explicitly assumed **no Data Center compute revenue from China**. [[1]] [[4]] Thus, the principal execution sensitivities are supply availability\u2014management characterized its outlook as supply constrained\u2014and whether hyperscaler, neocloud, enterprise and sovereign infrastructure buildouts continue to convert into deployed capacity at the expected pace. [[3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-First-Quarter-Fiscal-2027/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for First Quarter Fiscal 2027"
+        },
+        {
+          "url": "https://investor.nvidia.com/files/doc_financials/2027/NVDA-2027-Q2-10Q-Final-including-exhibits.pdf",
+          "title": "UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549"
+        },
+        {
+          "url": "https://investor.nvidia.com/files/content_files/TRANSCRIPT_-NVIDIA-Corp-NVDA-US-Q2-2027-Earnings-Call-26-August-2026-5_00-PM-ET.pdf",
+          "title": "NVIDIA Corp. (NVDA)"
+        },
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Second Quarter Fiscal 2027"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

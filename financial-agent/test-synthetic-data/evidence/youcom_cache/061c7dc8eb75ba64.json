@@ -1,0 +1,24 @@
+{
+  "query": "Marvell data center share of total revenue latest quarter",
+  "normalized": "center data marvell quarter revenue share total",
+  "fetched_at": "2026-10-17T21:03:13Z",
+  "elapsed_s": 6.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Marvell\u2019s Data Center segment accounted for **79% of total revenue** in its latest reported quarter, **Q2 fiscal 2027 (quarter ended August 1, 2026)**. [[1, 2]] \n\nThat corresponds to **$2.172 billion** of Data Center revenue out of **$2.739 billion** of total net revenue (approximately 79.3% before the company\u2019s whole-percent presentation rounding). [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.marvell.com/",
+          "title": "Investor Relations"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/1031/marvell-technology-inc-reports-second-quarter-of-fiscal-year-2027-financial-results",
+          "title": "Marvell Technology, Inc. Reports Second Quarter of Fiscal Year 2027 Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

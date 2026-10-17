@@ -1,0 +1,32 @@
+{
+  "query": "NVIDIA data center segment revenue for the last four reported quarters",
+  "normalized": "center data four nvidia quarters reported revenue segment",
+  "fetched_at": null,
+  "elapsed_s": 9.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s Data Center revenue for the last four reported quarters was: \n\n| Fiscal quarter | Quarter ended | Data Center revenue |\n|---|---:|---:|\n| Q2 FY2027 | July 26, 2026 | **$89.0 billion** |\n| Q1 FY2027 | April 26, 2026 | **$75.2 billion** |\n| Q4 FY2026 | January 25, 2026 | **$62.3 billion** |\n| Q3 FY2026 | October 26, 2025 | **$51.2 billion** | \n\nQ2 FY2027 Data Center revenue was $89.0 billion, 18% higher sequentially and 117% above the prior-year quarter. [[1]] \nQ1 FY2027 Data Center revenue was $75.2 billion, up 21% sequentially and 92% year over year. [[2]] \nQ4 FY2026 Data Center revenue was $62.3 billion, up 22% from Q3 and 75% year over year. [[3]] \nQ3 FY2026 Data Center revenue was $51.2 billion, up 25% sequentially and 66% year over year. [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2027",
+          "title": "NVIDIA Announces Financial Results for Second Quarter Fiscal 2027"
+        },
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2027",
+          "title": "NVIDIA Announces Financial Results for First Quarter Fiscal 2027"
+        },
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-fourth-quarter-and-fiscal-2026",
+          "title": "NVIDIA Announces Financial Results for Fourth Quarter and Fiscal 2026"
+        },
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-third-quarter-fiscal-2026",
+          "title": "NVIDIA Announces Financial Results for Third Quarter Fiscal 2026"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

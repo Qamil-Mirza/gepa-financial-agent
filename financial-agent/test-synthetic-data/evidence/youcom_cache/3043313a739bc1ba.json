@@ -1,0 +1,24 @@
+{
+  "query": "AWS segment revenue Q1 2026 Amazon quarterly results",
+  "normalized": "2026 amazon aws q1 quarterly results revenue segment",
+  "fetched_at": "2026-10-17T21:05:50Z",
+  "elapsed_s": 6.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AWS generated **$37.587 billion** of net sales (segment revenue) in Amazon\u2019s first quarter ended **March 31, 2026**, up **28% year over year** from **$29.267 billion** in Q1 2025. [[1]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000012/amzn-20260331xex991.htm",
+          "title": "Document 2 - file: amzn-20260331xex991.htm"
+        },
+        {
+          "url": "https://s2.q4cdn.com/299287126/files/doc_earnings/2026/q1/earnings-result/AMZN-Q1-2026-Earnings-Release.pdf",
+          "title": "AMAZON.COM ANNOUNCES FIRST QUARTER RESULTS"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

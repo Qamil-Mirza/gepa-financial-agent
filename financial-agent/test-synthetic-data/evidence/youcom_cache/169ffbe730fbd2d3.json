@@ -1,0 +1,20 @@
+{
+  "query": "Super Micro Computer AI server revenue share percentage Q2 fiscal 2026 quarter ended December 2025",
+  "normalized": "2025 2026 ai computer december ended fiscal micro percentage q2 quarter revenue server share super",
+  "fetched_at": "2026-10-17T21:10:05Z",
+  "elapsed_s": 5.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Super Micro Computer said that **AI GPU platforms represented over 90% of Q2 FY2026 revenue** for the quarter ended December 31, 2025. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://s204.q4cdn.com/707617056/files/doc_financials/2026/q2/SMCI-Q226-Prepared-Remarks-UPDATED.pdf",
+          "title": "SMCI FQ226 Prepared Remarks"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}
