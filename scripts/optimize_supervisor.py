@@ -42,14 +42,19 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--final-test", action="store_true",
                     help="also evaluate the held-out test split (do this once, after choosing a policy on val)")
     ap.add_argument("--policies", default="policies", help="policy store root")
+    ap.add_argument("--allow-invalid", action="store_true", help="continue even if some dataset lines are invalid")
     args = ap.parse_args(argv)
 
     s = Settings.from_env()
-    examples = []
+    examples, n_invalid = [], 0
     for p in args.dataset or ["data/fixtures/dev_examples.jsonl"]:
         rep = load_jsonl(p)
         print(rep.summary())
         examples.extend(rep.examples)
+        n_invalid += len(rep.invalid)
+    if n_invalid and not args.allow_invalid:
+        print(f"{n_invalid} invalid dataset lines (listed above); fix them or pass --allow-invalid")
+        return 4
     sp = split_by_scenario(examples, seed=args.split_seed)
     print(f"splits: {sp.summary()} | train labels={label_distribution(sp.train)} val labels={label_distribution(sp.val)}")
 

@@ -100,3 +100,26 @@ def test_split_without_tags_stratifies_by_full_trajectory_label():
     for part in (sp.train, sp.val, sp.test):
         full_labels = {(e.ground_truth.status.value, e.ground_truth.drift_type) for e in part if e.observation_step == 5}
         assert len(full_labels) == 3, full_labels
+
+
+def test_summary_lists_invalid_lines_with_reasons(tmp_path):
+    good = make_example("s1")
+    p = tmp_path / "d.jsonl"
+    p.write_text(good.model_dump_json() + "\nnot json\n")
+    s = load_jsonl(p).summary()
+    assert "1 valid, 1 invalid" in s and "line 2:" in s and "json" in s.lower()
+
+
+def test_scripts_refuse_invalid_dataset_unless_allowed(tmp_path):
+    import importlib.util
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("evaluate_supervisor", root / "scripts" / "evaluate_supervisor.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    p = tmp_path / "d.jsonl"
+    good = (root / "data/fixtures/dev_examples.jsonl").read_text()
+    p.write_text(good + "not json\n")
+    base = ["--mock", "--dataset", str(p), "--split", "val", "--out", str(tmp_path / "out")]
+    assert mod.main(base) != 0
+    assert mod.main(base + ["--allow-invalid"]) == 0

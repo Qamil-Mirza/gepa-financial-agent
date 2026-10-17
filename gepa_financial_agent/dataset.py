@@ -26,8 +26,15 @@ class LoadReport:
     invalid: list[InvalidExample]
     path: str
 
-    def summary(self) -> str:
-        return f"{self.path}: {len(self.examples)} valid, {len(self.invalid)} invalid"
+    def summary(self, max_listed: int = 20) -> str:
+        lines = [f"{self.path}: {len(self.examples)} valid, {len(self.invalid)} invalid"]
+        for bad in self.invalid[:max_listed]:
+            first = bad.error.strip().splitlines()
+            reason = " ".join(x.strip() for x in first[:3]) if first else "unknown error"
+            lines.append(f"  line {bad.line_number}: {reason[:300]}")
+        if len(self.invalid) > max_listed:
+            lines.append(f"  ... and {len(self.invalid) - max_listed} more")
+        return "\n".join(lines)
 
 
 def load_jsonl(path: str | Path) -> LoadReport:

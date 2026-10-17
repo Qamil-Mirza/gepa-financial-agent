@@ -22,12 +22,14 @@ from gepa_financial_agent.policy_store import PolicyStore  # noqa: E402
 
 
 def load_examples(paths: list[str]):
-    out = []
+    """Returns (examples, n_invalid)."""
+    out, n_invalid = [], 0
     for p in paths:
         rep = load_jsonl(p)
         print(rep.summary())
         out.extend(rep.examples)
-    return out
+        n_invalid += len(rep.invalid)
+    return out, n_invalid
 
 
 def select_split(examples, split: str, seed: int):
@@ -44,12 +46,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--policy", action="append", default=None, help="policy name or path (repeatable); default baseline")
     ap.add_argument("--heuristic", action="store_true", help="also run the deterministic rules baseline")
     ap.add_argument("--mock", action="store_true")
+    ap.add_argument("--allow-invalid", action="store_true", help="continue even if some dataset lines are invalid")
     ap.add_argument("--concurrency", type=int, default=None)
     ap.add_argument("--out", default=None, help="output dir; default runs/eval/<timestamp>")
     args = ap.parse_args(argv)
 
     s = Settings.from_env()
-    examples = select_split(load_examples(args.dataset or ["data/fixtures/dev_examples.jsonl"]), args.split, args.seed)
+    loaded, n_invalid = load_examples(args.dataset or ["data/fixtures/dev_examples.jsonl"])
+    if n_invalid and not args.allow_invalid:
+        print(f"{n_invalid} invalid dataset lines (listed above); fix them or pass --allow-invalid")
+        return 4
+    examples = select_split(loaded, args.split, args.seed)
     print(f"split={args.split} n={len(examples)} labels={label_distribution(examples)}")
     if args.mock:
         client = MockModelClient()
