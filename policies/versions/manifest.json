@@ -34,6 +34,34 @@
         "void": "label leak: fixture event IDs encoded the scenario kind and were shown to the supervisor and reflector; all metrics for this version are invalid"
       },
       "version": "b31ca3fe7873"
+    },
+    "gepa_clean_150": {
+      "created_at": "2026-10-17T13:06:11",
+      "metadata": {
+        "caveat": "fixture splits contained identical prompts across train/val/test (fixed in 69cc67a); not for promotion",
+        "mocked": false,
+        "run_dir": "runs/gepa/clean_150",
+        "test": {},
+        "val": {
+          "baseline/val": 0.5412748171368862,
+          "gepa/val": 0.737037037037037
+        }
+      },
+      "version": "b6409d47114b"
+    },
+    "gepa_clean_60": {
+      "created_at": "2026-10-17T13:04:07",
+      "metadata": {
+        "caveat": "fixture splits contained identical prompts across train/val/test (fixed in 69cc67a); not for promotion",
+        "mocked": false,
+        "run_dir": "runs/gepa/clean_60",
+        "test": {},
+        "val": {
+          "baseline/val": 0.5175983436853002,
+          "gepa/val": 0.5412748171368862
+        }
+      },
+      "version": "eac5a206b52d"
     }
   }
 }
