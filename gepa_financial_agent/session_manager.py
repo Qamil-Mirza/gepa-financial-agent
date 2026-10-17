@@ -12,7 +12,7 @@ from typing import Any
 from .crusoe_client import ModelClient
 from .policy_store import Policy
 from .schemas import EvaluationRecord, EventType, SupervisorInput, TrajectoryEvent
-from .supervisor import Supervisor
+from .supervisor import MAX_EVENT_CHARS, Supervisor
 
 log = logging.getLogger("gepa_financial_agent.session_manager")
 
@@ -103,12 +103,14 @@ class SupervisorManager:
     def __init__(self, model_client: ModelClient, policy_path: str | Path = "policies/current.txt", *,
                  policy: Policy | None = None, max_concurrent_inferences: int = 4,
                  trigger: TriggerConfig | None = None, max_events_in_context: int = 40,
+                 max_event_chars: int = MAX_EVENT_CHARS,
                  json_mode: bool = False, max_tokens: int = 1024) -> None:
         self.client = model_client
         self.policy = policy or Policy.from_file(policy_path)
         self.trigger = trigger or TriggerConfig()
         self.max_concurrent_inferences = max_concurrent_inferences
         self.max_events_in_context, self.json_mode, self.max_tokens = max_events_in_context, json_mode, max_tokens
+        self.max_event_chars = max_event_chars
         self.sessions: dict[str, SupervisorSession] = {}
         self._supervisors: dict[str, Supervisor] = {}
         self._sem: asyncio.Semaphore | None = None
@@ -136,7 +138,7 @@ class SupervisorManager:
         sup = self._supervisors.get(policy.version)
         if sup is None:
             sup = Supervisor(self.client, policy, max_tokens=self.max_tokens, json_mode=self.json_mode,
-                             max_events=self.max_events_in_context)
+                             max_events=self.max_events_in_context, max_chars=self.max_event_chars)
             self._supervisors[policy.version] = sup
         return sup
 

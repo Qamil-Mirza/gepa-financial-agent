@@ -24,6 +24,11 @@ Rules: evidence_event_ids must be event_ids that appear in the trajectory shown 
 drift_type must be null unless status is DRIFTING. A DRIFTING verdict needs at least one evidence event."""
 
 
+# Per-event render limit. Long enough for typical cited research answers, because UNSUPPORTED_CONCLUSION is judged
+# against the retrieved evidence the supervisor can actually see.
+MAX_EVENT_CHARS = 1500
+
+
 def _clip(text: str, n: int) -> str:
     text = text.replace("\n", " ").strip()
     return text if len(text) <= n else text[: n - 3] + "..."
@@ -37,7 +42,7 @@ def event_aliases(inp: SupervisorInput) -> dict[str, str]:
     return {e.event_id: f"E{i + 1}" for i, e in enumerate(inp.trajectory)}
 
 
-def render_event(e: TrajectoryEvent, max_chars: int = 600, alias: str | None = None) -> str:
+def render_event(e: TrajectoryEvent, max_chars: int = MAX_EVENT_CHARS, alias: str | None = None) -> str:
     parts = [f"[{alias or e.event_id}] step={e.step} {e.event_type.value}"]
     if e.tool_name:
         parts.append(f"tool={e.tool_name}")
@@ -58,7 +63,7 @@ def render_event(e: TrajectoryEvent, max_chars: int = 600, alias: str | None = N
     return " ".join(parts)
 
 
-def render_input(inp: SupervisorInput, max_events: int = 40, max_chars: int = 600) -> str:
+def render_input(inp: SupervisorInput, max_events: int = 40, max_chars: int = MAX_EVENT_CHARS) -> str:
     lines = [
         f"Swarm objective: {inp.swarm_objective}",
         f"Agent directive: {inp.agent_directive}",
@@ -82,7 +87,7 @@ def render_input(inp: SupervisorInput, max_events: int = 40, max_chars: int = 60
     return "\n".join(lines)
 
 
-def build_messages(policy_text: str, inp: SupervisorInput, max_events: int = 40, max_chars: int = 600) -> list[dict[str, Any]]:
+def build_messages(policy_text: str, inp: SupervisorInput, max_events: int = 40, max_chars: int = MAX_EVENT_CHARS) -> list[dict[str, Any]]:
     return [
         {"role": "system", "content": policy_text.rstrip() + "\n\n" + OUTPUT_CONTRACT},
         {"role": "user", "content": render_input(inp, max_events, max_chars)},
@@ -157,7 +162,7 @@ class Supervisor:
     """Stateless judge: (policy, input) -> EvaluationRecord. Shared across sessions; safe to call concurrently."""
 
     def __init__(self, client: ModelClient, policy: Policy, *, max_tokens: int = 1024, temperature: float = 0.0,
-                 json_mode: bool = False, max_events: int = 40, max_chars: int = 600, seed: int | None = None) -> None:
+                 json_mode: bool = False, max_events: int = 40, max_chars: int = MAX_EVENT_CHARS, seed: int | None = None) -> None:
         self.client, self.policy = client, policy
         self.max_tokens, self.temperature, self.json_mode, self.seed = max_tokens, temperature, json_mode, seed
         self.max_events, self.max_chars = max_events, max_chars
