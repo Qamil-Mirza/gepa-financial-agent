@@ -39,3 +39,44 @@ def test_run_optimization_end_to_end_with_mocks(tmp_path):
     assert art.best_policy.text.strip() and art.num_candidates >= 1 and art.total_metric_calls <= 20 + len(val)
     res = json.loads((run / "result.json").read_text())
     assert "val_aggregate_scores" in res and json.loads((run / "config.json").read_text())["dataset"]["train"] == 8
+
+
+def _load_optimize_script():
+    import importlib.util
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("optimize_supervisor", root / "scripts" / "optimize_supervisor.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod, root
+
+
+def _policies(tmp_path, root):
+    pol = tmp_path / "policies"
+    pol.mkdir()
+    (pol / "baseline.txt").write_text((root / "policies" / "baseline.txt").read_text())
+    (pol / "current.txt").write_text((root / "policies" / "baseline.txt").read_text())
+    return pol
+
+
+def _args(tmp_path, root, pol, *extra):
+    return ["--mock", "--max-metric-calls", "6", "--dataset", str(root / "data/fixtures/dev_examples.jsonl"),
+            "--policies", str(pol), "--run-dir", str(tmp_path / "run"), *extra]
+
+
+def test_mock_run_refuses_promote_and_is_named_mock(tmp_path):
+    mod, root = _load_optimize_script()
+    pol = _policies(tmp_path, root)
+    before = (pol / "current.txt").read_text()
+    assert mod.main(_args(tmp_path, root, pol, "--promote")) != 0
+    assert (pol / "current.txt").read_text() == before
+    manifest = json.loads((pol / "versions" / "manifest.json").read_text())
+    assert all(name.startswith("mock_") for name in manifest["versions"]) and manifest["versions"]
+
+
+def test_test_split_untouched_unless_final_test(tmp_path):
+    mod, root = _load_optimize_script()
+    pol = _policies(tmp_path, root)
+    assert mod.main(_args(tmp_path, root, pol)) == 0
+    labels = set(json.loads((tmp_path / "run" / "comparison.json").read_text())["runs"])
+    assert labels == {"baseline/val", "gepa/val"}

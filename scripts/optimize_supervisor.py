@@ -39,7 +39,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--mock", action="store_true", help="mock supervisor and reflection (pipeline check only)")
     ap.add_argument("--run-dir", default=None)
     ap.add_argument("--promote", action="store_true", help="copy the optimized policy to policies/current.txt")
-    ap.add_argument("--skip-test", action="store_true", help="do not touch the test split")
+    ap.add_argument("--final-test", action="store_true",
+                    help="also evaluate the held-out test split (do this once, after choosing a policy on val)")
+    ap.add_argument("--policies", default="policies", help="policy store root")
     args = ap.parse_args(argv)
 
     s = Settings.from_env()
@@ -62,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
         reflection = CrusoeReflectionLM(CrusoeClient.from_settings(s, "reflection", max_concurrent=1, thinking=None))
         print(f"MODE: REAL. supervisor={sup_client.model} reflection={reflection.client.model}")
 
-    store = PolicyStore("policies")
+    store = PolicyStore(args.policies)
     seed_policy = store.load(args.seed_policy)
     cfg = OptimizeConfig(max_metric_calls=args.max_metric_calls, reflection_minibatch_size=args.minibatch,
                          seed=args.gepa_seed, max_workers=args.max_workers or s.max_concurrent_inferences,
@@ -72,10 +74,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"GEPA finished: candidates={art.num_candidates} metric_calls={art.total_metric_calls} "
           f"seed_val={art.seed_val_score:.3f} best_val={art.best_val_score:.3f} run_dir={run_dir}")
 
-    # Held-out comparison: same model, decoding, schema, cutoffs. Test split is used exactly once, here.
+    # Comparison: same model, decoding, schema, cutoffs. The test split is only touched with --final-test.
     runs = [run_evaluation(seed_policy, sp.val, sup_client, out_dir=run_dir / "eval_val_baseline", label="baseline/val", json_mode=s.json_mode),
             run_evaluation(art.best_policy, sp.val, sup_client, out_dir=run_dir / "eval_val_gepa", label="gepa/val", json_mode=s.json_mode)]
-    if not args.skip_test:
+    if args.final_test:
         runs += [run_evaluation(seed_policy, sp.test, sup_client, out_dir=run_dir / "eval_test_baseline", label="baseline/test", json_mode=s.json_mode),
                  run_evaluation(art.best_policy, sp.test, sup_client, out_dir=run_dir / "eval_test_gepa", label="gepa/test", json_mode=s.json_mode)]
     table = format_comparison(runs)
@@ -89,9 +91,10 @@ def main(argv: list[str] | None = None) -> int:
     metadata = {"run_dir": str(run_dir), "mocked": comparison["mocked"],
                 "val": {r.label: r.metrics.macro_f1 for r in runs if r.label.endswith("/val")},
                 "test": {r.label: r.metrics.macro_f1 for r in runs if r.label.endswith("/test")}}
-    saved = store.save_version(art.best_policy.text, art.best_policy.name, metadata=metadata)
+    name = art.best_policy.name if not comparison["mocked"] else "mock_" + art.best_policy.name.removeprefix("gepa_")
+    saved = store.save_version(art.best_policy.text, name, metadata=metadata)
     print(f"saved policy version {saved.name} ({saved.version})")
-    if not args.skip_test:
+    if args.final_test:
         b, g = next(r for r in runs if r.label == "baseline/test"), next(r for r in runs if r.label == "gepa/test")
         verdict = ("GEPA policy improved held-out macro-F1" if g.metrics.macro_f1 > b.metrics.macro_f1 else
                    "GEPA policy did NOT improve held-out macro-F1")
@@ -99,6 +102,9 @@ def main(argv: list[str] | None = None) -> int:
               f"FPR baseline={b.metrics.false_positive_rate:.3f} gepa={g.metrics.false_positive_rate:.3f}"
               + (" [MOCK: not meaningful]" if comparison["mocked"] else ""))
     if args.promote:
+        if comparison["mocked"]:
+            print("refusing --promote: this run used mock inference")
+            return 3
         store.promote(saved.name)
         print("promoted to policies/current.txt")
     return 0
