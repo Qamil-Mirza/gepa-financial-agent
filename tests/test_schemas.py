@@ -69,3 +69,16 @@ def test_dataset_example_roundtrip_json():
     ex = DatasetExample(example_id="x", scenario_id="s", observation_step=2, supervisor_input=inp,
                         ground_truth=GroundTruth(status="ON_TRACK"))
     assert DatasetExample.model_validate_json(ex.model_dump_json()) == ex
+
+
+def test_inner_observation_step_inherits_outer_when_omitted_and_must_match_when_given():
+    events = [ev(i).model_dump() for i in range(3)]
+    base = {"example_id": "x", "scenario_id": "s", "observation_step": 5,
+            "ground_truth": {"status": "ON_TRACK"},
+            "supervisor_input": {"task_id": "t1", "agent_id": "a1", "swarm_objective": "o",
+                                 "agent_directive": "d", "trajectory": events}}
+    ex = DatasetExample.model_validate(base)
+    assert ex.supervisor_input.observation_step == 5
+    clash = {**base, "supervisor_input": {**base["supervisor_input"], "observation_step": 2}}
+    with pytest.raises(ValidationError):
+        DatasetExample.model_validate(clash)

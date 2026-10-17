@@ -159,6 +159,12 @@ class DatasetExample(BaseModel):
 
     @model_validator(mode="after")
     def _consistent(self) -> "DatasetExample":
+        inner = self.supervisor_input
+        if "observation_step" not in inner.model_fields_set:
+            inner.observation_step = self.observation_step
+        elif inner.observation_step != self.observation_step:
+            raise ValueError(f"supervisor_input.observation_step {inner.observation_step} != "
+                             f"observation_step {self.observation_step}")
         ids = self.supervisor_input.event_ids()
         missing = [i for i in self.ground_truth.evidence_event_ids if i not in ids]
         if missing:
