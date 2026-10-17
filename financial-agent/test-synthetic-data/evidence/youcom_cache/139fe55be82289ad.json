@@ -1,0 +1,20 @@
+{
+  "query": "Arm Q2 FY2026 data-center royalty revenue Neoverse doubling year over year",
+  "normalized": "arm center data doubling fy2026 neoverse over q2 revenue royalty year",
+  "fetched_at": "2026-10-17T21:05:27Z",
+  "elapsed_s": 13.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Yes\u2014Arm said that data-center royalty revenue doubled year over year in Q2 FY2026 (quarter ended September 30, 2025), reflecting expanding deployment of Arm-based data-center CPUs, including Neoverse-based platforms. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://futurumgroup.com/insights/arm-q2-fy-2026-earnings-highlight-ai-driven-royalty-momentum/",
+          "title": "Arm Q2 FY 2026 Earnings Highlight AI-Driven Royalty Momentum - Futurum"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

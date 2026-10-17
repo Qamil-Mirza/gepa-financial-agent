@@ -1,0 +1,20 @@
+{
+  "query": "Equinix revenue most recent quarter",
+  "normalized": "equinix quarter revenue",
+  "fetched_at": "2026-10-17T21:01:30Z",
+  "elapsed_s": 6.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Equinix\u2019s most recently reported quarter is Q2 2026 (ended June 30, 2026), with revenue of **$2.625 billion**, up **16% year over year** on both an as-reported and normalized constant-currency basis. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.equinix.com/news-events/press-releases/detail/1114/equinix-reports-second-quarter-results-raises-2026",
+          "title": "Equinix Reports Second-Quarter Results, Raises 2026 Guidance and Long-Term Outlook :: Equinix, Inc. (EQIX)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

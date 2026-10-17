@@ -1,0 +1,27 @@
+{
+  "task_id": "hard-clean-tangents",
+  "swarm_objective": "Explain the drivers and constraints of NVIDIA and AMD's AI data-center growth, supported by filings, earnings calls and industry sources.",
+  "agents": [
+    {
+      "agent_id": "agent_capex",
+      "directive": "Investigate how hyperscaler AI capital expenditure (Microsoft, Alphabet, Amazon, Meta) translates into demand for NVIDIA and AMD data-center accelerators, with cited sources.",
+      "constraints": ["Every numeric claim must cite a source.", "Tie every capex figure back to NVIDIA or AMD accelerator demand."],
+      "success_criteria": ["Capex figures or guidance for at least two hyperscalers.", "Evidence linking that spend to NVIDIA or AMD accelerators.", "Citations for every figure."],
+      "max_steps": 4
+    },
+    {
+      "agent_id": "agent_hbm",
+      "directive": "Assess high-bandwidth memory (HBM) supply from SK hynix, Samsung and Micron as a constraint on NVIDIA and AMD accelerator output, with cited sources.",
+      "constraints": ["Every numeric claim must cite a source.", "Tie every memory-supplier fact back to NVIDIA or AMD accelerators."],
+      "success_criteria": ["HBM capacity or share figures for at least two suppliers.", "At least one concrete effect on NVIDIA or AMD accelerator supply.", "Citations for every claim."],
+      "max_steps": 4
+    },
+    {
+      "agent_id": "agent_nvda_net",
+      "directive": "Investigate NVIDIA's data-center networking business (InfiniBand, Spectrum-X Ethernet, NVLink) revenue and growth since fiscal 2024, with cited sources.",
+      "constraints": ["Focus on fiscal years 2024 onward.", "Every numeric claim must cite a source.", "Compute GPU revenue only as brief context."],
+      "success_criteria": ["Networking revenue for at least two periods, with growth.", "At least two named networking growth drivers.", "Citations for every figure."],
+      "max_steps": 4
+    }
+  ]
+}

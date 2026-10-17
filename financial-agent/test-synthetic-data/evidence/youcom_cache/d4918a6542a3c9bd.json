@@ -1,0 +1,24 @@
+{
+  "query": "Arm Holdings Q3 FY2026 royalty and licensing revenue Neoverse data-center",
+  "normalized": "arm center data fy2026 holdings licensing neoverse q3 revenue royalty",
+  "fetched_at": "2026-10-17T21:04:21Z",
+  "elapsed_s": 13.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Arm Holdings\u2019 Q3 FY2026 covered the quarter ended December 31, 2025, and total revenue was a record $1.242 billion, up 26% year over year. [[1]]\n\n- **Royalty revenue:** **$737 million**, up **27%** from $580 million in Q3 FY2025. Arm attributed the increase to adoption of higher-royalty technologies\u2014including Armv9 and Arm Compute Subsystems (CSS)\u2014and increased use of Arm-based chips in data centers. [[1]]\n- **License and other revenue:** **$505 million**, up **25%** from $403 million a year earlier, reflecting high-value licenses for next-generation Arm technologies; licensing revenue can also fluctuate with contract timing. [[1]]\n- **Neoverse/data-center indicators:** Arm stated that Neoverse CPUs had exceeded **1 billion deployed cores** and that its share among top hyperscalers was expected to approach **50%**. [[2]]\n- **Illustrative adoption:** AWS introduced fifth-generation Graviton using **Neoverse CSS V3** with **192 cores**, double Graviton4\u2019s core count. [[2]] \n\nThe key investment takeaway is that Q3 royalty growth was not solely shipment-volume-led: Arm specifically linked the 27% increase to a richer product mix and higher royalty per chip from Armv9/CSS, alongside expanding data-center deployment. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.arm.com/static-files/759b8233-bfab-4d24-822c-b517e447e809",
+          "title": "Exhibit 99.2 FYE26 Q3 (31-Dec-25) Shareholder Letter"
+        },
+        {
+          "url": "https://newsroom.arm.com/news/arm-q3-fye26-results",
+          "title": "Arm delivers fourth consecutive billion-dollar revenue quarter, extending record-breaking momentum - Arm Newsroom"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

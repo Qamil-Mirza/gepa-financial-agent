@@ -1,0 +1,32 @@
+{
+  "query": "Marvell Technology data center revenue Q3 fiscal 2027 custom AI silicon electro-optics",
+  "normalized": "2027 ai center custom data electro fiscal marvell optics q3 revenue silicon technology",
+  "fetched_at": "2026-10-17T21:07:34Z",
+  "elapsed_s": 22.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Marvell had **not yet reported Q3 fiscal 2027 data-center revenue** as of its latest reported quarter; Q2 FY2027 ended August 1, 2026, and data-center revenue was **$2.172 billion**, up **46% year over year** and **18% sequentially**, representing **79%** of total revenue. [[1]] \n\nFor Q3 FY2027, Marvell guided total company revenue to roughly **$3.15 billion** (\u00b15%), while an industry analysis estimated data-center revenue would rise about **20% sequentially** and **75% year over year**; applying 20% to Q2\u2019s $2.172 billion implies approximately **$2.61 billion** in Q3 data-center revenue. [[2]] [[1]] \n\nThe expected Q3 step-up reflects broad data-center demand, with management specifically citing strong connectivity demand and a **significant acceleration in Custom silicon beginning in the second half of FY2027**. [[1]] \n\nMarvell does **not** disclose quarterly revenue separately for custom AI silicon versus electro-optics in its reported end-market table; however, its FY2026 investor materials characterize optical interconnect as roughly **half of data-center revenue** and custom silicon as approximately **25%** of data-center revenue. [[3]] \n\nA third-party model estimated Q2 FY2027 electro-optical-component revenue at approximately **$1.4 billion**, up **97.2% year over year**, indicating that optics remained the larger near-term AI revenue contributor even as custom silicon began to accelerate. [[2]] \n\nThe relevant product set includes 800G and 1.6T scale-out optics, NPO/CPO scale-up optical solutions, data-center interconnect modules, and custom XPU/XPU-attach solutions. [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/1031/marvell-technology-inc-reports-second-quarter-of-fiscal-year-2027-financial-results",
+          "title": "Marvell Technology, Inc. Reports Second Quarter of Fiscal Year 2027 Financial Results"
+        },
+        {
+          "url": "https://www.nextplatform.com/connect/2026/09/02/optics-still-driving-marvells-ai-business-more-than-custom-chips/5294018",
+          "title": "Optics Still Driving Marvell\u2019s AI Business More Than Custom Chips"
+        },
+        {
+          "url": "https://investor.marvell.com/sec-filings/all-sec-filings/content/0001104659-26-060253/0001104659-26-060253.pdf",
+          "title": "\u2610 \u2610 \u2612 \u2610 \u2610 \u2612 \u2610 \u2610 TABLE OF CONTENTS UNITED STATES"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/1023/marvell-technology-inc-reports-first-quarter-of-fiscal-year-2027-financial-results",
+          "title": "Marvell Technology, Inc. Reports First Quarter of Fiscal Year 2027 Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

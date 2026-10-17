@@ -1,0 +1,24 @@
+{
+  "query": "AWS segment revenue and operating income Q4 2025 Amazon earnings",
+  "normalized": "2025 amazon aws earnings income operating q4 revenue segment",
+  "fetched_at": "2026-10-17T21:06:30Z",
+  "elapsed_s": 5.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AWS generated **$35.579 billion of net sales (segment revenue)** in Amazon\u2019s fourth quarter ended December 31, 2025, up **24% year over year** from $28.786 billion. [[1, 2]] \n\nAWS segment operating income was **$12.5 billion**, versus **$10.6 billion** in Q4 2024. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-Fourth-Quarter-Results/",
+          "title": "Amazon.com, Inc. - Amazon.com Announces Fourth Quarter Results"
+        },
+        {
+          "url": "https://www.aboutamazon.com/news/company-news/amazon-earnings-q4-2025-report",
+          "title": "Amazon Q4 2025 earnings report: Read the release"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

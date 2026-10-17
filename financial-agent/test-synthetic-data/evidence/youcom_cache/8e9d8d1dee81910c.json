@@ -1,0 +1,28 @@
+{
+  "query": "Equinix Q2 2026 xScale leasing 134 MW AI demand",
+  "normalized": "134 2026 ai demand equinix leasing mw q2 xscale",
+  "fetched_at": "2026-10-17T21:13:57Z",
+  "elapsed_s": 21.0,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Equinix\u2019s Q2 2026 xScale leasing was a strong indicator of AI-led hyperscale demand, but the company did not disclose that all 134 MW was AI-specific.** Equinix closed **134 MW of xScale leases** in the quarter, including the Hampton transaction, and reported that the deal contributed approximately **$120 million of non-recurring fees**. [[1]] \n\nManagement said that \u201cthe vast majority\u201d of its largest Q2 deals were driven by AI workloads, while characterizing AI as an accelerant to its broader digitization, cloud, connectivity, and sovereignty demand. [[1]] Therefore, the sound interpretation is that the 134 MW leasing result was **materially AI-influenced rather than a disclosed 134-MW AI-only booking figure**. [[1]] \n\nThe financial impact was visible in reported results: Q2 revenue was **$2.625 billion, up 16% year over year**, with the company explicitly attributing part of that growth to one-time xScale fees. [[2]] Excluding xScale leasing fees, Equinix said adjusted EBITDA margin still increased by roughly **150 basis points year over year**, suggesting the underlying retail/interconnection platform was also performing strongly. [[3]] \n\nFor capacity and capital deployment, Equinix said a significant portion of capacity planned for delivery in the remainder of 2026 had already been committed through bookings and presales, while guiding to **$5\u2013$6 billion** of capital expenditure excluding real-estate acquisitions and xScale. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/equinix-eqix-q2-2026-earnings-call-transcript/",
+          "title": "Equinix (EQIX) Q2 2026 Earnings Call Transcript"
+        },
+        {
+          "url": "https://investor.equinix.com/news-events/press-releases/detail/1114/equinix-reports-second-quarter-results-raises-2026",
+          "title": "Equinix Reports Second-Quarter Results, Raises 2026 Guidance and Long-Term Outlook :: Equinix, Inc. (EQIX)"
+        },
+        {
+          "url": "https://www.theglobeandmail.com/investing/markets/stocks/EQIX/pressreleases/3730144/equinix-eqix-q2-2026-earnings-call-transcript/",
+          "title": "Equinix (EQIX) Q2 2026 Earnings Call Transcript - The Globe and Mail"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

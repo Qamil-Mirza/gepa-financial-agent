@@ -1,0 +1,24 @@
+{
+  "query": "Marvell Technology custom AI silicon electro-optics data center revenue split Q1 fiscal 2026",
+  "normalized": "2026 ai center custom data electro fiscal marvell optics q1 revenue silicon split technology",
+  "fetched_at": "2026-10-17T21:11:15Z",
+  "elapsed_s": 20.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Marvell did **not disclose a Q1 FY2026 revenue split between custom AI silicon and electro-optics**, so an exact dollar or percentage allocation cannot be reliably calculated from its reported results. [[1]] \n\nThe company reported **$1.4406 billion** of data-center revenue for the quarter ended **May 3, 2025**, equal to **76% of total company revenue**, with total revenue of **$1.895 billion**. [[1]] \n\nManagement attributed data-center momentum to both the rapid scaling of custom-silicon programs and robust electro-optics shipments, but provided no component-level revenue figures or mix percentages for either category. [[1]] \n\nThus, the defensible Q1 FY2026 \u201csplit\u201d is: **Data center: $1.441 billion; custom AI silicon: not separately disclosed; electro-optics: not separately disclosed; residual data-center products: also not separately disclosed.** [[1]] \n\nQualitatively, management indicated that its lead hyperscaler XPU program had become a key custom-business revenue driver and that optics was performing well and expected to grow during the year, but these comments do not establish a quarterly revenue mix. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/95/marvell-technology-inc-reports-first-quarter-of-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports First Quarter of Fiscal Year 2026 Financial Results"
+        },
+        {
+          "url": "https://www.alphaspread.com/security/nasdaq/mrvl/investor-relations/earnings-call/q1-2026",
+          "title": "MRVL Q1-2026 Earnings Call - Alpha Spread"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "query": "Arm Holdings Q2 fiscal 2026 royalty and licensing revenue Neoverse data center",
+  "normalized": "2026 arm center data fiscal holdings licensing neoverse q2 revenue royalty",
+  "fetched_at": "2026-10-17T21:05:08Z",
+  "elapsed_s": 12.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Arm\u2019s Q2 fiscal 2026, ended September 30, 2025, revenue was $1.135 billion; royalty revenue was a record $620 million, up 21% year over year, while **license and other revenue** was $515 million, up 56% year over year. [[1]] \n\nRoyalty growth reflected higher royalty rates from Armv9 and Arm Compute Subsystems (CSS), as well as greater use of Arm-based chips in data centers. [[1]] \n\nFor Neoverse/data center, Arm said data-center royalties doubled year over year, Neoverse had surpassed 1 billion CPUs deployed, and the Neoverse business more than doubled year over year. [[2]] \n\nArm also signed one new CSS license for a data-center customer during the quarter, among three total new CSS licenses. [[3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.arm.com/node/7711/html",
+          "title": "SEC Filing"
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2025/11/05/arm-arm-q2-2026-earnings-call-transcript/",
+          "title": "Arm (ARM) Q2 2026 Earnings Call Transcript"
+        },
+        {
+          "url": "https://newsroom.arm.com/news/arm-q2-fye26-results",
+          "title": "Arm Q2 FYE26 revenue surpasses $1 billion for third consecutive quarter - Arm Newsroom"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

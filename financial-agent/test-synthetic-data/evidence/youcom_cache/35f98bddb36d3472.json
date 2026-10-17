@@ -1,0 +1,20 @@
+{
+  "query": "Marvell Technology Q3 fiscal 2026 data center revenue",
+  "normalized": "2026 center data fiscal marvell q3 revenue technology",
+  "fetched_at": "2026-10-17T21:12:04Z",
+  "elapsed_s": 8.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Marvell Technology\u2019s data-center revenue was **$1.518 billion** in Q3 fiscal 2026 (three months ended **November 1, 2025**), representing **73%** of total revenue; it increased **38% year over year** from $1.101 billion and **2% sequentially** from $1.491 billion in Q2 fiscal 2026. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/999/marvell-technology-inc-reports-third-quarter-of-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports Third Quarter of Fiscal Year 2026 Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

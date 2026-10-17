@@ -1,0 +1,20 @@
+{
+  "query": "What is AFFO adjusted funds from operations for a data center REIT",
+  "normalized": "adjusted affo center data funds operations reit",
+  "fetched_at": "2026-10-17T21:02:58Z",
+  "elapsed_s": 9.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AFFO\u2014**adjusted funds from operations**\u2014is a non-GAAP cash-flow proxy used to assess a data-center REIT\u2019s recurring earnings available after the recurring spending needed to sustain its properties and revenue base. [[1]] \n\nIt generally starts with FFO and deducts (i) recurring capitalized maintenance expenditures, such as ongoing property improvements, leasing costs, and tenant-improvement allowances, and (ii) the effect of GAAP straight-line rent accounting. [[1]] \n\nFor a data-center REIT, investors commonly use AFFO and AFFO per share to evaluate recurring cash-generation capacity, dividend coverage, and valuation, because it adjusts FFO for the continuing capital needs of operating data-center facilities. [[1]] \n\nA simplified formulation is: **AFFO = FFO \u2212 recurring maintenance/tenant/leasing capital expenditures \u2212 straight-line-rent adjustment \u00b1 company-specific recurring adjustments.** [[1]] \n\nImportantly, AFFO is not standardized, so the precise adjustments\u2014and whether particular spending is classified as maintenance versus growth capex\u2014can differ by REIT; investors should use the company\u2019s own reconciliation and definition when comparing issuers. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.reit.com/glossary/adjusted-funds-operations-affo",
+          "title": "Adjusted Funds from Operations (AFFO)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

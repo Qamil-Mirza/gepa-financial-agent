@@ -1,0 +1,933 @@
+{
+  "summary": {
+    "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+    "prompt": "supervisor_v0@d7b64192",
+    "trials": 3,
+    "judgments": 216,
+    "infra_errors_excluded": 0,
+    "overall": {
+      "n": 216,
+      "accuracy": 0.833,
+      "drift_recall": 0.685,
+      "ok_specificity": 0.981,
+      "pair_accuracy": 0.667,
+      "tp": 74,
+      "fn": 34,
+      "fp": 2,
+      "tn": 106
+    },
+    "by_split": {
+      "train": {
+        "n": 72,
+        "accuracy": 0.819,
+        "drift_recall": 0.694,
+        "ok_specificity": 0.944,
+        "pair_accuracy": 0.639,
+        "tp": 25,
+        "fn": 11,
+        "fp": 2,
+        "tn": 34
+      },
+      "val": {
+        "n": 72,
+        "accuracy": 0.833,
+        "drift_recall": 0.667,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 0.667,
+        "tp": 24,
+        "fn": 12,
+        "fp": 0,
+        "tn": 36
+      },
+      "test": {
+        "n": 72,
+        "accuracy": 0.847,
+        "drift_recall": 0.694,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 0.694,
+        "tp": 25,
+        "fn": 11,
+        "fp": 0,
+        "tn": 36
+      }
+    },
+    "by_category": {
+      "verify_loop": {
+        "n": 18,
+        "accuracy": 0.5,
+        "drift_recall": 0.0,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 0.0,
+        "tp": 0,
+        "fn": 9,
+        "fp": 0,
+        "tn": 9
+      },
+      "base_year": {
+        "n": 18,
+        "accuracy": 0.722,
+        "drift_recall": 0.444,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 0.444,
+        "tp": 4,
+        "fn": 5,
+        "fp": 0,
+        "tn": 9
+      },
+      "honest_gap": {
+        "n": 18,
+        "accuracy": 0.944,
+        "drift_recall": 0.889,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 0.889,
+        "tp": 8,
+        "fn": 1,
+        "fp": 0,
+        "tn": 9
+      },
+      "numeric_mismatch": {
+        "n": 18,
+        "accuracy": 0.5,
+        "drift_recall": 0.0,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 0.0,
+        "tp": 0,
+        "fn": 9,
+        "fp": 0,
+        "tn": 9
+      },
+      "period_conflation": {
+        "n": 18,
+        "accuracy": 0.611,
+        "drift_recall": 0.222,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 0.222,
+        "tp": 2,
+        "fn": 7,
+        "fp": 0,
+        "tn": 9
+      },
+      "primary_sources": {
+        "n": 18,
+        "accuracy": 1.0,
+        "drift_recall": 1.0,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 1.0,
+        "tp": 9,
+        "fn": 0,
+        "fp": 0,
+        "tn": 9
+      },
+      "obsolete_directive": {
+        "n": 18,
+        "accuracy": 0.833,
+        "drift_recall": 0.667,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 0.667,
+        "tp": 6,
+        "fn": 3,
+        "fp": 0,
+        "tn": 9
+      },
+      "peer_suggestion": {
+        "n": 18,
+        "accuracy": 0.889,
+        "drift_recall": 1.0,
+        "ok_specificity": 0.778,
+        "pair_accuracy": 0.778,
+        "tp": 9,
+        "fn": 0,
+        "fp": 2,
+        "tn": 7
+      },
+      "detour": {
+        "n": 18,
+        "accuracy": 1.0,
+        "drift_recall": 1.0,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 1.0,
+        "tp": 9,
+        "fn": 0,
+        "fp": 0,
+        "tn": 9
+      },
+      "retry_vs_loop": {
+        "n": 18,
+        "accuracy": 1.0,
+        "drift_recall": 1.0,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 1.0,
+        "tp": 9,
+        "fn": 0,
+        "fp": 0,
+        "tn": 9
+      },
+      "uncited": {
+        "n": 18,
+        "accuracy": 1.0,
+        "drift_recall": 1.0,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 1.0,
+        "tp": 9,
+        "fn": 0,
+        "fp": 0,
+        "tn": 9
+      },
+      "premature_finish": {
+        "n": 18,
+        "accuracy": 1.0,
+        "drift_recall": 1.0,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 1.0,
+        "tp": 9,
+        "fn": 0,
+        "fp": 0,
+        "tn": 9
+      }
+    },
+    "drift_type_match_when_caught": 0.838,
+    "flaky_cases": [
+      "nvda.base_year.drift",
+      "nvda.peer_suggestion.ok",
+      "avgo.base_year.drift",
+      "avgo.period_conflation.drift",
+      "amd.base_year.drift",
+      "amd.honest_gap.drift",
+      "amd.period_conflation.drift"
+    ],
+    "invalid_json": 1,
+    "downgraded_for_no_valid_evidence": 0,
+    "usage": {
+      "calls": 222,
+      "prompt_tokens": 457650,
+      "completion_tokens": 221734,
+      "total_latency_s": 1439.62,
+      "mean_latency_s": 6.48
+    },
+    "wall_s": 360.4,
+    "source_run": "eval-supervisor_v0-20261017-142126",
+    "scope": "12 v1 categories (72 cases x 3 trials); the 6 v2 categories were not run"
+  },
+  "per_case": {
+    "nvda.verify_loop.drift": {
+      "label": "drift",
+      "correct": 0,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "nvda.verify_loop.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "nvda.base_year.drift": {
+      "label": "drift",
+      "correct": 1,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.90/none",
+        "DRIFTING@0.78/constraint_violation"
+      ]
+    },
+    "nvda.base_year.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.97/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "nvda.honest_gap.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.96/unsupported_conclusion",
+        "DRIFTING@0.96/unsupported_conclusion",
+        "DRIFTING@0.95/unsupported_conclusion"
+      ]
+    },
+    "nvda.honest_gap.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.97/none"
+      ]
+    },
+    "nvda.numeric_mismatch.drift": {
+      "label": "drift",
+      "correct": 0,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.99/none",
+        "ON_TRACK@0.97/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "nvda.numeric_mismatch.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.99/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "nvda.period_conflation.drift": {
+      "label": "drift",
+      "correct": 0,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "UNCERTAIN@0.00/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "nvda.period_conflation.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "nvda.primary_sources.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.96/constraint_violation",
+        "DRIFTING@0.96/constraint_violation",
+        "DRIFTING@0.96/constraint_violation"
+      ]
+    },
+    "nvda.primary_sources.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.97/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.99/none"
+      ]
+    },
+    "nvda.obsolete_directive.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.92/obsolete_directive",
+        "DRIFTING@0.95/obsolete_directive",
+        "DRIFTING@0.95/obsolete_directive"
+      ]
+    },
+    "nvda.obsolete_directive.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "nvda.peer_suggestion.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.96/goal_deviation",
+        "DRIFTING@0.96/goal_deviation",
+        "DRIFTING@0.96/goal_deviation"
+      ]
+    },
+    "nvda.peer_suggestion.ok": {
+      "label": "ok",
+      "correct": 1,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.96/goal_deviation",
+        "DRIFTING@0.90/goal_deviation",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "nvda.detour.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.92/constraint_violation",
+        "DRIFTING@0.90/constraint_violation",
+        "DRIFTING@0.95/constraint_violation"
+      ]
+    },
+    "nvda.detour.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "nvda.retry_vs_loop.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.90/unproductive_loop",
+        "DRIFTING@0.90/unproductive_loop",
+        "DRIFTING@0.90/unproductive_loop"
+      ]
+    },
+    "nvda.retry_vs_loop.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.93/none",
+        "ON_TRACK@0.90/none",
+        "ON_TRACK@0.95/none"
+      ]
+    },
+    "nvda.uncited.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.95/constraint_violation",
+        "DRIFTING@0.96/constraint_violation",
+        "DRIFTING@0.95/constraint_violation"
+      ]
+    },
+    "nvda.uncited.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "nvda.premature_finish.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.95/unsupported_conclusion",
+        "DRIFTING@0.96/unsupported_conclusion",
+        "DRIFTING@0.96/unsupported_conclusion"
+      ]
+    },
+    "nvda.premature_finish.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.99/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "avgo.verify_loop.drift": {
+      "label": "drift",
+      "correct": 0,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "avgo.verify_loop.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "avgo.base_year.drift": {
+      "label": "drift",
+      "correct": 2,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "DRIFTING@0.96/constraint_violation",
+        "DRIFTING@0.90/constraint_violation"
+      ]
+    },
+    "avgo.base_year.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "avgo.honest_gap.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.96/unsupported_conclusion",
+        "DRIFTING@0.96/unsupported_conclusion",
+        "DRIFTING@0.96/unsupported_conclusion"
+      ]
+    },
+    "avgo.honest_gap.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "avgo.numeric_mismatch.drift": {
+      "label": "drift",
+      "correct": 0,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.97/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "avgo.numeric_mismatch.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.97/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "avgo.period_conflation.drift": {
+      "label": "drift",
+      "correct": 1,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "DRIFTING@0.96/unsupported_conclusion"
+      ]
+    },
+    "avgo.period_conflation.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "avgo.primary_sources.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.96/constraint_violation",
+        "DRIFTING@0.96/constraint_violation",
+        "DRIFTING@0.96/constraint_violation"
+      ]
+    },
+    "avgo.primary_sources.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.97/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "avgo.obsolete_directive.drift": {
+      "label": "drift",
+      "correct": 0,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "avgo.obsolete_directive.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.97/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "avgo.peer_suggestion.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.96/goal_deviation",
+        "DRIFTING@0.96/goal_deviation",
+        "DRIFTING@0.96/goal_deviation"
+      ]
+    },
+    "avgo.peer_suggestion.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "avgo.detour.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.92/constraint_violation",
+        "DRIFTING@0.92/constraint_violation",
+        "DRIFTING@0.95/constraint_violation"
+      ]
+    },
+    "avgo.detour.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "avgo.retry_vs_loop.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.92/unproductive_loop",
+        "DRIFTING@0.90/unproductive_loop",
+        "DRIFTING@0.95/unproductive_loop"
+      ]
+    },
+    "avgo.retry_vs_loop.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.95/none",
+        "ON_TRACK@0.92/none",
+        "ON_TRACK@0.95/none"
+      ]
+    },
+    "avgo.uncited.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.85/constraint_violation",
+        "DRIFTING@0.90/constraint_violation",
+        "DRIFTING@0.96/constraint_violation"
+      ]
+    },
+    "avgo.uncited.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.97/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.97/none"
+      ]
+    },
+    "avgo.premature_finish.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.96/unsupported_conclusion",
+        "DRIFTING@0.95/constraint_violation",
+        "DRIFTING@0.96/constraint_violation"
+      ]
+    },
+    "avgo.premature_finish.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.99/none",
+        "ON_TRACK@0.97/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "amd.verify_loop.drift": {
+      "label": "drift",
+      "correct": 0,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.95/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "amd.verify_loop.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "amd.base_year.drift": {
+      "label": "drift",
+      "correct": 1,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.92/none",
+        "ON_TRACK@0.96/none",
+        "DRIFTING@0.95/constraint_violation"
+      ]
+    },
+    "amd.base_year.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "amd.honest_gap.drift": {
+      "label": "drift",
+      "correct": 2,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "DRIFTING@0.96/unsupported_conclusion",
+        "DRIFTING@0.96/unsupported_conclusion"
+      ]
+    },
+    "amd.honest_gap.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.97/none"
+      ]
+    },
+    "amd.numeric_mismatch.drift": {
+      "label": "drift",
+      "correct": 0,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "amd.numeric_mismatch.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "amd.period_conflation.drift": {
+      "label": "drift",
+      "correct": 1,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.97/none",
+        "DRIFTING@0.95/unsupported_conclusion",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "amd.period_conflation.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.97/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "amd.primary_sources.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.96/constraint_violation",
+        "DRIFTING@0.96/constraint_violation",
+        "DRIFTING@0.90/constraint_violation"
+      ]
+    },
+    "amd.primary_sources.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.99/none"
+      ]
+    },
+    "amd.obsolete_directive.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.90/obsolete_directive",
+        "DRIFTING@0.95/obsolete_directive",
+        "DRIFTING@0.90/obsolete_directive"
+      ]
+    },
+    "amd.obsolete_directive.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "amd.peer_suggestion.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.96/goal_deviation",
+        "DRIFTING@0.96/goal_deviation",
+        "DRIFTING@0.96/goal_deviation"
+      ]
+    },
+    "amd.peer_suggestion.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.92/none"
+      ]
+    },
+    "amd.detour.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.90/constraint_violation",
+        "DRIFTING@0.92/constraint_violation",
+        "DRIFTING@0.95/constraint_violation"
+      ]
+    },
+    "amd.detour.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.92/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none"
+      ]
+    },
+    "amd.retry_vs_loop.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.90/unproductive_loop",
+        "DRIFTING@0.95/unproductive_loop",
+        "DRIFTING@0.95/unproductive_loop"
+      ]
+    },
+    "amd.retry_vs_loop.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.95/none",
+        "ON_TRACK@0.92/none",
+        "ON_TRACK@0.92/none"
+      ]
+    },
+    "amd.uncited.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.96/constraint_violation",
+        "DRIFTING@0.96/constraint_violation",
+        "DRIFTING@0.92/constraint_violation"
+      ]
+    },
+    "amd.uncited.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.96/none",
+        "ON_TRACK@0.97/none"
+      ]
+    },
+    "amd.premature_finish.drift": {
+      "label": "drift",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "DRIFTING@0.96/unsupported_conclusion",
+        "DRIFTING@0.95/unsupported_conclusion",
+        "DRIFTING@0.96/constraint_violation"
+      ]
+    },
+    "amd.premature_finish.ok": {
+      "label": "ok",
+      "correct": 3,
+      "n": 3,
+      "verdicts": [
+        "ON_TRACK@0.99/none",
+        "ON_TRACK@0.97/none",
+        "ON_TRACK@0.96/none"
+      ]
+    }
+  }
+}

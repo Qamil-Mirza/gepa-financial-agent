@@ -1,0 +1,44 @@
+{
+  "query": "Equinix Q3 2026 revenue and AI-related data-center leasing demand xScale interconnection",
+  "normalized": "2026 ai center data demand equinix interconnection leasing q3 related revenue xscale",
+  "fetched_at": "2026-10-17T21:12:02Z",
+  "elapsed_s": 34.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Q3 2026 revenue:** Equinix had not yet reported Q3 as of October 17, 2026; it scheduled its earnings call for October 28, so the relevant company figure is its Q3 revenue guide of **$2.525\u2013$2.575 billion** (midpoint **$2.550 billion**), representing **9\u201311% year-over-year reported growth** and **10\u201312% normalized/constant-currency growth**. [[1, 2]] \nThe available analyst consensus was **$2.618 billion**, about **$43 million (1.7%) above** the high end of management\u2019s range and **2.7% above** its midpoint, implying the principal near-term revenue-execution risk was expectations above formal guidance. [[3, 2]]\n\n**Why AI demand appears material:** In Q2, Equinix said AI infrastructure demand was accelerating and that the vast majority of its largest deals were AI-workload driven; management characterized the demand as spanning private AI stacks, sovereign deployments, batch training/inference, and latency-sensitive inference. [[4]] \nThis is not solely a hyperscaler-compute story: Equinix\u2019s differentiated proposition is neutral, connected infrastructure, and the company stated that eight of the top 10 AI model providers and eight of the top 10 neoclouds use its platform for key networking workloads. [[4]]\n\n**xScale leasing read-through:** The clearest quantitative evidence is **134 MW of xScale leasing signed across the Americas in Q2 2026**; its xScale portfolio totaled **604 MW leased**, with approximately **2,000 MW of capacity when fully built out** and more than **$23 billion** of total investment. [[5]] \nThat leasing was financially consequential: Q2 revenue was **$2.625 billion**, up **16% year over year**, and management explicitly attributed part of that growth to one-time xScale fees; the Hampton xScale transaction alone contributed about **$120 million** of non-recurring fees. [[2, 6]] \nAccordingly, xScale validates substantial AI/hyperscale demand and supports future capacity utilization, but investors should distinguish recurring underlying demand from the timing volatility created by non-recurring leasing fees. [[2, 6]]\n\n**Interconnection is the stronger recurring-demand indicator:** Equinix delivered **$424 million of annualized gross bookings**, up **23% year over year**, and added a record **9,700 net interconnections** in Q2. [[2]] \nThe record interconnection additions, along with **11% year-over-year monthly recurring revenue growth** on both reported and normalized constant-currency bases, indicate that AI is also increasing demand for connectivity and ecosystem access\u2014not just wholesale power capacity. [[2]] \nEquinix also expanded its Cisco/NVIDIA collaboration to support enterprise AI factories across its global data-center footprint, which reinforces its strategy of monetizing AI through connected enterprise deployment and interconnection rather than only through large xScale leases. [[2]]\n\n**Bottom line:** For Q3, the revenue question was whether Equinix could exceed a **$2.525\u2013$2.575 billion** guide already shaped by strong bookings and AI-related demand; structurally, the more durable evidence is the combination of 134 MW of xScale leases and record interconnection growth, while the main modeling caution is that xScale fees can pull revenue forward and make quarter-to-quarter reported growth less representative of recurring run-rate demand. [[7, 5, 2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.equinix.com/",
+          "title": "Equinix, Inc. (EQIX)"
+        },
+        {
+          "url": "https://investor.equinix.com/news-events/press-releases/detail/1114/equinix-reports-second-quarter-results-raises-2026",
+          "title": "Equinix Reports Second-Quarter Results, Raises 2026 Guidance and Long-Term Outlook :: Equinix, Inc. (EQIX)"
+        },
+        {
+          "url": "https://www.chartmill.com/stock/quote/EQIX/estimates",
+          "title": "EQIX Earnings & Revenue Estimates, Forecasts & Revisions | ..."
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/equinix-eqix-q2-2026-earnings-call-transcript/",
+          "title": "Equinix (EQIX) Q2 2026 Earnings Call Transcript"
+        },
+        {
+          "url": "https://d1io3yog0oux5.cloudfront.net/_28ff1161d13c7903ebb24bea08b833f3/equinix/db/2183/27054/earnings_presentation/Equinix+Q2+26+Earnings+Presentation+Final.pdf",
+          "title": "\u00a9 2026 Equinix, Inc. Q2 2026 Earnings Conference Call NASDAQ: EQIX"
+        },
+        {
+          "url": "https://www.theglobeandmail.com/investing/markets/stocks/EQIX/pressreleases/3730144/equinix-eqix-q2-2026-earnings-call-transcript/",
+          "title": "Equinix (EQIX) Q2 2026 Earnings Call Transcript - The Globe and Mail"
+        },
+        {
+          "url": "https://investor.equinix.com/sec-filings/all-sec-filings/content/0001101239-26-000145/a991eqix-q226xpr.htm",
+          "title": "Document"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

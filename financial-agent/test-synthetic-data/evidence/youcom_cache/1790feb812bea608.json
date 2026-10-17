@@ -1,0 +1,32 @@
+{
+  "query": "Which hyperscalers are Marvell custom AI chip customers",
+  "normalized": "ai chip custom customers hyperscalers marvell which",
+  "fetched_at": "2026-10-17T21:04:00Z",
+  "elapsed_s": 21.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Marvell\u2019s publicly identified hyperscaler custom-AI-chip customers are **Amazon Web Services (AWS)** and **Microsoft Azure**: Marvell\u2019s work is associated with AWS\u2019s **Trainium** accelerators and Microsoft\u2019s **Maia** accelerators. [[1]] \n\nAWS is the most directly confirmed relationship in Marvell\u2019s own disclosures: its expanded agreement with Marvell explicitly covers the supply of **custom AI products**, alongside connectivity and networking semiconductors. [[2]] \n\nMarvell also serves other hyperscalers with broader infrastructure silicon, but the available company disclosure does not individually identify additional customers as custom-XPU customers; therefore, Google and Meta should not be counted as publicly confirmed Marvell custom-AI-chip customers on this evidence. [[3]] [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.tomshardware.com/tech-industry/semiconductors/custom-ai-asics-examined-from-broadcom-to-mtia",
+          "title": "The custom AI ASIC state of play (May 2026) \u2014 Broadcom deals, Google TPUs, Meta MTIA & beyond"
+        },
+        {
+          "url": "https://www.marvell.com/company/newsroom/marvell-expands-strategic-collaboration-aws-enable-accelerated-infrastructure-ai-cloud.html",
+          "title": "Marvell Expands Strategic Collaboration with AWS to Enable Accelerated Infrastructure for AI in the Cloud"
+        },
+        {
+          "url": "https://www.marvell.com/ai.html",
+          "title": "AI Data Center"
+        },
+        {
+          "url": "https://www.marvell.com/content/dam/marvell/en/company/assets/marvell-custom-ai-investor-event-2025.pdf",
+          "title": "Custom AI Investor Event"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

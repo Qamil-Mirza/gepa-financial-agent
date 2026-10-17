@@ -1,0 +1,24 @@
+{
+  "query": "Marvell Technology data center revenue Q4 fiscal 2026 full year fiscal 2026",
+  "normalized": "2026 center data fiscal full marvell q4 revenue technology year",
+  "fetched_at": "2026-10-17T21:11:55Z",
+  "elapsed_s": 14.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Marvell Technology\u2019s data-center revenue was **$1.651 billion in Q4 fiscal 2026** (the quarter ended January 31, 2026), representing **74%** of total quarterly revenue; it increased **21% year over year** and **9% sequentially**. [[1]] \n\nFor **full-year fiscal 2026**, data-center revenue **exceeded $6.0 billion**, up **46% year over year**. [[2]] \n\nFor context, Marvell\u2019s total company revenue was **$2.219 billion in Q4** and **$8.195 billion for FY2026**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/1011/marvell-technology-inc-reports-fourth-quarter-and-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports Fourth Quarter and Fiscal Year 2026 Financial Results"
+        },
+        {
+          "url": "https://www.alphaspread.com/security/nasdaq/mrvl/investor-relations/earnings-call/q4-2026",
+          "title": "MRVL Q4-2026 Earnings Call - Alpha Spread"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}
