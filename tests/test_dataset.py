@@ -152,3 +152,28 @@ def test_split_keeps_scenarios_with_identical_content_together():
     where = {e.scenario_id: name for name in ("train", "val", "test") for e in getattr(sp, name)}
     for pair in range(6):
         assert where[f"s{2 * pair}"] == where[f"s{2 * pair + 1}"]
+
+
+TEAMMATE_SAMPLE = "tests/fixtures/gautam_sample.jsonl"
+
+
+def test_load_jsonl_converts_teammate_layout():
+    rep = load_jsonl(TEAMMATE_SAMPLE)
+    assert rep.invalid == [] and len(rep.examples) == 3
+    by_id = {e.example_id: e for e in rep.examples}
+    drift = by_id["tr_cc0313627d@5"]
+    assert drift.split_hint == "val" and drift.ground_truth.drift_onset_step == 5
+    assert "family:margin_comparison" in drift.tags and "source:gautam_v1" in drift.tags
+    assert drift.supervisor_input.observation_step == drift.observation_step == 5
+    refs = [r for e in drift.supervisor_input.trajectory for r in e.source_references]
+    assert any(r.source_id for r in refs)
+    clean = by_id["tr_120c7f66be@1"]
+    assert clean.split_hint == "train" and clean.ground_truth.drift_onset_step == 3  # pre-onset cutoff of a drift trace
+
+
+def test_teammate_split_field_is_respected():
+    exs = load_jsonl(TEAMMATE_SAMPLE).examples
+    sp = split_by_scenario(exs, seed=0)
+    assert [e.example_id for e in sp.val] == ["tr_cc0313627d@5"]
+    assert [e.example_id for e in sp.test] == ["tr_7334ab7c24@3"]
+    assert [e.example_id for e in sp.train] == ["tr_120c7f66be@1"]

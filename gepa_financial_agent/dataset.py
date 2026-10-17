@@ -37,7 +37,30 @@ class LoadReport:
         return "\n".join(lines)
 
 
+TEAMMATE_SOURCE = "gautam_v1"
+
+
+def from_teammate_row(row: dict, source: str = TEAMMATE_SOURCE) -> dict:
+    """Map the synthetic-data teammate's layout (synthetic-data/DATASET_FORMAT.md) onto DatasetExample.
+
+    scenario_family -> tag family:<x>; split -> split_hint; top-level drift_onset_step -> ground_truth.
+    """
+    row = dict(row)
+    family = row.pop("scenario_family")
+    split = row.pop("split", None)
+    onset = row.pop("drift_onset_step", None)
+    gt = dict(row.get("ground_truth") or {})
+    if onset is not None and gt.get("drift_onset_step") is None:
+        gt["drift_onset_step"] = onset
+    row["ground_truth"] = gt
+    if split is not None:
+        row["split_hint"] = split
+    row["tags"] = list(row.get("tags") or []) + [f"family:{family}", f"source:{source}"]
+    return row
+
+
 def load_jsonl(path: str | Path) -> LoadReport:
+    """Load and validate examples. Rows in the teammate layout (with `scenario_family`) are converted."""
     path = Path(path)
     examples: list[DatasetExample] = []
     invalid: list[InvalidExample] = []
@@ -46,7 +69,10 @@ def load_jsonl(path: str | Path) -> LoadReport:
             if not line.strip():
                 continue
             try:
-                examples.append(DatasetExample.model_validate_json(line))
+                row = json.loads(line)
+                if isinstance(row, dict) and "scenario_family" in row:
+                    row = from_teammate_row(row)
+                examples.append(DatasetExample.model_validate(row))
             except (ValidationError, ValueError) as e:
                 invalid.append(InvalidExample(n, str(e), line[:200]))
     if invalid:
