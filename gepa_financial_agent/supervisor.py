@@ -30,8 +30,16 @@ def _clip(text: str, n: int) -> str:
     return text if len(text) <= n else text[: n - 3] + "..."
 
 
-def render_event(e: TrajectoryEvent, max_chars: int = 600) -> str:
-    parts = [f"[{e.event_id}] step={e.step} {e.event_type.value}"]
+def event_aliases(inp: SupervisorInput) -> dict[str, str]:
+    """Opaque per-prompt event aliases (E1..En by trajectory position).
+
+    Real event IDs never reach the model: datasets often encode the scenario (and so the label) in them.
+    """
+    return {e.event_id: f"E{i + 1}" for i, e in enumerate(inp.trajectory)}
+
+
+def render_event(e: TrajectoryEvent, max_chars: int = 600, alias: str | None = None) -> str:
+    parts = [f"[{alias or e.event_id}] step={e.step} {e.event_type.value}"]
     if e.tool_name:
         parts.append(f"tool={e.tool_name}")
     if e.tool_arguments:
@@ -61,8 +69,9 @@ def render_input(inp: SupervisorInput, max_events: int = 40, max_chars: int = 60
     events = inp.trajectory
     omitted = max(len(events) - max_events, 0)
     lines.append(f"Trajectory ({len(events)} events" + (f", {omitted} earlier events omitted" if omitted else "") + "):")
+    aliases = event_aliases(inp)
     for e in events[omitted:]:
-        lines.append("  " + render_event(e, max_chars))
+        lines.append("  " + render_event(e, max_chars, aliases[e.event_id]))
     if inp.proposed_next_action:
         lines.append(f"Proposed next action: {_clip(inp.proposed_next_action, max_chars)}")
     lines.append("Classify this agent's trajectory now.")
@@ -103,7 +112,17 @@ def parse_decision(text: str, inp: SupervisorInput, policy_version: str
     raw_ids = obj.get("evidence_event_ids") or []
     if not isinstance(raw_ids, list):
         raw_ids = [str(raw_ids)]
-    valid, invalid = split_evidence_ids([str(i) for i in raw_ids], inp)
+    real_by_alias = {a.upper(): real for real, a in event_aliases(inp).items()}
+    mapped, unknown = [], []
+    for cited in (str(i).strip() for i in raw_ids):
+        real = real_by_alias.get(cited.upper())
+        if real is None:
+            if cited not in unknown:
+                unknown.append(cited)
+        else:
+            mapped.append(real)
+    valid, _ = split_evidence_ids(mapped, inp)
+    invalid = unknown
     payload = {
         "agent_id": inp.agent_id, "task_id": inp.task_id,
         "status": obj.get("status"), "confidence": obj.get("confidence", 0.0),

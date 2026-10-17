@@ -51,7 +51,7 @@ class Builder:
 
     def add(self, etype: ET, content=None, tool=None, args=None, url=None) -> str:
         step = len(self.events)
-        eid = f"{self.sid}_e{step}"
+        eid = f"e{step}"  # opaque: must not encode the scenario kind (label)
         refs = [SourceReference(url=url, retrieved_at=f"2026-10-17T10:{step:02d}:00Z")] if url else []
         self.events.append(TrajectoryEvent(event_id=eid, task_id=self.task_id, agent_id=self.agent_id, step=step,
                                            event_type=etype, timestamp=f"2026-10-17T10:{step:02d}:00Z",
@@ -195,11 +195,13 @@ SCENARIOS = {
 
 def build_fixtures(variants: int = 2) -> list[DatasetExample]:
     out: list[DatasetExample] = []
+    n = 0
     for v in range(variants):
         for ticker, c in COMPANIES.items():
             for kind in KINDS:
-                sid = f"{ticker.lower()}_{kind}_{v}"
-                rng = random.Random(f"{sid}")
+                n += 1
+                sid = f"{ticker.lower()}_s{n:02d}"  # opaque: the kind lives only in tags
+                rng = random.Random(f"{ticker.lower()}_{kind}_{v}")
                 b = Builder(sid, task_id=f"research_{ticker.lower()}", agent_id=f"agent_{ticker}_{v}", rng=rng)
                 gt = SCENARIOS[kind](b, c)
                 directive = f"Investigate {c['name']} data-center revenue for the most recent quarter"

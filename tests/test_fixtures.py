@@ -39,3 +39,11 @@ def test_committed_fixture_file_matches_generator(tmp_path):
     mod.main(["--out", str(out)])
     committed = ROOT / "data" / "fixtures" / "dev_examples.jsonl"
     assert committed.read_bytes() == out.read_bytes(), "run: uv run python scripts/make_dev_fixtures.py"
+
+
+def test_fixture_ids_do_not_encode_labels():
+    mod = load_script()
+    for ex in mod.build_fixtures():
+        ids = [ex.scenario_id, ex.example_id] + [e.event_id for e in ex.supervisor_input.trajectory]
+        for kind in mod.KINDS:
+            assert not any(kind in i for i in ids), (ex.example_id, kind)

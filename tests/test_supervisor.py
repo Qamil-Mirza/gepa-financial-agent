@@ -28,7 +28,7 @@ def test_extract_json_from_fenced_prose():
 
 def test_parse_decision_filters_invalid_evidence_and_ignores_model_ids():
     raw = json.dumps({"agent_id": "WRONG", "task_id": "WRONG", "status": "DRIFTING", "confidence": 0.9,
-                      "drift_type": "GOAL_DEVIATION", "evidence_event_ids": ["e1", "ghost", "e3"],
+                      "drift_type": "GOAL_DEVIATION", "evidence_event_ids": ["E2", "ghost", "e4"],
                       "explanation": "x", "recommended_action": "FLAG_FOR_REVIEW"})
     d, err, invalid = parse_decision(raw, make_input(), "v1")
     assert err is None and invalid == ["ghost"]
@@ -46,7 +46,7 @@ def test_build_messages_bounds_context_and_contains_contract():
     msgs = build_messages(POLICY.text, inp, max_events=40)
     assert msgs[0]["role"] == "system" and OUTPUT_CONTRACT.strip() in msgs[0]["content"]
     user = msgs[1]["content"]
-    assert "20 earlier events omitted" in user and "[e59]" in user and "[e0]" not in user
+    assert "20 earlier events omitted" in user and "[E60]" in user and "[E1]" not in user and "[e59]" not in user
     assert "ground_truth" not in user and "dir" in user and "c1" in user
 
 
@@ -84,3 +84,37 @@ def test_supervisor_model_error_is_recorded_not_raised():
     sup = Supervisor(Boom(), POLICY)
     assert sup.evaluate_sync(make_input()).error.startswith("model_error")
     assert asyncio.run(sup.evaluate(make_input())).error.startswith("model_error")
+
+
+def test_prompt_shows_opaque_aliases_not_real_event_ids():
+    inp = SupervisorInput(task_id="t", agent_id="a", swarm_objective="o", agent_directive="d",
+                          trajectory=[TrajectoryEvent(event_id=f"nvda_goal_deviation_0_e{i}", task_id="t", agent_id="a",
+                                                      step=i, event_type=EventType.AGENT_MESSAGE, content="c")
+                                      for i in range(3)], observation_step=2)
+    user = build_messages("p", inp)[1]["content"]
+    assert "goal_deviation" not in user and "nvda_goal" not in user
+    assert "[E1]" in user and "[E3]" in user
+
+
+def test_parse_decision_maps_aliases_back_and_rejects_real_ids():
+    raw = json.dumps({"status": "DRIFTING", "confidence": 0.9, "drift_type": "GOAL_DEVIATION",
+                      "evidence_event_ids": ["E2", "e2", "E9", "e0"], "explanation": "x"})
+    d, err, invalid = parse_decision(raw, make_input(), "v1")
+    assert err is None
+    assert d.evidence_event_ids == ["e1"]       # E2 is the 2nd event (real id e1); "e2" is the same alias, deduped
+    assert invalid == ["E9", "e0"]              # out-of-range alias and a raw real id are both invalid
+
+
+def test_no_fixture_prompt_contains_a_label_token():
+    from pathlib import Path
+    from gepa_financial_agent.dataset import load_jsonl
+    exs = load_jsonl(Path(__file__).resolve().parents[1] / "data/fixtures/dev_examples.jsonl").examples
+    for ex in exs:
+        user = build_messages("p", ex.supervisor_input)[1]["content"]
+        for tag in ex.tags:
+            if tag.startswith("kind:"):
+                assert tag[5:] not in user, (ex.example_id, tag)
+        assert ex.scenario_id not in user, ex.example_id
+        lowered = user.lower()
+        for name in [*(x.value for x in DriftStatus), *(x.value for x in DriftType)]:
+            assert name.lower() not in lowered, (ex.example_id, name)

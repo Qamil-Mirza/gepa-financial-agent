@@ -83,7 +83,9 @@ def test_sessions_are_isolated_and_coalesced():
     assert set(by_agent) == {"A", "B"}
     prompt_a = next(p for p in seen if "directive A" in p)
     prompt_b = next(p for p in seen if "directive B" in p)
-    assert "B_e0" not in prompt_a and "A_e0" not in prompt_b and "[A_e9]" in prompt_a
+    # event IDs are aliased in prompts, so isolation is checked on event content
+    assert "B says" not in prompt_a and "A says" not in prompt_b
+    assert "A says 9" in prompt_a and "Trajectory (10 events)" in prompt_a and "Trajectory (3 events)" in prompt_b
     assert m.latest("A").decision.status.value == "ON_TRACK" and m.decisions("B")[0].agent_id == "B"
     assert asyncio.run(m.evaluate_pending()) == []  # nothing pending afterwards
 
