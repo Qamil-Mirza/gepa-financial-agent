@@ -1,8 +1,111 @@
-# gepa-financial-agent
+# gepa-financial-agent: PitStop + GEPA
 
 Built at the **Crusoe x Cerebral Valley Recursive Agents Hackathon** (Oct 17, 2026, SF).
 
-A multi-agent financial research swarm on Crusoe Managed Inference, watched by a task-scoped drift supervisor whose system prompt is optimized with [GEPA](https://github.com/gepa-ai/gepa). Three workstreams, defined in `docs/PRD.md`: (1) the agent stack, (2) synthetic labeled drift traces, (3) the supervisor and GEPA pipeline.
+**A supervisor that watches a multi-agent financial research swarm, catches agents drifting off their task, and steers them back. Its prompt is rewritten automatically by [GEPA](https://github.com/gepa-ai/gepa) from the swarm's own traces.** Everything runs on Nemotron models on Crusoe Managed Inference, with research through the You.com Finance Research API.
+
+## Why
+
+Multi-agent research swarms drift:
+- An agent wanders into an off-topic segment.
+- It breaks a constraint, such as citing nothing or using the wrong fiscal years.
+- It loops.
+- It reports a figure its evidence doesn't support.
+
+A supervisor that reads each agent's trace before every step can catch this early, before a slow, paid research call is spent. But a supervisor is only as good as its prompt, and hand-tuning that prompt is guesswork.
+
+GEPA reads the supervisor's mistakes on labeled traces, has a reflection model propose a better prompt, and keeps only rewrites that score higher. The question we set out to answer: **can rewriting the prompt alone make a small, cheap supervisor as good as a big one?**
+
+## What we built
+
+- **PitStop swarm** (`pitstop/pitstop/`, Arjun):
+  - Three You.com research agents, each asking one narrow question per step.
+  - A Nemotron supervisor that judges every proposed query *before* it is sent: ON_TRACK, DRIFTING or UNCERTAIN, with evidence event ids validated in code.
+  - A labeled hard-pairs eval: 18 drift categories, each a drift case and a healthy twin, split by company.
+- **Corrections, team report, run timeline** (Gautam):
+  - On a drift alarm, the supervisor blocks the query and sends the agent a correction.
+  - A report agent writes the team's financial report only from findings the supervisor didn't flag.
+  - A curated timeline records every flag and correction.
+- **Synthetic drift data** (`synthetic-data/`, Gautam): drift traces from real Nemotron workers and real You.com answers, plus a hard held-out set on unseen companies.
+- **GEPA pipeline** (`gepa_financial_agent/`, `scripts/`, Qamil):
+  - Adapters that score candidate prompts with PitStop's own supervisor and alert rule.
+  - Optimization on train, selection on val, and a test split GEPA never sees.
+  - Repeated-trial evaluation with summaries.
+- **Demo UI** (`pitstop/pitstop/pitstop/demo/`): a click-through page where the original prompt and the GEPA prompt each run and correct their own agents, live or from a recording (see [Demo](#demo)).
+
+## Results
+
+**PitStop hard pairs, AMD test split.** Train is NVIDIA and val is Broadcom; GEPA never saw this split. Each arm has 36 cases × 5 trials = 180 judgments, and an alert fires on DRIFTING at confidence ≥ 0.75. Full write-up: `docs/PITSTOP_RESULTS.md`.
+
+| Supervisor | Prompt | Accuracy (5-trial range) | Drift caught | False alarms (of 180) |
+|---|---|---|---|---|
+| Nano 30B | original | 0.817 (0.778–0.861) | 0.667 | 3 |
+| Nano 30B | **GEPA** (`pitstop_nano_800`) | **0.878** (0.861–0.917) | **0.756** | **0** |
+| Super 120B | original | 0.861 (0.833–0.917) | 0.789 | 6 |
+| Super 120B | **GEPA** (`pitstop_super_600`) | **0.956** (0.917–0.972) | **0.933** | **2** |
+
+- **The small model with a rewritten prompt matches the 4× larger model.** Nano + GEPA is 0.878 against Super's 0.861 with the original prompt, and their trial ranges overlap.
+- **Super + GEPA is the best arm.** Its worst trial equals the baseline's best.
+- **The rewrites were cheap:** Nano's GEPA run took 29 minutes and cost about $0.70.
+
+Earlier, on the team's synthetic dataset, GEPA's effect was **modest or unproven**; see `docs/RESULTS.md` and the Limitations below.
+
+## Demo
+
+A click-through page (`pitstop/pitstop/pitstop/demo/`) for a one-minute demo. Two Nemotron Nano supervisors use the same model with different prompts: the original prompt, and the prompt GEPA rewrote. Each one runs and corrects its own three research agents on the same task. Design: `docs/superpowers/specs/2026-10-17-gepa-demo-ui-design.md`.
+
+```bash
+cd pitstop/pitstop
+uv run --project ../.. --with httpx --with rich python -m pitstop.demo.server --port 8779
+# demo mode (replays a committed real recording): http://127.0.0.1:8779
+# live mode (real Crusoe + You.com run):          http://127.0.0.1:8779/?mode=live
+```
+
+| Screen | Shows |
+|---|---|
+| 1. Start | Chat box; three agents spawn per side |
+| 2. Watch | Original prompt (left) vs GEPA prompt (right): a verdict per step, the injected-drift marker, "caught at step N", ↩ re-plans after a correction, extra alarms, and trace events flowing into each supervisor. Click any cell to see why. |
+| 3. Team reports | Each side's final financial report, written only from findings its supervisor didn't flag |
+| 4. Prompt evolution | The real GEPA run (`pitstop_nano_800`): best val score 0.800 → 0.854 over 15 loops, with the prompt growing from 1.6k to 7.8k characters |
+| 5. Scoreboard | Held-out test accuracy on the PitStop hard pairs (see [Results](#results)) |
+
+Keys: → / Space next, ← back, Home / Esc start, R replay, L live. The page is sized for a projector.
+
+**Live mode notes:**
+- **Keys:** live mode needs `CRUSOE_API_KEY` and `YDC_API_KEY` in `.env`.
+- **Time:** a paired run takes about 4–6 minutes; the catch and correction land about 1.5 minutes in.
+- **Cost:** up to about $3 of You.com calls with a cold cache. Identical requests from the two sides are de-duplicated, and the agents run at temperature 0, so a rehearsal warms the cache.
+- **Rate limits:** stop other jobs on the same Crusoe account first, because concurrent GEPA/eval runs cause 429s.
+- **Re-recording demo mode:** run a live pair, then `python -m pitstop.demo.export --swarm-run runs/pair-<id>`.
+
+## Limitations
+
+**Crusoe rate limits shaped what we could run.** Without a payment method, each model is capped at about 30 requests a minute, and an account-level `max_requests_limit (orchestrator)` 429 kicks in when several jobs share the account.
+- **Super GEPA (`pitstop_super_600`):** 581 calls were rate-limited and retried, adding up to **about 48 minutes of backoff** across its 8 workers. The run took 62 minutes for 654 metric calls. The Nano run took 29 minutes for 822 calls and was rate-limited only twice.
+- **The 2,400-call Nano continuation (`pitstop_nano_2400`)** ran alongside the Super jobs. It hit 197 rate-limited calls, about 14 minutes of backoff, and is still running at the time of writing.
+- **Small budgets:** we kept GEPA budgets at 600–800 metric calls and test at 5 trials per arm, and ran jobs one after another where we could, rather than spending hours waiting on 429s.
+- **Earlier team-dataset test battery:** 6 rows were scored INVALID because a 429 or connection error outlasted the client's retry window (`docs/RESULTS.md`, Known issues). The PitStop harness retries and excludes such rows (0 excluded in every run above).
+- **Live demo recordings:** 1 of the 5 real runs we recorded was discarded because 429s cost the original-prompt supervisor two checks and made the agents fail to plan or extract findings 4 times. Live mode now retries up to 6 times, but a live demo still needs the account to itself.
+
+**The evidence is promising, not conclusive.**
+- **Small test set.** Test is 36 cases. Per-case sign tests are not significant (Nano p = 0.69, Super p = 0.125, the smallest possible with 4 changed cases), even though the gains are consistent across trials.
+- **More loops didn't buy more test accuracy, so far.** In the Nano run, almost all of the test gain came from the first accepted rewrite, after about 108 metric calls. Val kept rising (0.829 → 0.854), but test accuracy stayed flat (0.872–0.883). The demo's dashed "more loops?" line is a question, not a measurement; the 2,400-call continuation is meant to answer it.
+- **Transfer is limited.**
+  - The test split shares the 18 categories with train and differs only by company.
+  - On Gautam's hard held-out set (unseen companies and distractors), Nano fails with either prompt, flagging 75–81% of healthy steps.
+  - On the earlier team dataset, GEPA mostly shifted which drift types the supervisor favours instead of improving detection, so it was not promoted (`docs/RESULTS.md`).
+- **Some overfitting.** One rule in the Nano GEPA prompt still quotes an NVIDIA train figure.
+
+**Costs of the rewritten prompt.**
+- **Longer prompt:** the GEPA prompts grew about 5×, from 1.6k to 7.8k characters for Nano.
+- **Slower checks:** Nano checks with the GEPA prompt are about 30–40% slower (median about 11–12 s against 8–9 s per check), because they read more and write longer answers.
+- **Truncated replies:** 10 of 180 Nano replies ran past PitStop's `max_tokens=2000` and were cut off. Counting all 10 as wrong still gives 0.861.
+
+**The demo is anecdotal.**
+- **Unverified drift:** live drift is *injected* with a hidden instruction, and the agent doesn't always comply. In one recording, an early correction kept the agent on-task, so the injected drift never happened.
+- **One run is one sample.** Crusoe doesn't honor `seed`, so runs vary even at temperature 0. The test-split table above is the real measurement.
+- **Strict figure check:** the report agent's figure check also flags reformatted or derived numbers ("figures not found in any finding"), the same way on both sides.
+- **Illustrative data:** hard-pairs trajectories are synthetic, and their figures are illustrative.
 
 ## Team
 | Name | GitHub | Focus |
@@ -21,44 +124,6 @@ data/fixtures/                                              deterministic dev fi
 docs/                                                       PRD, contracts, architecture, progress log
 ```
 Contracts between workstreams: `docs/INTEGRATION_CONTRACT.md` (agent stack -> supervisor) and `docs/DATASET_CONTRACT.md` / `synthetic-data/DATASET_FORMAT.md` (dataset -> evaluator).
-
-## Demo: what GEPA's prompt rewrite does
-
-A click-through page (`pitstop/pitstop/pitstop/demo/`) for a one-minute demo. Two Nemotron Nano supervisors use the same model with different prompts: the original prompt, and the prompt GEPA rewrote. Each one runs and corrects its own three research agents on the same task. Design: `docs/superpowers/specs/2026-10-17-gepa-demo-ui-design.md`.
-
-```bash
-cd pitstop/pitstop
-uv run --project ../.. --with httpx --with rich python -m pitstop.demo.server --port 8779
-# demo mode (replays a committed real recording): http://127.0.0.1:8779
-# live mode (real Crusoe + You.com run):          http://127.0.0.1:8779/?mode=live
-```
-
-| Screen | Shows |
-|---|---|
-| 1. Start | Chat box; three agents spawn per side |
-| 2. Watch | Original prompt (left) vs GEPA prompt (right): a verdict per step, the injected-drift marker, "caught at step N", ↩ re-plans after a correction, extra alarms, and trace events flowing into each supervisor. Click any cell to see why. |
-| 3. Team reports | Each side's final financial report, written only from findings its supervisor didn't flag |
-| 4. Prompt evolution | The real GEPA run (`pitstop_nano_800`): best val score 0.800 → 0.854 over 15 loops, with the prompt growing from 1.6k to 7.8k characters |
-| 5. Scoreboard | Held-out test accuracy on the PitStop hard pairs (below) |
-
-Keys: → / Space next, ← back, Home / Esc start, R replay, L live. The page is sized for a projector.
-
-**PitStop hard pairs, test split** (AMD cases, never seen by GEPA; 180 judgments = 36 cases × 5 trials per arm; fires = DRIFTING at confidence ≥ 0.75):
-
-| Supervisor | Accuracy | Drift caught | False alarms |
-|---|---|---|---|
-| Nano, original prompt | 81.7% | 66.7% | 3 |
-| **Nano, GEPA prompt** | **87.8%** | **75.6%** | **0** |
-| Super (120B), original prompt | 86.1% | 78.9% | 6 |
-
-A 30B model with a rewritten prompt matches the 120B model. The 1.7-point gap over Super is within the noise of 180 judgments.
-
-**Live mode notes:**
-- **Keys:** live mode needs `CRUSOE_API_KEY` and `YDC_API_KEY` in `.env`.
-- **Time:** a paired run takes about 4–6 minutes; the catch and correction land about 1.5 minutes in.
-- **Cost:** up to about $3 of You.com calls with a cold cache. Identical requests from the two sides are de-duplicated, and the agents run at temperature 0, so a rehearsal warms the cache.
-- **Rate limits:** stop other jobs on the same Crusoe account first, because concurrent GEPA/eval runs cause 429s.
-- **Re-recording demo mode:** run a live pair, then `python -m pitstop.demo.export --swarm-run runs/pair-<id>`.
 
 ---
 
