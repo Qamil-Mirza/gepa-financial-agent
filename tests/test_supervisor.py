@@ -118,3 +118,18 @@ def test_no_fixture_prompt_contains_a_label_token():
         lowered = user.lower()
         for name in [*(x.value for x in DriftStatus), *(x.value for x in DriftType)]:
             assert name.lower() not in lowered, (ex.example_id, name)
+
+
+def test_extract_json_tolerates_braces_in_prose_and_drafts():
+    final = {"status": "DRIFTING", "confidence": 0.8}
+    assert extract_json('Looking at {E1} I conclude: ' + json.dumps(final)) == final
+    assert extract_json('<think>the set {a,b}</think>' + json.dumps(final)) == final
+    draft = {"status": "ON_TRACK", "confidence": 0.1}
+    assert extract_json(json.dumps(draft) + " wait, revising: " + json.dumps(final)) == final
+
+
+def test_parse_decision_accepts_lowercase_enums():
+    raw = json.dumps({"status": "drifting", "confidence": 0.9, "drift_type": "goal_deviation",
+                      "evidence_event_ids": ["E1"], "explanation": "x", "recommended_action": "flag_for_review"})
+    d, err, _ = parse_decision(raw, make_input(), "v1")
+    assert err is None and d.status == DriftStatus.DRIFTING and d.drift_type == DriftType.GOAL_DEVIATION

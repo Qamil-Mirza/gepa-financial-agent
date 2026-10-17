@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 from typing import Any
 
 from pydantic import ValidationError
@@ -85,22 +84,33 @@ def build_messages(policy_text: str, inp: SupervisorInput, max_events: int = 40,
     ]
 
 
-_FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.DOTALL)
+_DECODER = json.JSONDecoder()
 
 
 def extract_json(text: str) -> dict[str, Any]:
-    candidates = [m.group(1) for m in _FENCE.finditer(text)] + [text]
-    for c in candidates:
-        start, end = c.find("{"), c.rfind("}")
-        if start == -1 or end <= start:
-            continue
+    """Return the last top-level JSON object in `text` that has a "status" key (else the last object).
+
+    Tolerates prose, code fences, reasoning blocks containing braces, and draft objects before the final one.
+    """
+    objects: list[dict[str, Any]] = []
+    i = text.find("{")
+    while i != -1:
         try:
-            obj = json.loads(c[start:end + 1])
+            obj, end = _DECODER.raw_decode(text, i)
         except json.JSONDecodeError:
+            i = text.find("{", i + 1)
             continue
         if isinstance(obj, dict):
-            return obj
-    raise ValueError("no JSON object found in model output")
+            objects.append(obj)
+        i = text.find("{", end)
+    if not objects:
+        raise ValueError("no JSON object found in model output")
+    with_status = [o for o in objects if "status" in o]
+    return (with_status or objects)[-1]
+
+
+def _upper(v: Any) -> Any:
+    return v.strip().upper() if isinstance(v, str) else v
 
 
 def parse_decision(text: str, inp: SupervisorInput, policy_version: str
@@ -125,10 +135,10 @@ def parse_decision(text: str, inp: SupervisorInput, policy_version: str
     invalid = unknown
     payload = {
         "agent_id": inp.agent_id, "task_id": inp.task_id,
-        "status": obj.get("status"), "confidence": obj.get("confidence", 0.0),
-        "drift_type": obj.get("drift_type") or None, "evidence_event_ids": valid,
+        "status": _upper(obj.get("status")), "confidence": obj.get("confidence", 0.0),
+        "drift_type": _upper(obj.get("drift_type")) or None, "evidence_event_ids": valid,
         "explanation": str(obj.get("explanation", "")),
-        "recommended_action": obj.get("recommended_action") or "NONE",
+        "recommended_action": _upper(obj.get("recommended_action")) or "NONE",
         "policy_version": policy_version, "observation_step": inp.observation_step,
     }
     try:
