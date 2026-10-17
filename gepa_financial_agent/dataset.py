@@ -83,6 +83,37 @@ def _stratum(scenario_examples: list[DatasetExample]) -> str:
     return f"label:{gt.status.value}/{gt.drift_type.value if gt.drift_type else '-'}"
 
 
+def _content_key(ex: DatasetExample) -> str:
+    """What the supervisor would see, minus identifiers: equal keys mean the same prompt."""
+    inp = ex.supervisor_input
+    events = [(e.step, e.event_type.value, e.tool_name, e.tool_arguments, e.content) for e in inp.trajectory]
+    return json.dumps([inp.swarm_objective, inp.agent_directive, inp.constraints, inp.success_criteria, events],
+                      sort_keys=True, default=str)
+
+
+def _content_groups(by_scenario: dict[str, list[DatasetExample]]) -> dict[str, str]:
+    """Union scenarios that share any identical example (same prompt content); returns scenario -> group root."""
+    parent = {sid: sid for sid in by_scenario}
+
+    def find(x: str) -> str:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    first_owner: dict[str, str] = {}
+    for sid in sorted(by_scenario):
+        for ex in by_scenario[sid]:
+            key = _content_key(ex)
+            if key in first_owner:
+                a, b = find(first_owner[key]), find(sid)
+                if a != b:
+                    parent[max(a, b)] = min(a, b)
+            else:
+                first_owner[key] = sid
+    return {sid: find(sid) for sid in by_scenario}
+
+
 def _allocate(n: int, train_frac: float, val_frac: float) -> tuple[int, int]:
     n_train = int(round(n * train_frac))
     n_val = int(round(n * val_frac))
@@ -106,17 +137,28 @@ def split_by_scenario(examples: list[DatasetExample], train_frac: float = 0.6, v
         by_scenario.setdefault(ex.scenario_id, []).append(ex)
         if ex.split_hint:
             forced[ex.scenario_id] = ex.split_hint
+    # Scenarios with identical content (duplicate variants, shared prefixes) form one group, so the same
+    # prompt can never appear in two splits. A forced split_hint applies to the whole group.
+    group_of = _content_groups(by_scenario)
+    members: dict[str, list[str]] = {}
+    for sid, g in group_of.items():
+        members.setdefault(g, []).append(sid)
+    forced_group = {group_of[sid]: split for sid, split in forced.items()}
     strata: dict[str, list[str]] = {}
-    for sid in sorted(set(by_scenario) - set(forced)):
-        strata.setdefault(_stratum(by_scenario[sid]), []).append(sid)
+    for g in sorted(set(members) - set(forced_group)):
+        strata.setdefault(min(_stratum(by_scenario[sid]) for sid in members[g]), []).append(g)
     rng = random.Random(seed)
-    assignment = dict(forced)
+    assignment: dict[str, str] = {}
+    for g, split in forced_group.items():
+        for sid in members[g]:
+            assignment[sid] = split
     for key in sorted(strata):
         free = strata[key]
         rng.shuffle(free)
         n_train, n_val = _allocate(len(free), train_frac, val_frac)
-        for i, sid in enumerate(free):
-            assignment[sid] = "train" if i < n_train else ("val" if i < n_train + n_val else "test")
+        for i, g in enumerate(free):
+            for sid in members[g]:
+                assignment[sid] = "train" if i < n_train else ("val" if i < n_train + n_val else "test")
     splits = DatasetSplits()
     for ex in examples:
         getattr(splits, assignment[ex.scenario_id]).append(ex)

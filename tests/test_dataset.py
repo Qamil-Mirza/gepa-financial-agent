@@ -10,7 +10,7 @@ from gepa_financial_agent.schemas import (
 
 def make_example(scenario, n_events=6, onset=None, status="ON_TRACK", drift_type=None, evidence=()):
     events = [TrajectoryEvent(event_id=f"{scenario}_e{i}", task_id="t", agent_id="a", step=i,
-                              event_type=EventType.AGENT_MESSAGE, content=f"msg {i}") for i in range(n_events)]
+                              event_type=EventType.AGENT_MESSAGE, content=f"{scenario} msg {i}") for i in range(n_events)]
     inp = SupervisorInput(task_id="t", agent_id="a", swarm_objective="o", agent_directive="d", trajectory=events,
                           observation_step=n_events - 1)
     return DatasetExample(example_id=f"{scenario}_full", scenario_id=scenario, observation_step=n_events - 1,
@@ -78,14 +78,25 @@ def test_label_distribution():
     assert label_distribution(exs) == {"ON_TRACK": 1, "DRIFTING": 1, "UNCERTAIN": 0}
 
 
-def test_split_stratifies_by_kind_tag_so_every_kind_is_in_every_split():
+def test_fixture_split_never_puts_the_same_prompt_in_two_splits():
     from pathlib import Path
+    from gepa_financial_agent.supervisor import render_input
     exs = load_jsonl(Path(__file__).resolve().parents[1] / "data/fixtures/dev_examples.jsonl").examples
     sp = split_by_scenario(exs, seed=0)
-    kinds = lambda part: {t for e in part for t in e.tags if t.startswith("kind:")}
+    prompts = [{render_input(e.supervisor_input) for e in part} for part in (sp.train, sp.val, sp.test)]
+    assert not (prompts[0] & prompts[1]) and not (prompts[0] & prompts[2]) and not (prompts[1] & prompts[2])
+    assert all(prompts)
+
+
+def test_split_stratifies_by_kind_tag_so_every_kind_is_in_every_split():
+    exs = []
+    for kind in ("on_track", "goal_deviation", "exploratory_legit"):
+        for s in range(5):
+            ex = make_example(f"{kind}{s}", n_events=6)
+            exs.append(ex.model_copy(update={"tags": [f"kind:{kind}"]}))
+    sp = split_by_scenario(exs, seed=0)
+    kinds = lambda part: {t for e in part for t in e.tags}
     assert kinds(sp.train) == kinds(sp.val) == kinds(sp.test) == kinds(exs)
-    groups = [{e.scenario_id for e in part} for part in (sp.train, sp.val, sp.test)]
-    assert not (groups[0] & groups[1]) and not (groups[0] & groups[2]) and not (groups[1] & groups[2])
 
 
 def test_split_without_tags_stratifies_by_full_trajectory_label():
@@ -123,3 +134,21 @@ def test_scripts_refuse_invalid_dataset_unless_allowed(tmp_path):
     base = ["--mock", "--dataset", str(p), "--split", "val", "--out", str(tmp_path / "out")]
     assert mod.main(base) != 0
     assert mod.main(base + ["--allow-invalid"]) == 0
+
+
+def test_split_keeps_scenarios_with_identical_content_together():
+    exs = []
+    for s in range(12):
+        full = make_example(f"s{s}", n_events=6)
+        if s % 2:  # odd scenarios duplicate the previous one's content under a different id
+            full = full.model_copy(update={"scenario_id": f"s{s}", "example_id": f"s{s}_full"})
+        exs.append(full)
+    # make pairs (0,1), (2,3), ... share content and every pair differ from the others
+    for i, ex in enumerate(exs):
+        pair = i // 2
+        traj = [e.model_copy(update={"content": f"pair {pair} msg {e.step}"}) for e in ex.supervisor_input.trajectory]
+        exs[i] = ex.model_copy(update={"supervisor_input": ex.supervisor_input.model_copy(update={"trajectory": traj})})
+    sp = split_by_scenario(exs, seed=0)
+    where = {e.scenario_id: name for name in ("train", "val", "test") for e in getattr(sp, name)}
+    for pair in range(6):
+        assert where[f"s{2 * pair}"] == where[f"s{2 * pair + 1}"]
