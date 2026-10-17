@@ -4,6 +4,7 @@
   python -m pitstop.cli run --scenario scenarios/nvda_amd.json
   python -m pitstop.cli compare --run-dir runs/<id> --prompt-a prompts/supervisor_v0.txt --prompt-b prompts/<new>.txt
   python -m pitstop.cli timeline --run-dir runs/<id>   # rebuild + print the curated drift timeline
+  python -m pitstop.cli serve --port 8765               # timeline API + live SSE stream for the UI
 """
 from __future__ import annotations
 
@@ -111,6 +112,17 @@ async def cmd_timeline(args) -> None:
     console.print(f"[dim]wrote {Path(args.run_dir) / 'timeline.json'} ({doc['counts']})[/]")
 
 
+async def cmd_serve(args) -> None:
+    from .server import make_server
+    runs_dir = Path(args.runs_dir or load_settings().runs_dir)
+    server = make_server(runs_dir, args.host, args.port)
+    console.print(f"[green]serving timelines from {runs_dir} on http://{args.host}:{server.server_port}/api/runs[/]")
+    try:
+        await asyncio.to_thread(server.serve_forever)
+    finally:
+        server.server_close()
+
+
 def main() -> None:
     p = argparse.ArgumentParser(prog="pitstop")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -129,9 +141,12 @@ def main() -> None:
     t = sub.add_parser("timeline")
     t.add_argument("--run-dir", required=True)
     t.add_argument("--highlights", action="store_true", help="only drift flags, suspicions and responses")
+    v = sub.add_parser("serve")
+    v.add_argument("--host", default="127.0.0.1"); v.add_argument("--port", type=int, default=8765)
+    v.add_argument("--runs-dir")
     args = p.parse_args()
     asyncio.run({"check": cmd_check, "run": cmd_run, "compare": cmd_compare,
-                 "timeline": cmd_timeline}[args.cmd](args))
+                 "timeline": cmd_timeline, "serve": cmd_serve}[args.cmd](args))
 
 
 if __name__ == "__main__":
