@@ -320,18 +320,20 @@ def _evidence(decision: dict, inp: dict) -> list[EvidenceRef]:
     return refs
 
 
-def build_from_run_dir(run_dir: Path, *, write: bool = True) -> dict:
-    """Rebuild the timeline of a finished run from its raw logs."""
+def build_from_run_dir(run_dir: Path, *, write: bool = True, decisions_name: str = "decisions.jsonl",
+                       out_stem: str = "timeline", supervisor_key: str = "supervisor") -> dict:
+    """Rebuild the timeline of a finished run from its raw logs. The shadow supervisor's timeline is
+    decisions_name="decisions_shadow.jsonl", out_stem="timeline_shadow", supervisor_key="shadow_supervisor"."""
     run_dir = Path(run_dir)
     meta = json.loads((run_dir / "meta.json").read_text()) if (run_dir / "meta.json").exists() else {}
-    dec_path = run_dir / "decisions.jsonl"
+    dec_path = run_dir / decisions_name
     records = [json.loads(l) for l in dec_path.read_text().splitlines() if l.strip()] if dec_path.exists() else []
-    log_path = run_dir / "timeline.jsonl" if write else None
+    log_path = run_dir / f"{out_stem}.jsonl" if write else None
     if log_path and log_path.exists():
         log_path.unlink()
     tb = TimelineBuilder(log_path)
     scenario = meta.get("scenario") or {"task_id": None, "swarm_objective": None, "agents": []}
-    sup = meta.get("supervisor", {})
+    sup = meta.get(supervisor_key) or {}
     tb.run_started(meta.get("run_id", run_dir.name), scenario,
                    supervisor={"model": sup.get("model"), "prompt_version": sup.get("prompt_version")},
                    halt_on_drift=bool(meta.get("halt_on_drift")),
@@ -362,4 +364,4 @@ def build_from_run_dir(run_dir: Path, *, write: bool = True) -> dict:
         tb.report_written(meta["report"], timestamp=meta.get("finished_at"))
     return tb.run_finished(interventions=meta.get("interventions"), ground_truth=meta.get("ground_truth"),
                            timestamp=meta.get("finished_at"),
-                           out_path=run_dir / "timeline.json" if write else None)
+                           out_path=run_dir / f"{out_stem}.json" if write else None)
