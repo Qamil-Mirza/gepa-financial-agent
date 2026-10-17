@@ -1,0 +1,28 @@
+{
+  "query": "TSMC CoWoS advanced packaging demand AI accelerators",
+  "normalized": "accelerators advanced ai cowos demand packaging tsmc",
+  "fetched_at": "2026-10-17T20:03:06Z",
+  "elapsed_s": 23.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**TSMC\u2019s CoWoS demand outlook remains structurally strong, led by data-center AI accelerators rather than a broad-based semiconductor recovery.** TSMC defined its AI-accelerator category as AI GPUs, AI ASICs, and HBM controllers for data-center training and inference, and reported that this category reached a high-teens percentage of total 2025 revenue. [[1]] [[2]]\n\n**Why CoWoS is central:** CoWoS is one of TSMC\u2019s advanced-packaging/3D-integration technologies designed to enable large-scale interconnectivity at lower power consumption, a capability particularly relevant to accelerator systems combining leading-edge logic and high-bandwidth memory. [[3]] TSMC therefore treats advanced packaging as a necessary complement to leading-edge wafer capacity, rather than as a standalone cyclical packaging business. [[3]] [[2]]\n\n**Demand versus supply has been tight.** In April 2025, management said CoWoS demand had been \u201cmuch, much higher\u201d than it could prepare for, stated that capacity remained fully loaded, and said it still needed substantial new capacity despite some improvement in the supply-demand balance. [[1]] TSMC\u2019s response was to target a doubling of CoWoS capacity during 2025, explicitly to support customer demand. [[1]] Management did not disclose a specific 2026 CoWoS capacity figure in that call, but characterized the forward momentum as healthy. [[1]]\n\n**The broader AI demand signal strengthened through 2025.** TSMC said it observed robust AI-related demand throughout the year and expects AI-related demand to remain robust entering 2026. [[3]] At its January 2026 earnings call, the company raised its five-year AI-accelerator revenue-growth outlook to approximately a mid-to-high-50% CAGR for 2024\u20132029, with accelerators expected to be the largest contributor to incremental revenue growth. [[2]]\n\n**Capacity expansion is meaningful but disciplined.** For 2026, TSMC allocated 10\u201320% of its capital budget to advanced packaging, testing, mask making, and other areas, while also continuing investment in advanced-packaging facilities in Taiwan. [[2]] It has also announced plans for two new advanced-packaging facilities and an R&D center in Arizona to help complete the AI supply chain. [[1]]\n\n**Investor implication:** CoWoS is a high-value bottleneck and an important mechanism through which AI-accelerator demand translates into TSMC growth, but the key constraint is execution\u2014bringing packaging capacity online fast enough, alongside leading-edge logic and HBM supply, without overbuilding for a demand cycle that is currently exceptionally strong. TSMC\u2019s own planning framework relies on multi-year customer and end-customer demand signals and engagement lead times of at least two to three years, rather than spot demand alone. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/2025-04/7630274eecc1197a4e3ea6a415f44a47204fe10a/TSMC%201Q25%20Transcript.pdf",
+          "title": "Q1 2025 Taiwan Semiconductor Manufacturing Co Ltd ..."
+        },
+        {
+          "url": "https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/2026-01/51d09df96cd89ac19d65af39032b038dc2896a24/TSMC%204Q25%20Transcript.pdf",
+          "title": "Q4 2025 Taiwan Semiconductor Manufacturing Co Ltd ..."
+        },
+        {
+          "url": "https://investor.tsmc.com/static/annualReports/2025/english/index.html",
+          "title": "TSMC 2025 Annual Report Website"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

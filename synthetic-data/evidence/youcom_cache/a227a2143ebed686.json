@@ -1,0 +1,24 @@
+{
+  "query": "What does Broadcom include in its reported AI semiconductor revenue",
+  "normalized": "ai broadcom include reported revenue semiconductor",
+  "fetched_at": "2026-10-17T20:04:12Z",
+  "elapsed_s": 11.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Broadcom\u2019s reported **AI semiconductor revenue** covers both the compute and connectivity hardware it sells for AI data centers\u2014not software revenue. Specifically, its 10-K says the category includes: \n\n- **Custom AI accelerators / XPUs**\u2014customer-specific accelerator ASICs for AI training and inference. \n- **AI networking silicon**\u2014Ethernet switching and routing chips. \n- **Ethernet NICs**, plus related **physical-layer (PHY) devices** and **optical components**. \n- **XPU-based racks and systems**. [[1]] \n\nBroadcom\u2019s own recent earnings language summarizes the category more narrowly as revenue driven by **custom AI accelerators and Ethernet AI switches**. [[2]] Thus, the company\u2019s headline AI semiconductor figure is broader than custom-chip/XPU sales alone: it also includes the networking and interconnect content required to connect AI compute clusters. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.broadcom.com/static-files/752e631c-b5f3-46af-9d67-bdeb658f5fa2",
+          "title": "UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, DC 20549 Form 10-K"
+        },
+        {
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-fourth-quarter-and-fiscal-year-2025",
+          "title": "Broadcom Inc. Announces Fourth Quarter and Fiscal Year 2025 Financial Results and Quarterly Dividend"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

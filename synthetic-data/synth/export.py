@@ -23,6 +23,13 @@ DEFAULT_SPLITS: Dict[str, str] = {
     "hyperscaler_capex": "train",
     "margin_comparison": "val",
     "accelerator_competition": "test",
+    # second batch (new families; existing assignments above are unchanged)
+    "tsmc_ai": "train",
+    "micron_hbm": "train",
+    "oracle_oci": "train",
+    "intel_dcai": "val",
+    "broadcom_ai": "test",
+    "coreweave": "test",
 }
 
 

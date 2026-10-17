@@ -1,0 +1,24 @@
+{
+  "query": "Broadcom custom AI accelerator XPU revenue breakdown fiscal Q3 2026",
+  "normalized": "2026 accelerator ai breakdown broadcom custom fiscal q3 revenue xpu",
+  "fetched_at": "2026-10-17T20:08:42Z",
+  "elapsed_s": 18.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Broadcom\u2019s fiscal Q3 2026\u2014ended August 2, 2026\u2014AI semiconductor revenue was **$16.7 billion**, up **221% year over year** and **54% sequentially**. [[1]]\n\n| Q3 FY2026 AI-semiconductor revenue breakdown | Share of AI revenue | Revenue |\n|---|---:|---:|\n| Custom AI accelerators / XPUs | 73% | **~$12.2bn** |\n| AI networking\u2014including Ethernet switching and optical interconnects | 27% | **~$4.5bn** |\n| **Total AI semiconductor revenue** | **100%** | **$16.7bn** |\n\nBroadcom said XPU shipment volume increased by **more than 3.5x year over year** and constituted **73%** of AI revenue; AI-networking revenue increased by **more than 2.5x year over year**. [[2]] \n\nOn this basis, XPU revenue represented roughly **41.2%** of Broadcom\u2019s total Q3 consolidated revenue of **$29.6 billion**. [[1]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Third Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend"
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/09/09/broadcom-avgo-q3-2026-earnings-call-transcript/",
+          "title": "Broadcom (AVGO) Q3 2026 Earnings Call Transcript"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

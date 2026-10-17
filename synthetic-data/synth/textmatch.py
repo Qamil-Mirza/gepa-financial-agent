@@ -25,7 +25,7 @@ _PERIOD_WORDS = {"q1", "q2", "q3", "q4", "first", "second", "third", "fourth", "
 
 
 ENTITIES = {"nvidia", "amd", "microsoft", "alphabet", "google", "amazon", "aws", "meta", "tsmc", "intel",
-            "qualcomm", "apple", "broadcom"}
+            "qualcomm", "apple", "broadcom", "micron", "oracle", "coreweave", "samsung", "hynix"}
 
 
 def _is_period(tok: str) -> bool:

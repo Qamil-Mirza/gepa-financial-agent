@@ -1,0 +1,20 @@
+{
+  "query": "CoreWeave revenue backlog latest quarter",
+  "normalized": "backlog coreweave quarter revenue",
+  "fetched_at": "2026-10-17T20:06:53Z",
+  "elapsed_s": 6.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "CoreWeave reported **Q2 2026 revenue of $2.575 billion** for the quarter ended **June 30, 2026**. [[1]] \n\nIts **revenue backlog was approximately $104 billion** as of June 30, 2026; this excludes **more than $25 billion** of net new customer commitments added in early Q3 2026. [[1]] \n\nCoreWeave defines revenue backlog as remaining performance obligations plus other amounts it estimates will become revenue under committed customer contracts, subject to service delivery and availability requirements. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Reports-Strong-Second-Quarter-2026-Results/default.aspx",
+          "title": "CoreWeave - CoreWeave Reports Strong Second Quarter 2026 Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

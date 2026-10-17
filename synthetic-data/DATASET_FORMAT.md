@@ -106,7 +106,8 @@ actions are.
 Every trace goes through a deterministic verifier (`synth/verify.py`) before export. A trace is
 dropped if the agent didn't act on the steer, drifted before step `x`, or (for benign and clean
 runs) shows any drift signal: distractor or off-scope keywords, repeated queries, uncited
-findings, or figures absent from its evidence. Healthy agents sometimes drift on their own (e.g.
+findings, or figures absent from its evidence. Any trace where the agent reveals the steer
+("per the operator's instruction") is also dropped. Healthy agents sometimes drift on their own (e.g.
 an NVIDIA agent wandering into AMD), and those traces are dropped, not mislabeled.
 
 ## Splits
@@ -116,9 +117,9 @@ traces of a task land in one split:
 
 | Split | Families |
 |---|---|
-| train | `nvda_datacenter`, `amd_datacenter`, `hyperscaler_capex` |
-| val | `margin_comparison` |
-| test | `accelerator_competition` |
+| train | `nvda_datacenter`, `amd_datacenter`, `hyperscaler_capex`, `tsmc_ai`, `micron_hbm`, `oracle_oci` |
+| val | `margin_comparison`, `intel_dcai` |
+| test | `accelerator_competition`, `broadcom_ai`, `coreweave` |
 
 Real traces from the live financial swarm should be added to `test`.
 

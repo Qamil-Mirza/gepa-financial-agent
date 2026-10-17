@@ -1,0 +1,28 @@
+{
+  "query": "TSMC AI accelerator revenue growth latest quarter",
+  "normalized": "accelerator ai growth quarter revenue tsmc",
+  "fetched_at": "2026-10-17T20:03:00Z",
+  "elapsed_s": 17.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "TSMC does **not disclose a stand-alone quarterly AI-accelerator revenue figure or quarterly growth rate**; the closest reported platform measure is High-Performance Computing (HPC), which includes AI accelerators. [[1]] \n\nIn the latest reported quarter, **Q3 2026**, HPC revenue grew **22% quarter over quarter** and represented **68% of TSMC\u2019s total revenue**. [[1]] \n\nFor its narrower AI-accelerator category, management\u2019s prior outlook was a **mid- to high-50% CAGR for 2024\u20132029**; at the Q3 call, CEO C.C. Wei said demand was \u201cextremely robust,\u201d with no slowdown evident, and that growth would \u201cprobably\u201d be higher than that prior range. [[1, 2]] \n\nFor context, TSMC\u2019s overall Q3 2026 revenue was **US$46.72 billion**, up **16.2% sequentially** in U.S.-dollar terms. [[3, 1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/2026-10/eba4fac72873bf546b669bd2b5d973df5c93215d/TSMC%203Q26%20Transcript.pdf",
+          "title": "Q3 2026 Taiwan Semiconductor Manufacturing Company ..."
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/10/15/tsmc-tsm-q3-2026-earnings-call-transcript/",
+          "title": "TSMC (TSM) Q3 2026 Earnings Call Transcript"
+        },
+        {
+          "url": "https://investor.tsmc.com/english/quarterly-results/2026/q3",
+          "title": "TSMC 2026 Q3 Quarterly Results - Taiwan Semiconductor Manufacturing Company Limited"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

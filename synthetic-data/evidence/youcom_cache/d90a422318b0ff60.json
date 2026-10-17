@@ -1,0 +1,28 @@
+{
+  "query": "Broadcom AI networking Tomahawk Ethernet revenue",
+  "normalized": "ai broadcom ethernet networking revenue tomahawk",
+  "fetched_at": "2026-10-17T20:04:00Z",
+  "elapsed_s": 19.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Broadcom does **not** separately disclose revenue for the Tomahawk Ethernet-switch product family, so a standalone \u201cTomahawk revenue\u201d figure cannot be derived from its reported financials. [[1]] \n\nThe closest company-disclosed proxy is **AI networking revenue**: in fiscal Q2 2025, Broadcom reported AI semiconductor revenue of **more than $4.4 billion**, of which Ethernet-based AI networking was **40%**, implying AI-networking revenue of **more than approximately $1.76 billion** for the quarter. [[1]] \n\nThat AI-networking figure is broader than Tomahawk: it includes Broadcom\u2019s Ethernet networking portfolio used in AI clusters, while management said AI networking grew **over 70% year over year** in Q2 FY2025. [[1]] \n\nTomahawk 6 was not the primary driver of that Q2 number, since initial shipments during the quarter were limited to proof-of-concept deployments; the revenue base was therefore principally supported by prior-generation Tomahawk switches and related Ethernet products, including Jericho routers. [[2]] \n\nFor context, Broadcom reported total AI revenue of **$20.0 billion in FY2025**, but did not provide an annual networking/Tomahawk revenue split. [[3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2025/06/05/broadcom-avgo-q2-2025-earnings-call-transcript/",
+          "title": "Broadcom AVGO Q2 2025 Earnings Call Transcript"
+        },
+        {
+          "url": "https://futurumgroup.com/insights/broadcom-q2-fy-2025-sees-record-revenue-solid-ai-and-software-growth/",
+          "title": "Broadcom Q2 FY 2025 Sees Record Revenue, Solid AI and Software Growth"
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2025/12/12/broadcom-avgo-q4-2025-earnings-call-transcript/",
+          "title": "Broadcom (AVGO) Q4 2025 Earnings Call Transcript"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}
