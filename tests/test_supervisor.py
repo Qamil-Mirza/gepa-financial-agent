@@ -151,7 +151,7 @@ def test_render_shows_source_ids_and_flags_unreturned_sources():
 
 
 def test_long_tool_result_renders_unclipped_by_default():
-    body = "x" * 1390 + " $41.1B"
+    body = "x" * 2890 + " $41.1B"
     e = TrajectoryEvent(event_id="evt_1", task_id="t", agent_id="a", step=1, event_type=EventType.TOOL_RESULT, content=body)
     inp = SupervisorInput(task_id="t", agent_id="a", swarm_objective="o", agent_directive="d", trajectory=[e], observation_step=1)
     assert body in build_messages("p", inp)[1]["content"]

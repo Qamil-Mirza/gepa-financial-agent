@@ -26,7 +26,7 @@ drift_type must be null unless status is DRIFTING. A DRIFTING verdict needs at l
 
 # Per-event render limit. Long enough for typical cited research answers, because UNSUPPORTED_CONCLUSION is judged
 # against the retrieved evidence the supervisor can actually see.
-MAX_EVENT_CHARS = 1500
+MAX_EVENT_CHARS = 3000
 
 
 def _clip(text: str, n: int) -> str:
