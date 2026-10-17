@@ -1,0 +1,78 @@
+import json
+
+from gepa_financial_agent.dataset import (
+    expand_prefixes, label_distribution, load_jsonl, split_by_scenario, truncate_example, write_jsonl,
+)
+from gepa_financial_agent.schemas import (
+    DatasetExample, DriftStatus, EventType, GroundTruth, SupervisorInput, TrajectoryEvent,
+)
+
+
+def make_example(scenario, n_events=6, onset=None, status="ON_TRACK", drift_type=None, evidence=()):
+    events = [TrajectoryEvent(event_id=f"{scenario}_e{i}", task_id="t", agent_id="a", step=i,
+                              event_type=EventType.AGENT_MESSAGE, content=f"msg {i}") for i in range(n_events)]
+    inp = SupervisorInput(task_id="t", agent_id="a", swarm_objective="o", agent_directive="d", trajectory=events,
+                          observation_step=n_events - 1)
+    return DatasetExample(example_id=f"{scenario}_full", scenario_id=scenario, observation_step=n_events - 1,
+                          supervisor_input=inp,
+                          ground_truth=GroundTruth(status=status, drift_type=drift_type,
+                                                   evidence_event_ids=list(evidence), drift_onset_step=onset))
+
+
+def test_load_reports_invalid_lines(tmp_path):
+    good = make_example("s1")
+    p = tmp_path / "d.jsonl"
+    bad_evidence = json.loads(good.model_dump_json())
+    bad_evidence["example_id"] = "bad"
+    bad_evidence["ground_truth"]["evidence_event_ids"] = ["ghost"]
+    p.write_text(good.model_dump_json() + "\n" + "not json\n" + json.dumps(bad_evidence) + "\n\n")
+    rep = load_jsonl(p)
+    assert [e.example_id for e in rep.examples] == ["s1_full"]
+    assert [i.line_number for i in rep.invalid] == [2, 3]
+    assert "ghost" in rep.invalid[1].error
+
+
+def test_write_then_load_roundtrip(tmp_path):
+    exs = [make_example("s1"), make_example("s2")]
+    p = tmp_path / "o.jsonl"
+    write_jsonl(exs, p)
+    assert load_jsonl(p).examples == exs
+
+
+def test_split_keeps_scenarios_together_and_is_deterministic():
+    exs = []
+    for s in range(10):
+        full = make_example(f"s{s}", n_events=6)
+        exs.extend(expand_prefixes([full], cutoffs=[2, 4, 5]))
+    a = split_by_scenario(exs, seed=1)
+    b = split_by_scenario(exs, seed=1)
+    assert [e.example_id for e in a.train] == [e.example_id for e in b.train]
+    groups = [{e.scenario_id for e in part} for part in (a.train, a.val, a.test)]
+    assert not (groups[0] & groups[1]) and not (groups[0] & groups[2]) and not (groups[1] & groups[2])
+    assert len(a.train) + len(a.val) + len(a.test) == len(exs)
+    assert all(len(g) > 0 for g in groups)
+
+
+def test_split_hint_forces_test():
+    exs = [make_example(f"s{s}") for s in range(5)]
+    exs[0] = exs[0].model_copy(update={"split_hint": "test"})
+    sp = split_by_scenario(exs, seed=0)
+    assert any(e.scenario_id == "s0" for e in sp.test)
+
+
+def test_truncate_relabels_prefix_before_onset():
+    full = make_example("s1", n_events=8, onset=5, status="DRIFTING", drift_type="GOAL_DEVIATION",
+                        evidence=["s1_e5", "s1_e6"])
+    before = truncate_example(full, 4)
+    at = truncate_example(full, 5)
+    after = truncate_example(full, 6)
+    assert before.ground_truth.status == DriftStatus.ON_TRACK and before.ground_truth.evidence_event_ids == []
+    assert at.ground_truth.status == DriftStatus.UNCERTAIN and at.ground_truth.evidence_event_ids == ["s1_e5"]
+    assert after.ground_truth.status == DriftStatus.DRIFTING and after.ground_truth.evidence_event_ids == ["s1_e5", "s1_e6"]
+    assert max(e.step for e in after.supervisor_input.trajectory) == 6 and after.observation_step == 6
+    assert after.example_id == "s1_full@6" and after.scenario_id == "s1"
+
+
+def test_label_distribution():
+    exs = [make_example("a"), make_example("b", status="DRIFTING", drift_type="OTHER")]
+    assert label_distribution(exs) == {"ON_TRACK": 1, "DRIFTING": 1, "UNCERTAIN": 0}
