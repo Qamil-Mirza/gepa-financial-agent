@@ -103,6 +103,7 @@ Saved in `evals/results/baseline_v0_super.json` and `evals/results/baseline_v0_n
 | `a13907f` | PitStop package, model ID fix, short-ID validator fix, first hard-case suite and live scenarios |
 | `56a6b61` | New baseline prompt, full-report fix, hard-pairs dataset and runner |
 | `2bbe3d3` | Super vs Nano baseline results; also included the local pit-wall UI (`pitstop/ui/`), which is pending removal from the branch |
+| `6789190`..`fa44cbc` | Gautam Bhooma: curated drift timeline (`pitstop/timeline.py`), timeline API server with live SSE stream (`pitstop/server.py`), and tests |
 
 ## 9. Open items
 
