@@ -1,0 +1,44 @@
+{
+  "name": "pitstop_nano_800",
+  "mocked": false,
+  "supervisor_model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+  "run_dir": "runs/gepa/pitstop_nano_800",
+  "seed_prompt": "pitstop/pitstop/prompts/supervisor_v0.txt",
+  "seed_version": "d7b641925e0f",
+  "best_version": "9275c52ba138",
+  "seed_val_score": 0.8,
+  "best_val_score": 0.8541666666666666,
+  "num_candidates": 9,
+  "total_metric_calls": 822,
+  "val_repeats": 2,
+  "optimizer": {
+    "max_metric_calls": 800,
+    "minibatch": 6,
+    "acceptance": "strict_improvement",
+    "gepa_seed": 0
+  },
+  "supervisor_usage": {
+    "model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+    "requests": 924,
+    "errors": 0,
+    "retries": 2,
+    "prompt_tokens": 2680115,
+    "completion_tokens": 1179883,
+    "cached_tokens": 0,
+    "mean_latency_ms": 9353.594786040505,
+    "max_in_flight": 8,
+    "est_cost_usd": 0.36998234999999996
+  },
+  "reflection_usage": {
+    "model": "deepseek-ai/DeepSeek-V4-Pro",
+    "requests": 14,
+    "errors": 0,
+    "retries": 0,
+    "prompt_tokens": 155896,
+    "completion_tokens": 16797,
+    "cached_tokens": 0,
+    "mean_latency_ms": 10093.843452166766,
+    "max_in_flight": 1,
+    "est_cost_usd": 0.32971259999999997
+  }
+}

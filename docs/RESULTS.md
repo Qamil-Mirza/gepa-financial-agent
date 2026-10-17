@@ -6,6 +6,8 @@ Date: 2026-10-17. Supervisor model `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B`, r
 
 GEPA works end to end on real inference: it reads train trajectories, proposes new supervisor prompts with the reflection model, selects on val and stores versioned policies. On this data size its effect is **modest or unproven**. On the held-out test split, gepa_team_300 and the hand-written baseline have the same mean macro-F1 (0.553 vs 0.549) and overlapping ranges over 5 repeats. The GEPA policy is better on GOAL_DEVIATION and worse on every other drift type. The promotion rule (beat baseline on test without more undetected drift) fails, so **`policies/current.txt` stays the baseline**. gepa_team_60, gepa_team_150 and gepa_team_300 are kept in `policies/versions/` and the manifest, marked "evaluated, not promoted".
 
+**PitStop (teammate system):** GEPA run inside Arjun's PitStop supervisor, and Gautam's hard held-out set, are in `docs/PITSTOP_RESULTS.md`. On PitStop with Nano, GEPA raised hard-pairs test accuracy from 0.817 to 0.878 (5 trials); the gain came from the first accepted candidate.
+
 ## Test split, 5 repeats (n=82 per repeat)
 
 Command, repeated 5 times with `--out runs/eval/team_final_r{1..5}`:
