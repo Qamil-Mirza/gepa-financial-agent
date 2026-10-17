@@ -75,6 +75,8 @@ Setup: supervisor `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B`, reflection `deepse
 - **It specialized in GOAL_DEVIATION.** On test it scores 70/70 on GOAL_DEVIATION (baseline 62/70) but 1/30 on CONSTRAINT_VIOLATION (baseline 15/30). The other drift types also drop: OBSOLETE_DIRECTIVE 12/30 vs 24/30, UNSUPPORTED_CONCLUSION 4/30 vs 19/30.
 - **Val could not separate the policies.** The val gains of the three GEPA runs (0.007 to 0.018 macro-F1) are smaller than the baseline's own val spread across repeats (0.515 to 0.549).
 
+- **On the smaller Nemotron Nano supervisor, the result is the same.** GEPA's +0.075 val gain did not transfer: test macro-F1 is 0.378 (0.356–0.410) against 0.367 (0.360–0.379) for baseline. Its one consistent effect is zero undetected drift, bought with more false alarms. It is not promoted.
+
 Earlier results on our dev fixtures (a 0.59 → 0.77 test gain) are void: the fixture event IDs leaked the label. See `PROGRESS.md` and the manifest.
 
 ## Mock vs real

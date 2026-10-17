@@ -21,6 +21,7 @@ PRICES_PER_M: dict[str, tuple[float, float, float]] = {
     "deepseek-ai/DeepSeek-V4.1-Flash": (0.29, 0.20, 0.007),
     "deepseek-ai/DeepSeek-V4-Pro": (1.74, 3.48, 0.15),
     "nvidia/Nemotron-3-Nano-30B-A3B": (0.05, 0.20, 0.03),
+    "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": (0.05, 0.20, 0.03),  # id as served by /v1/models
     "nvidia/nemotron-3.5-lightning-30b-a3b": (0.05, 0.20, 0.03),
     "nvidia/Nemotron-3-Super-120B-A12B": (0.30, 2.40, 0.15),
     "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B": (0.30, 2.40, 0.15),  # id as served by /v1/models

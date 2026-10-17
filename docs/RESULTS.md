@@ -94,7 +94,54 @@ The budget is counted in metric calls, but almost all of it went to val evaluati
   - distinct seeds per run;
   - a budget in the thousands of metric calls, so that most of it buys reflection loops rather than val evals.
 
+## Nano supervisor (`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`)
+
+The same pipeline was run with the smaller Nemotron Nano as the supervisor model: same dataset, split, seed policy, reflection model and GEPA seed 0. These runs used a separate policy store, so the Super results above are unaffected.
+
+### Val
+
+| run | budget (metric calls) | loops | accepted | baseline val macro-F1 | GEPA val macro-F1 |
+|---|---|---|---|---|---|
+| nano_60 | 60 | 1 | 0 | 0.397 | 0.382 (unchanged prompt, `eac5a206b52d`) |
+| nano_150 → gepa_nano_150 (`1c80e4ea7311`) | 150 (192 used) | 5 | 2 | 0.411 | 0.486 |
+
+- **Noise band:** three val evaluations of the same baseline prompt on Nano gave 0.382, 0.397 and 0.411. The +0.075 val gain is outside that band.
+- **Rejections were real losses, not ties:** unlike the Super runs, the rejected Nano children scored clearly below their parents on the minibatch.
+- **gepa_nano_150 on val:** FPR 0.52 → 0.44, UNCERTAIN recall 0 → 0.12, 1 undetected drift scenario for both.
+
+### Test, 5 repeats (n=82 per repeat)
+
+Runs are in `runs/eval/nano_final_r{1..5}`. Raw numbers: `docs/results/nano_test_20261017.json`, produced by `scripts/summarize_repeats.py --runs 'runs/eval/nano_final_r*'`. In that file the GEPA policy appears as `best_policy`, because it was evaluated from `runs/gepa/nano_150/best_policy.txt`.
+
+| metric | baseline mean (min–max) | gepa_nano_150 mean (min–max) |
+|---|---|---|
+| macro-F1 | 0.367 (0.360–0.379) | 0.378 (0.356–0.410) |
+| accuracy | 0.520 (0.512–0.537) | 0.546 (0.524–0.585) |
+| false-positive rate | 0.571 (0.559–0.588) | 0.612 (0.559–0.676) |
+| DRIFTING recall | 0.778 (0.750–0.806) | 0.878 (0.806–0.917) |
+| mean detection delay (steps) | 0.19 (0.00–0.53) | 0.19 (0.11–0.44) |
+| undetected drift scenarios (of 18) | 1.2 (0–3) | **0.0 (0–0)** |
+| UNCERTAIN recall | 0 in every repeat | 0 in every repeat |
+| invalid outputs | 0 | 0 |
+
+Per-repeat macro-F1: baseline [0.363, 0.372, 0.360, 0.379, 0.360], gepa_nano_150 [0.410, 0.368, 0.356, 0.392, 0.367].
+
+| drift type (pooled over 5 repeats) | baseline | gepa_nano_150 |
+|---|---|---|
+| GOAL_DEVIATION | **30/70** | 11/70 |
+| CONSTRAINT_VIOLATION | 17/30 | **28/30** |
+| OBSOLETE_DIRECTIVE | 17/30 | 16/30 |
+| UNPRODUCTIVE_LOOP | **6/20** | 0/20 |
+| UNSUPPORTED_CONCLUSION | 1/30 | **10/30** |
+
+**Verdict: not promoted.**
+- **The val gain did not transfer.** On test the macro-F1 ranges overlap.
+- **The one consistent effect is zero undetected drift in all five repeats** (baseline 0–3). It is paid for with more false alarms: FPR rises to as much as 0.68.
+- **The drift-type shift mirrors Super.** gepa_nano_150 gained an explicit rule for missing `source_ids` and became strong on CONSTRAINT_VIOLATION, but lost most of GOAL_DEVIATION. On both models GEPA moved the supervisor's drift-type priors toward what its few minibatches rewarded, rather than improving detection across the board.
+- **Nano is much weaker than Super as a supervisor** (macro-F1 about 0.37 vs 0.55, FPR about 0.57 vs 0.15).
+
 ## Known issues found in these runs
 
 - **Transport failures become INVALID predictions.** `crusoe_client.py` retries 429/5xx/timeouts with exponential backoff (`max_retries=5`, about 31 s of total backoff). Orchestrator-level 429s (`max_requests_limit (orchestrator)`) and connection errors sometimes outlast that window. The affected example is then scored as INVALID (6 rows over 10 policy-repeats here). The code was not changed in the middle of the test battery, to keep repeats comparable. Fix later: a longer backoff cap or more retries for 429, and re-queueing failed rows instead of scoring them.
 - **One degenerate output.** Nemotron Super returns `<unk>` or tab runs for the baseline prompt on `tr_b610663dee@6` (3 of 5 repeats).
+- **Reflector code fence leaks into the policy text.** The nano_60 proposal (`runs/gepa/nano_60/run_log.txt`, Iteration 1) ended with a stray closing code fence that the reflection model wrapped around its output. The proposal was rejected, so no stored policy contains it. Extraction of the reflector's output still needs to strip fences. Not fixed before submission.
