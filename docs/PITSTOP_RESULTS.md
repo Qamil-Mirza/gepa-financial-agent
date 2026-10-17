@@ -68,7 +68,30 @@ The reflector was told not to copy companies or figures from the examples, but o
 
 GEPA run `pitstop_super_600`: 654 metric calls, 15 iterations, 7 candidates. Val went from 0.835 to 0.958, and the best candidate was found in the last iteration. It took 63 minutes, most of it waiting on Crusoe rate limits (429 `max_requests_limit (orchestrator)`), and cost $1.93 supervisor + $0.24 reflection. The prompt grew to 1,160 words and contains no company names or figures from the examples.
 
-The 3-arm AMD test (baseline vs `pitstop_super_600` vs our earlier `gepa_team_300`, 5 trials each) is **still running**; results will be added to this section.
+### AMD test, 36 cases × 5 trials (PitStop's harness)
+
+Raw numbers: `docs/results/pitstop_super_test_20261017.json`.
+
+| | baseline `supervisor_v0` | GEPA in PitStop `pitstop_super_600` |
+|---|---|---|
+| accuracy | 0.861 (0.833–0.917) | **0.956 (0.917–0.972)** |
+| pair accuracy | 0.722 | **0.911** |
+| drift recall | 0.789 | **0.933** |
+| specificity | 0.933 | **0.978** |
+| false alarms / missed drift (pooled, of 180) | 6 / 19 | **2 / 6** |
+| accuracy, original 12 categories / 6 harder ones added later | 0.917 / 0.750 | **1.000 / 0.867** |
+| drift_type correct when caught | 0.87 | 0.88 |
+| invalid outputs | 0 | 0 |
+| est. cost per 180 judgments | $0.48 | $0.59 |
+
+- **This is the largest gain we measured.** Per trial, GEPA ranged 0.917–0.972 and the baseline 0.833–0.917, so GEPA's worst trial equals the baseline's best.
+- **Per case it fixed 4 and broke none.**
+  - Fixed: arithmetic_growth and claimed_authorization drift, and false alarms on the detour and uncited healthy twins.
+  - The sign test is p = 0.125. With only 4 cases changed, that is the smallest p-value possible, so it is not formally significant, but every change went the same way.
+- **Super had no truncated outputs, unlike Nano.**
+- **Nano with the GEPA prompt (0.878, 0.861–0.917) is in the same range as Super with the original prompt (0.861, 0.833–0.917).** The small model with the rewritten prompt matches the 4× larger model.
+
+The third arm (our earlier `gepa_team_300`, dropped in unchanged) is **still running** and will be added.
 
 For reference, Arjun's earlier Super baseline on the original 12 categories only (not comparable with the 18-category runs here): test accuracy 0.889 (`pitstop/pitstop/evals/results/baseline_v0_super.json`).
 
@@ -90,11 +113,7 @@ This set uses five companies that appear nowhere in training, with distractors t
 - **Nano fails this set with either prompt.** It flags 75–81% of healthy steps.
 - **GEPA's difference is within noise.** As on the team test set, GEPA shifted Nano's drift-type preferences (toward CONSTRAINT_VIOLATION) rather than improving detection.
 
-HARD_GEPA run `pitstop_super_600`: 654 metric calls, 15 iterations, 7 candidates. Val went from 0.835 to 0.958, and the best candidate was found in the last iteration. It took 63 minutes, most of it waiting on Crusoe rate limits (429 `max_requests_limit (orchestrator)`), and cost $1.93 supervisor + $0.24 reflection. The prompt grew to 1,160 words and contains no company names or figures from the examples.
-
-The 3-arm AMD test (baseline vs `pitstop_super_600` vs our earlier `gepa_team_300`, 5 trials each) is **still running**; results will be added to this section.
-
-For reference, Arjun's earlier Super baseline on the original 12 categories only (not comparable with the 18-category runs here): test accuracy 0.889 (`pitstop/pitstop/evals/results/baseline_v0_super.json`).
+**Super** (baseline vs `gepa_team_300`): **still running**, queued after Super's PitStop test.
 
 ## Reproduce
 

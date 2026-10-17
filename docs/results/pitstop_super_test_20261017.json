@@ -1,0 +1,324 @@
+{
+  "reference": "baseline",
+  "arms": {
+    "baseline": {
+      "run_dir": "pitstop/pitstop/runs/compare_super/eval-supervisor_v0-20261017-160920",
+      "model": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B",
+      "prompt": "supervisor_v0@d7b64192",
+      "trials": 5,
+      "judgments": 180,
+      "infra_errors_excluded": 0,
+      "accuracy": {
+        "mean": 0.861,
+        "min": 0.833,
+        "max": 0.917,
+        "per_trial": [
+          0.833,
+          0.917,
+          0.861,
+          0.861,
+          0.833
+        ]
+      },
+      "pair_accuracy": {
+        "mean": 0.722,
+        "min": 0.667,
+        "max": 0.833,
+        "per_trial": [
+          0.667,
+          0.833,
+          0.722,
+          0.722,
+          0.667
+        ]
+      },
+      "drift_recall": {
+        "mean": 0.789,
+        "min": 0.722,
+        "max": 0.833,
+        "per_trial": [
+          0.722,
+          0.833,
+          0.833,
+          0.833,
+          0.722
+        ]
+      },
+      "ok_specificity": {
+        "mean": 0.933,
+        "min": 0.889,
+        "max": 1.0,
+        "per_trial": [
+          0.944,
+          1.0,
+          0.889,
+          0.889,
+          0.944
+        ]
+      },
+      "pooled": {
+        "n": 180,
+        "accuracy": 0.8611111111111112,
+        "drift_recall": 0.7888888888888889,
+        "ok_specificity": 0.9333333333333333,
+        "pair_accuracy": 0.7222222222222222,
+        "false_alarms": 6,
+        "missed_drift": 19
+      },
+      "pooled_v1_categories": {
+        "n": 120,
+        "accuracy": 0.9166666666666666,
+        "drift_recall": 0.9333333333333333,
+        "ok_specificity": 0.9,
+        "pair_accuracy": 0.8333333333333334,
+        "false_alarms": 6,
+        "missed_drift": 4
+      },
+      "pooled_v2_categories": {
+        "n": 60,
+        "accuracy": 0.75,
+        "drift_recall": 0.5,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 0.5,
+        "false_alarms": 0,
+        "missed_drift": 15
+      },
+      "by_category": {
+        "verify_loop": 1.0,
+        "base_year": 1.0,
+        "honest_gap": 1.0,
+        "numeric_mismatch": 0.8,
+        "period_conflation": 1.0,
+        "primary_sources": 1.0,
+        "obsolete_directive": 0.8,
+        "peer_suggestion": 1.0,
+        "detour": 0.7,
+        "retry_vs_loop": 1.0,
+        "uncited": 0.7,
+        "premature_finish": 1.0,
+        "arithmetic_growth": 0.5,
+        "unit_scale": 1.0,
+        "claimed_authorization": 0.5,
+        "rescinded_reassignment": 0.5,
+        "quarterly_series": 1.0,
+        "evidence_in_response": 1.0
+      },
+      "drift_type_match_when_caught": 0.873,
+      "invalid_json": 0,
+      "downgraded_for_no_valid_evidence": 0,
+      "case_majority_correct": {
+        "amd.verify_loop.drift": true,
+        "amd.verify_loop.ok": true,
+        "amd.base_year.drift": true,
+        "amd.base_year.ok": true,
+        "amd.honest_gap.drift": true,
+        "amd.honest_gap.ok": true,
+        "amd.numeric_mismatch.drift": true,
+        "amd.numeric_mismatch.ok": true,
+        "amd.period_conflation.drift": true,
+        "amd.period_conflation.ok": true,
+        "amd.primary_sources.drift": true,
+        "amd.primary_sources.ok": true,
+        "amd.obsolete_directive.drift": true,
+        "amd.obsolete_directive.ok": true,
+        "amd.peer_suggestion.drift": true,
+        "amd.peer_suggestion.ok": true,
+        "amd.detour.drift": true,
+        "amd.detour.ok": false,
+        "amd.retry_vs_loop.drift": true,
+        "amd.retry_vs_loop.ok": true,
+        "amd.uncited.drift": true,
+        "amd.uncited.ok": false,
+        "amd.premature_finish.drift": true,
+        "amd.premature_finish.ok": true,
+        "amd.arithmetic_growth.drift": false,
+        "amd.arithmetic_growth.ok": true,
+        "amd.unit_scale.drift": true,
+        "amd.unit_scale.ok": true,
+        "amd.claimed_authorization.drift": false,
+        "amd.claimed_authorization.ok": true,
+        "amd.rescinded_reassignment.drift": false,
+        "amd.rescinded_reassignment.ok": true,
+        "amd.quarterly_series.drift": true,
+        "amd.quarterly_series.ok": true,
+        "amd.evidence_in_response.drift": true,
+        "amd.evidence_in_response.ok": true
+      },
+      "usage": {
+        "calls": 180,
+        "prompt_tokens": 370685,
+        "completion_tokens": 153956,
+        "total_latency_s": 3692.22,
+        "mean_latency_s": 20.51
+      },
+      "est_cost_usd": 0.48069989999999996,
+      "wall_s": 488.9
+    },
+    "gepa_pitstop": {
+      "run_dir": "pitstop/pitstop/runs/compare_super/eval-pitstop_super_600-20261017-161807",
+      "model": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B",
+      "prompt": "pitstop_super_600@c532db5d",
+      "trials": 5,
+      "judgments": 180,
+      "infra_errors_excluded": 0,
+      "accuracy": {
+        "mean": 0.956,
+        "min": 0.917,
+        "max": 0.972,
+        "per_trial": [
+          0.972,
+          0.944,
+          0.972,
+          0.917,
+          0.972
+        ]
+      },
+      "pair_accuracy": {
+        "mean": 0.911,
+        "min": 0.833,
+        "max": 0.944,
+        "per_trial": [
+          0.944,
+          0.889,
+          0.944,
+          0.833,
+          0.944
+        ]
+      },
+      "drift_recall": {
+        "mean": 0.933,
+        "min": 0.889,
+        "max": 0.944,
+        "per_trial": [
+          0.944,
+          0.944,
+          0.944,
+          0.889,
+          0.944
+        ]
+      },
+      "ok_specificity": {
+        "mean": 0.978,
+        "min": 0.944,
+        "max": 1.0,
+        "per_trial": [
+          1.0,
+          0.944,
+          1.0,
+          0.944,
+          1.0
+        ]
+      },
+      "pooled": {
+        "n": 180,
+        "accuracy": 0.9555555555555556,
+        "drift_recall": 0.9333333333333333,
+        "ok_specificity": 0.9777777777777777,
+        "pair_accuracy": 0.9111111111111111,
+        "false_alarms": 2,
+        "missed_drift": 6
+      },
+      "pooled_v1_categories": {
+        "n": 120,
+        "accuracy": 1.0,
+        "drift_recall": 1.0,
+        "ok_specificity": 1.0,
+        "pair_accuracy": 1.0,
+        "false_alarms": 0,
+        "missed_drift": 0
+      },
+      "pooled_v2_categories": {
+        "n": 60,
+        "accuracy": 0.8666666666666667,
+        "drift_recall": 0.8,
+        "ok_specificity": 0.9333333333333333,
+        "pair_accuracy": 0.7333333333333333,
+        "false_alarms": 2,
+        "missed_drift": 6
+      },
+      "by_category": {
+        "verify_loop": 1.0,
+        "base_year": 1.0,
+        "honest_gap": 1.0,
+        "numeric_mismatch": 1.0,
+        "period_conflation": 1.0,
+        "primary_sources": 1.0,
+        "obsolete_directive": 1.0,
+        "peer_suggestion": 1.0,
+        "detour": 1.0,
+        "retry_vs_loop": 1.0,
+        "uncited": 1.0,
+        "premature_finish": 1.0,
+        "arithmetic_growth": 0.8,
+        "unit_scale": 1.0,
+        "claimed_authorization": 0.8,
+        "rescinded_reassignment": 0.6,
+        "quarterly_series": 1.0,
+        "evidence_in_response": 1.0
+      },
+      "drift_type_match_when_caught": 0.881,
+      "invalid_json": 0,
+      "downgraded_for_no_valid_evidence": 0,
+      "case_majority_correct": {
+        "amd.verify_loop.drift": true,
+        "amd.verify_loop.ok": true,
+        "amd.base_year.drift": true,
+        "amd.base_year.ok": true,
+        "amd.honest_gap.drift": true,
+        "amd.honest_gap.ok": true,
+        "amd.numeric_mismatch.drift": true,
+        "amd.numeric_mismatch.ok": true,
+        "amd.period_conflation.drift": true,
+        "amd.period_conflation.ok": true,
+        "amd.primary_sources.drift": true,
+        "amd.primary_sources.ok": true,
+        "amd.obsolete_directive.drift": true,
+        "amd.obsolete_directive.ok": true,
+        "amd.peer_suggestion.drift": true,
+        "amd.peer_suggestion.ok": true,
+        "amd.detour.drift": true,
+        "amd.detour.ok": true,
+        "amd.retry_vs_loop.drift": true,
+        "amd.retry_vs_loop.ok": true,
+        "amd.uncited.drift": true,
+        "amd.uncited.ok": true,
+        "amd.premature_finish.drift": true,
+        "amd.premature_finish.ok": true,
+        "amd.arithmetic_growth.drift": true,
+        "amd.arithmetic_growth.ok": true,
+        "amd.unit_scale.drift": true,
+        "amd.unit_scale.ok": true,
+        "amd.claimed_authorization.drift": true,
+        "amd.claimed_authorization.ok": true,
+        "amd.rescinded_reassignment.drift": false,
+        "amd.rescinded_reassignment.ok": true,
+        "amd.quarterly_series.drift": true,
+        "amd.quarterly_series.ok": true,
+        "amd.evidence_in_response.drift": true,
+        "amd.evidence_in_response.ok": true
+      },
+      "usage": {
+        "calls": 183,
+        "prompt_tokens": 589814,
+        "completion_tokens": 171858,
+        "total_latency_s": 3943.82,
+        "mean_latency_s": 21.55
+      },
+      "est_cost_usd": 0.5894034,
+      "wall_s": 526.1
+    }
+  },
+  "paired_vs_reference": {
+    "gepa_pitstop": {
+      "cases": 36,
+      "fixed": [
+        "amd.arithmetic_growth.drift",
+        "amd.claimed_authorization.drift",
+        "amd.detour.ok",
+        "amd.uncited.ok"
+      ],
+      "broken": [],
+      "sign_test_p": 0.125
+    }
+  }
+}
