@@ -1,0 +1,20 @@
+{
+  "query": "NVIDIA gross margin Q2 fiscal 2027",
+  "normalized": "2027 fiscal gross margin nvidia q2",
+  "fetched_at": "2026-10-17T19:43:40Z",
+  "elapsed_s": 7.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s gross margin in Q2 fiscal 2027 (quarter ended July 26, 2026) was **75.0% on both a GAAP and non-GAAP basis**; GAAP gross profit was **$72.142 billion** on **$96.2 billion** of revenue. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Second Quarter Fiscal 2027"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

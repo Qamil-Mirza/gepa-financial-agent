@@ -1,0 +1,24 @@
+{
+  "query": "AMD Data Center revenue Q1 fiscal 2027",
+  "normalized": "2027 amd center data fiscal q1 revenue",
+  "fetched_at": "2026-10-17T19:36:33Z",
+  "elapsed_s": 9.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD has not yet reported Q1 fiscal 2027 results, so its Data Center revenue for that quarter is not available as of October 17, 2026. AMD\u2019s investor-relations site lists reported financial results through Q2 2026, while the company reported Q1 2026 results on May 5, 2026. [[1]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/news-events/press-releases?category=financial",
+          "title": "Press Releases :: Advanced Micro Devices, Inc. (AMD)"
+        },
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1282/amd-to-report-fiscal-first-quarter-2026-financial-results",
+          "title": "AMD to Report Fiscal First Quarter 2026 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

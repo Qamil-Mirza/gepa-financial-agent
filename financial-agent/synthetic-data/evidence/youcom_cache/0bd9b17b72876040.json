@@ -1,0 +1,20 @@
+{
+  "query": "NVIDIA Data Center revenue Q3 fiscal 2026",
+  "normalized": "2026 center data fiscal nvidia q3 revenue",
+  "fetched_at": "2026-10-17T19:38:40Z",
+  "elapsed_s": 5.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s Data Center revenue was **$51.2 billion** in Q3 fiscal 2026, a record level; it increased **25% sequentially** and **66% year over year**. The quarter ended **October 26, 2025**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2025/NVIDIA-Announces-Financial-Results-for-Third-Quarter-Fiscal-2026/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Third Quarter Fiscal 2026"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

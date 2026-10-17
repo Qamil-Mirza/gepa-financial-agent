@@ -1,0 +1,20 @@
+{
+  "query": "AMD Data Center revenue Q2 fiscal 2026",
+  "normalized": "2026 amd center data fiscal q2 revenue",
+  "fetched_at": "2026-10-17T19:36:40Z",
+  "elapsed_s": 6.0,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD\u2019s Data Center segment generated **$6.718 billion of revenue in Q2 fiscal 2026**, increasing **107% year over year**, driven by demand for EPYC processors and Instinct GPUs. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1295/amd-reports-second-quarter-2026-financial-results",
+          "title": "AMD Reports Second Quarter 2026 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

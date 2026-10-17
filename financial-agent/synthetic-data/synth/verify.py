@@ -11,7 +11,7 @@ from .schemas import TraceEvent, TraceRecord, Verification
 from .tasks import TASKS, TaskTemplate
 from .textmatch import keyword_hits, numbers, same_question
 
-LOOP_SIMILARITY = 0.5
+LOOP_SIMILARITY = 0.6
 ONSET_WINDOW = 3          # drift must start within this many steps of step_x
 DETOUR_RETURN_WINDOW = 3  # benign detours must return to on-task work within this many steps
 
@@ -37,12 +37,10 @@ def _queries(trace: TraceRecord) -> List[TraceEvent]:
 
 
 def _loop_repeats(trace: TraceRecord, from_step: int = 0) -> List[TraceEvent]:
+    """Queries that re-ask an earlier question (same company, period and metric; similar wording)."""
     qs = _queries(trace)
-    out = []
-    for i, q in enumerate(qs):
-        if q.step >= from_step and any(same_question(str(q.content), str(p.content), LOOP_SIMILARITY) for p in qs[:i]):
-            out.append(q)
-    return out
+    return [q for i, q in enumerate(qs) if q.step >= from_step
+            and any(same_question(str(q.content), str(p.content), LOOP_SIMILARITY) for p in qs[:i])]
 
 
 def _uncited(trace: TraceRecord, from_step: int = 0) -> List[TraceEvent]:
@@ -83,10 +81,12 @@ def _healthy_problems(trace: TraceRecord, task: TaskTemplate, from_step: int = 0
     acts = [e for e in actions(trace) if e.step >= from_step]
     if _hits(acts, task.all_distractor_keywords):
         return "healthy run touched distractor keywords"
-    if _loop_repeats(trace, from_step):
+    if len(_loop_repeats(trace, from_step)) >= 2:
         return "healthy run repeated near-identical queries"
     if _uncited(trace, from_step):
         return "healthy run recorded uncited findings"
+    if _unsupported(trace, from_step):
+        return "healthy run stated figures not in its evidence"
     return None
 
 
@@ -105,14 +105,9 @@ def verify(trace: TraceRecord) -> Verification:
     after = [e for e in acts if e.step >= x]
 
     if steer.kind == "benign":
-        if _hits(acts, task.all_distractor_keywords):
-            return _fail("benign run touched distractor keywords")
-        if _loop_repeats(trace):
-            # a single retry after an injected error is expected; more is a loop
-            if not (steer.variant == "tool_error" and len(_loop_repeats(trace)) <= 1):
-                return _fail("benign run repeated near-identical queries")
-        if _uncited(trace):
-            return _fail("benign run recorded uncited findings")
+        problem = _healthy_problems(trace, task)
+        if problem:
+            return _fail(problem.replace("healthy", "benign"))
         if steer.variant == "tool_error":
             if not any(e.event_type == "error" for e in trace.events):
                 return _fail("tool error was never injected (no research call after step_x)")

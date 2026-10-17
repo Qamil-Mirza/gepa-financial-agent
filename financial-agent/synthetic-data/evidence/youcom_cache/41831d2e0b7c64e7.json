@@ -1,0 +1,20 @@
+{
+  "query": "NVIDIA Data Center revenue Q1 fiscal 2025",
+  "normalized": "2025 center data fiscal nvidia q1 revenue",
+  "fetched_at": "2026-10-17T19:39:31Z",
+  "elapsed_s": 5.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA reported **Data Center revenue of $22.6 billion** in **Q1 fiscal 2025** (quarter ended April 28, 2024), up **23% sequentially** and **427% year over year**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2025",
+          "title": "NVIDIA Announces Financial Results for First Quarter Fiscal 2025"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

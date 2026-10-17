@@ -1,0 +1,36 @@
+{
+  "query": "NVIDIA Data Center revenue growth drivers Q2 fiscal 2027 Blackwell Ultra networking",
+  "normalized": "2027 blackwell center data drivers fiscal growth networking nvidia q2 revenue ultra",
+  "fetched_at": "2026-10-17T19:39:02Z",
+  "elapsed_s": 22.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Q2 FY2027 Data Center performance.** NVIDIA generated **$89.0 billion** of Data Center revenue in the quarter ended July 26, 2026\u2014up **18% sequentially** from $75.2 billion in Q1 FY2027, or about **$13.8 billion** of incremental revenue, and up **117% year over year**. [[1, 2]]\n\n**Principal growth driver: Blackwell-based AI compute deployment.** Sustained Blackwell demand drove hyperscaler revenue to **$49 billion**, up **13% sequentially**, as customers added GPU capacity; management characterized the dynamic as additional compute capacity translating directly into additional customer revenue. [[3]]\n\n**Broader customer mix was also important.** Data Center growth came from both hyperscalers and the AI-cloud, industrial and enterprise (\u201cACIE\u201d) customer group; ACIE revenue was roughly **$40 billion**, rising **25% quarter over quarter** and **138% year over year**, aided by NeoCloud partners bringing capacity online. [[4]]\n\n**Blackwell Ultra increased content per AI factory.** GB300 and other Blackwell Ultra systems are optimized for agentic, reasoning and physical AI, while NVIDIA\u2019s Blackwell architecture combines 36 Grace CPUs and 72 Blackwell GPUs in a data-center-scale liquid-cooled design. [[5]] NVIDIA placed the Grace Blackwell revenue opportunity at approximately **$25 billion per gigawatt**, versus roughly **$18 billion per gigawatt** for Hopper, indicating that the platform transition raises NVIDIA content per unit of deployed power capacity. [[3]]\n\n**Networking was a material complementary engine.** Networking had another record quarter, with revenue up **18% sequentially**; Spectrum-X Ethernet grew **2.6x year over year**, demonstrating that AI-cluster buildouts require substantial scale-out networking alongside GPU compute. [[3]] The prior-year platform ramp context supports this: NVIDIA said Data Center networking revenue had grown **142%** in FY2026, driven by NVLink compute fabric for GB200/GB300 systems and continued Ethernet and InfiniBand growth. [[5]]\n\n**Bottom line.** Q2\u2019s Data Center acceleration reflected a mutually reinforcing stack: Blackwell/Blackwell Ultra compute capacity, higher system-level content per gigawatt, expansion beyond a small set of hyperscalers into AI clouds and enterprises, and rapidly growing NVLink, InfiniBand and Spectrum-X Ethernet networking. [[3, 4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Second Quarter Fiscal 2027"
+        },
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-First-Quarter-Fiscal-2027/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for First Quarter Fiscal 2027"
+        },
+        {
+          "url": "https://investor.nvidia.com/files/content_files/TRANSCRIPT_-NVIDIA-Corp-NVDA-US-Q2-2027-Earnings-Call-26-August-2026-5_00-PM-ET.pdf",
+          "title": "Corrected Transcript 1-877-FACTSET www.callstreet.com Total Pages: 16"
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/31/nvidia-nvda-q2-2027-earnings-call-transcript/",
+          "title": "Nvidia (NVDA) Q2 2027 Earnings Call Transcript"
+        },
+        {
+          "url": "https://investor.nvidia.com/files/doc_financials/2026/q4/10K-NVDA.pdf",
+          "title": "FORM 10-K NVIDIA CORPORATION"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

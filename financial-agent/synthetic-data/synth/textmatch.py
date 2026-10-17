@@ -24,12 +24,16 @@ def jaccard(a: str, b: str) -> float:
 _PERIOD_WORDS = {"q1", "q2", "q3", "q4", "first", "second", "third", "fourth", "h1", "h2"}
 
 
+ENTITIES = {"nvidia", "amd", "microsoft", "alphabet", "google", "amazon", "aws", "meta", "tsmc", "intel",
+            "qualcomm", "apple", "broadcom"}
+
+
 def _is_period(tok: str) -> bool:
-    return tok in _PERIOD_WORDS or any(c.isdigit() for c in tok)
+    return tok in _PERIOD_WORDS or tok in ENTITIES or any(c.isdigit() for c in tok)
 
 
 def same_question(a: str, b: str, threshold: float = 0.5) -> bool:
-    """Similar wording AND no difference in periods/numbers (Q2 vs Q3 FY2027 are different questions)."""
+    """Similar wording AND same periods, numbers and companies (Q2 vs Q3, NVIDIA vs AMD are different questions)."""
     ta, tb = tokens(a), tokens(b)
     if any(_is_period(t) for t in ta ^ tb):
         return False
