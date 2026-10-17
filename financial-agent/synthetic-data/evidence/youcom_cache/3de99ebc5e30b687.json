@@ -1,0 +1,20 @@
+{
+  "query": "AMD embedded segment revenue Q2 2026 Xilinx FPGA",
+  "normalized": "2026 amd embedded fpga q2 revenue segment xilinx",
+  "fetched_at": "2026-10-17T19:45:07Z",
+  "elapsed_s": 8.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD\u2019s Embedded segment generated **$977 million of revenue in Q2 2026**, up **19% year over year** from **$824 million in Q2 2025** and up from **$873 million in Q1 2026**. AMD attributed the growth to strengthening demand across multiple end markets; the segment includes the company\u2019s Xilinx-derived adaptive-computing/FPGA portfolio, although AMD did not separately disclose Xilinx FPGA-only revenue. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1295/amd-reports-second-quarter-2026-financial-results",
+          "title": "AMD Reports Second Quarter 2026 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

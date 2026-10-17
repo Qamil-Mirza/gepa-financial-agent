@@ -1,0 +1,28 @@
+{
+  "query": "Amazon fiscal year 2026 Q1 AI capital expenditure data center spending",
+  "normalized": "2026 ai amazon capital center data expenditure fiscal q1 spending year",
+  "fetched_at": "2026-10-17T19:44:59Z",
+  "elapsed_s": 21.0,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Amazon FY2026 Q1 AI/data-center spending**\n\n- Amazon\u2019s Q1 FY2026 cash capital expenditure\u2014reported as **purchases of property and equipment\u2014was $44.203 billion**, versus **$25.019 billion** in Q1 FY2025, an increase of **$19.184 billion (76.7% year over year)**. [[1]]\n- This is the appropriate reported capex measure for the quarter; it includes broad property-and-equipment spending rather than a separately disclosed \u201cAI data-center\u201d line item. [[1]]\n- Amazon said its higher property-and-equipment investment **primarily reflected AI investments**, while its filings show that its relevant infrastructure footprint includes data-center facilities and server/networking equipment. [[2]] [[1]]\n- The Q1 outlay represented about **22.1%** of Amazon\u2019s previously stated plan to invest approximately **$200 billion in capex during FY2026**, spanning AI alongside chips, robotics, and low-Earth-orbit satellites. [[3]]\n- On a trailing-12-month basis through March 31, 2026, purchases of property and equipment, net of sale proceeds and incentives, were **$147.299 billion**, up from **$87.978 billion** a year earlier; operating cash flow was **$148.531 billion**, leaving **$1.232 billion** in free cash flow. [[1]]\n- Amazon therefore does **not** disclose a clean Q1 dollar amount solely for AI data centers; the defensible disclosed answer is **$44.2 billion total quarterly property-and-equipment capex**, with management attributing the overall step-up primarily to AI. [[1]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000014/amzn-20260331.htm",
+          "title": "amzn-20260331 - Amazon.com, Inc."
+        },
+        {
+          "url": "https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-First-Quarter-Results/default.aspx",
+          "title": "Amazon.com, Inc. - Amazon.com Announces First Quarter Results"
+        },
+        {
+          "url": "https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-Fourth-Quarter-Results/",
+          "title": "Amazon.com, Inc. - Amazon.com Announces Fourth Quarter Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

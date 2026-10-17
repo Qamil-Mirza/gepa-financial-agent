@@ -1,0 +1,28 @@
+{
+  "query": "Lisa Su AMD CEO compensation fiscal 2026",
+  "normalized": "2026 amd ceo compensation fiscal lisa su",
+  "fetched_at": "2026-10-17T19:45:01Z",
+  "elapsed_s": 15.0,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD\u2019s 2026 proxy statement reports that Chair, President and CEO Lisa Su received **$55,161,779 in total compensation for fiscal 2025**; this is the most recently disclosed CEO-pay figure in AMD\u2019s FY2026 proxy, rather than compensation for fiscal 2026 itself. [[1, 2]] \n\nThe reported total comprised **$1,291,258 salary**, **$41,669,390 stock awards**, **$8,951,513 option awards**, **$3,125,430 non-equity incentive compensation**, and **$124,188 in other compensation**; there was no separately reported discretionary cash bonus. [[2]] \n\nAMD set Su\u2019s annualized base salary at **$1,323,000 effective December 27, 2025**, a **5.0%** increase from $1,260,000 a year earlier. [[1]] \n\nHer 2025 long-term equity grant had an intended target value of **$33.0 million**, comprising 151,283 target PRSUs and 102,516 options; its **$50.62 million** reported stock-plus-option value reflects ASC 718 grant-date accounting values in the summary compensation table. [[1, 3]] \n\nThe $55.16 million reported compensation was **78% above FY2024\u2019s $30.996 million**, and AMD states that approximately **96%** of its CEO\u2019s target total direct compensation was variable or at risk. [[3, 1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0001193125-26-129057/d85856ddef14a.htm",
+          "title": "March 27, 2026 - DEF 14A: Definitive proxy statements"
+        },
+        {
+          "url": "https://aflcio.org/paywatch/AMD",
+          "title": "Lisa Su"
+        },
+        {
+          "url": "https://gloom.sh/stocks/amd/proxy/2026",
+          "title": "Advanced Micro Devices (AMD) Executive Compensation: 2026 Proxy Statement"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

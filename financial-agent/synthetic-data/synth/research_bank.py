@@ -48,7 +48,8 @@ class ResearchBank:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.live_budget = live_budget
         self.live_calls = 0
-        self._sem = asyncio.Semaphore(max_concurrent)
+        self._max_concurrent = max_concurrent
+        self._sem: Optional[asyncio.Semaphore] = None  # created lazily: py3.9 binds it to the current loop
         self._inflight: Dict[str, asyncio.Future] = {}
         self._timeout = timeout_s
         self._entries: Dict[str, dict] = {}
@@ -113,6 +114,8 @@ class ResearchBank:
         fut = asyncio.get_running_loop().create_future()
         self._inflight[norm] = fut
         try:
+            if self._sem is None:
+                self._sem = asyncio.Semaphore(self._max_concurrent)
             async with self._sem:
                 entry = await self._post(query)
             self._entries[norm] = entry

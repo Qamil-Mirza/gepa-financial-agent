@@ -1,0 +1,24 @@
+{
+  "query": "Microsoft FY2025 Q3 capital expenditure AI data center spending",
+  "normalized": "ai capital center data expenditure fy2025 microsoft q3 spending",
+  "fetched_at": "2026-10-17T19:45:34Z",
+  "elapsed_s": 17.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Microsoft\u2019s FY2025 Q3 (quarter ended March 31, 2025) capital expenditures, **including finance leases**, were **$21.4 billion**, while cash paid for property, plant, and equipment was **$16.7 billion**. [[1]] \nThe roughly **$4.7 billion** difference reflects the quarter\u2019s finance-lease component, principally related to data-center capacity timing. [[1]] \nManagement said approximately **half** of cloud- and AI-related spending went to long-lived assets expected to support monetization for **15 years or more**; the other half was primarily CPUs and GPUs used to meet demand signals, including a **$315 billion** contracted backlog. [[1]] \nThis was a substantial step-up from FY2024 Q3\u2019s **$14.0 billion** of capex including finance leases\u2014an increase of approximately **53% year over year**\u2014while cash PP&E spending rose from **$11.0 billion** to **$16.7 billion**. [[2]] [[1]] \nMicrosoft attributed the Q3 FY2025 amount being slightly below its expectations to normal variability in the timing of data-center lease deliveries, not a reduction in AI infrastructure commitment. [[1]] \nFor FY2025 Q4, the company guided that capex would rise sequentially, while maintaining its prior aggregate second-half FY2025 capex outlook. [[1]] \nManagement also said AI demand was growing faster than capacity additions and expected some AI capacity constraints to persist beyond June 2025. [[1]] \nFor FY2026, Microsoft expected capex to keep growing but at a lower rate than FY2025, with a greater proportion of shorter-lived assets tied more directly to revenue. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.microsoft.com/en-us/investor/events/fy-2025/earnings-fy-2025-q3",
+          "title": "Microsoft Fiscal Year 2025 Third Quarter Earnings Conference Call"
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2024/04/25/microsoft-msft-q3-2024-earnings-call-transcript/",
+          "title": "Microsoft (MSFT) Q3 2024 Earnings Call Transcript"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

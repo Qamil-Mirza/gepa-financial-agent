@@ -1,0 +1,20 @@
+{
+  "query": "Jensen Huang NVIDIA CEO compensation fiscal 2026",
+  "normalized": "2026 ceo compensation fiscal huang jensen nvidia",
+  "fetched_at": "2026-10-17T19:44:38Z",
+  "elapsed_s": 12.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Jensen Huang\u2019s reported total compensation as NVIDIA\u2019s President and CEO for fiscal 2026 was **$36.34 million**: $1.50 million salary, $6.00 million non-equity incentive compensation, $24.80 million in stock awards, and $4.05 million in other compensation; he received no option awards. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.salary.com/research/executive-compensation/jen-hsun-huang-executive-member-of-nvidia-corp",
+          "title": "President and CEO Jen-Hsun Huang salary at NVIDIA CORP"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}
