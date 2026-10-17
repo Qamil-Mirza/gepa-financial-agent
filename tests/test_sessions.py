@@ -141,3 +141,57 @@ def test_close_export_replay():
     json.dumps(exp)  # JSON-serializable
     stats = m.stats()
     assert stats["usage"]["requests"] == 4 and stats["policy"]["version"] == P1.version
+
+
+def test_duplicate_event_is_idempotent_and_conflicting_duplicate_rejected():
+    m = manager(MockModelClient(), trigger=TriggerConfig(every_n_events=1))
+    m.register_agent("A", "task_A", "d", "s")
+    e = ev("A", 0)
+    asyncio.run(m.observe("A", e))
+    asyncio.run(m.observe("A", e))  # at-least-once redelivery
+    assert len(m.sessions["A"].events) == 1
+    clash = ev("A", 0).model_copy(update={"content": "different"})
+    with pytest.raises(ValueError):
+        asyncio.run(m.observe("A", clash))
+    recs = asyncio.run(m.evaluate_pending())
+    assert len(recs) == 1 and recs[0].error is None
+
+
+def test_one_failing_session_does_not_stop_others():
+    m = manager(MockModelClient(), trigger=TriggerConfig(every_n_events=1))
+    for a in "AB":
+        m.register_agent(a, f"task_{a}", "d", "s")
+        asyncio.run(m.observe(a, ev(a, 0)))
+
+    def boom():
+        raise RuntimeError("bad session state")
+
+    m.sessions["A"].build_input = boom
+    recs = {r.agent_id: r for r in asyncio.run(m.evaluate_pending())}
+    assert set(recs) == {"A", "B"}
+    assert recs["A"].decision is None and "bad session state" in recs["A"].error
+    assert recs["B"].error is None and recs["B"].decision is not None
+    assert m.sessions["A"].evaluating is False
+
+
+def test_adapter_survives_duplicate_events_for_other_agents():
+    from gepa_financial_agent.adapters.base import EventStreamAdapter
+    m = manager(MockModelClient(), trigger=TriggerConfig(every_n_events=1))
+    for a in "AB":
+        m.register_agent(a, f"task_{a}", "d", "s")
+    adapter = EventStreamAdapter(m, eval_interval_s=0.01)
+
+    async def run():
+        stop = asyncio.Event()
+        consumer = asyncio.create_task(adapter.run(stop))
+        await adapter.emit("A", ev("A", 0, etype=EventType.ERROR))
+        await adapter.emit("A", ev("A", 0, etype=EventType.ERROR))
+        await adapter.emit("B", ev("B", 0))
+        await adapter.drain()
+        stop.set()
+        await consumer
+        return consumer
+
+    consumer = asyncio.run(run())
+    assert consumer.exception() is None
+    assert m.latest("B") is not None and m.latest("A") is not None

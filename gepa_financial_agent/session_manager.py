@@ -64,6 +64,11 @@ class SupervisorSession:
     def add_event(self, e: TrajectoryEvent) -> None:
         if e.agent_id != self.agent_id:
             raise ValueError(f"event agent_id {e.agent_id!r} does not match session agent {self.agent_id!r}")
+        prior = next((x for x in self.events if x.event_id == e.event_id), None)
+        if prior is not None:
+            if prior == e:
+                return  # idempotent: at-least-once redelivery of the same event
+            raise ValueError(f"conflicting duplicate event_id {e.event_id!r} for agent {self.agent_id!r}")
         self.events.append(e)
         self.events_since_eval += 1
 
@@ -159,6 +164,12 @@ class SupervisorManager:
             s.evaluating, s.pending, s.events_since_eval = True, False, 0
             try:
                 rec = await self._supervisor_for(s.policy).evaluate(s.build_input())
+            except Exception as e:  # noqa: BLE001 - one bad session must not stop supervision of the others
+                log.error("evaluation failed for agent=%s: %s", s.agent_id, e)
+                rec = EvaluationRecord(agent_id=s.agent_id, task_id=s.task_id,
+                                       observation_step=s.events[-1].step if s.events else 0,
+                                       policy_version=s.policy.version, model=self.client.model,
+                                       error=f"session_error: {type(e).__name__}: {e}")
             finally:
                 s.evaluating = False
             s.records.append(rec)
@@ -168,7 +179,11 @@ class SupervisorManager:
         targets = [s for s in self.sessions.values() if s.pending and not s.evaluating and s.events]
         if not targets:
             return []
-        return list(await asyncio.gather(*(self._evaluate(s) for s in targets)))
+        results = await asyncio.gather(*(self._evaluate(s) for s in targets), return_exceptions=True)
+        for r in results:
+            if not isinstance(r, EvaluationRecord):
+                log.error("evaluation task failed outside the session guard: %r", r)
+        return [r for r in results if isinstance(r, EvaluationRecord)]
 
     async def evaluate_now(self, agent_id: str) -> EvaluationRecord:
         return await self._evaluate(self.sessions[agent_id])
