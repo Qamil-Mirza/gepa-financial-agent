@@ -95,3 +95,15 @@ def test_heuristic_baseline():
     assert heuristic_baseline(ok.supervisor_input).status == DriftStatus.ON_TRACK
     run = run_heuristic_evaluation(exs[:10])
     assert run.model == "heuristic-rules" and run.mocked is False and len(run.records) == 10
+
+
+def test_format_comparison_shows_detection_delay():
+    exs = load_jsonl(FIXTURES).examples
+    run = run_heuristic_evaluation(exs)
+    header, _, row = format_comparison([run]).splitlines()
+    cols = header.split()
+    assert "delay" in cols and "undet" in cols
+    m = run.metrics
+    expected_delay = "n/a" if m.mean_detection_delay is None else f"{m.mean_detection_delay:.2f}"
+    assert row.split()[cols.index("delay")] == expected_delay
+    assert row.split()[cols.index("undet")] == str(m.undetected_drift_scenarios)

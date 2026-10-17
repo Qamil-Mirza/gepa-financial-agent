@@ -259,7 +259,8 @@ def run_heuristic_evaluation(examples: list[DatasetExample], out_dir: str | Path
 
 def format_comparison(runs: list[EvalRun]) -> str:
     cols = [("label", 22), ("policy", 10), ("mode", 5), ("n", 4), ("macroF1", 8), ("acc", 6), ("P_drift", 8),
-            ("R_drift", 8), ("FPR", 6), ("FNR", 6), ("invalid", 8), ("evid_ok", 8), ("score", 6), ("ms", 7), ("usd", 8)]
+            ("R_drift", 8), ("FPR", 6), ("FNR", 6), ("invalid", 8), ("evid_ok", 8), ("delay", 6), ("undet", 6), ("score", 6), ("ms", 7),
+            ("usd", 8)]
     head = " ".join(f"{c:<{w}}" for c, w in cols)
     lines = [head, "-" * len(head)]
     for r in runs:
@@ -267,7 +268,9 @@ def format_comparison(runs: list[EvalRun]) -> str:
         vals = [r.label[:22], r.policy_version[:10], "MOCK" if r.mocked else "REAL", m.n, f"{m.macro_f1:.3f}",
                 f"{m.accuracy:.3f}", f"{m.drifting_precision:.3f}", f"{m.drifting_recall:.3f}",
                 f"{m.false_positive_rate:.3f}", f"{m.false_negative_rate:.3f}", f"{m.invalid_output_rate:.3f}",
-                f"{m.evidence_validity_rate:.3f}", f"{m.mean_score:.3f}", f"{m.mean_latency_ms:.0f}",
+                f"{m.evidence_validity_rate:.3f}",
+                "n/a" if m.mean_detection_delay is None else f"{m.mean_detection_delay:.2f}",
+                m.undetected_drift_scenarios, f"{m.mean_score:.3f}", f"{m.mean_latency_ms:.0f}",
                 "n/a" if m.est_cost_usd is None else f"{m.est_cost_usd:.4f}"]
         lines.append(" ".join(f"{str(v):<{w}}" for v, (_, w) in zip(vals, cols)))
     return "\n".join(lines)
