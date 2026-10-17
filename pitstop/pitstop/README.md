@@ -20,6 +20,36 @@ A run writes `runs/<run_id>/` containing `events.jsonl` (every trajectory event)
 `decisions.jsonl` (every supervisor input + validated verdict) and `meta.json`
 (ground truth, interventions, token usage, You.com spend).
 
+It also writes a curated **timeline** for the UI: `timeline.jsonl` (appended live, one entry per
+line, safe to tail) and `timeline.json` (run info, per-agent summaries with a compact verdict
+history, and all entries). Only notable things become entries: `drift_flagged` (critical),
+`drift_response` (halted / recovered / persisted, linked to its flag by `responds_to`),
+`drift_suspected`, `status_changed`, `supervisor_correction`, plus run and agent lifecycle.
+Each entry's `source` says who emitted it (`role`: `system` / `supervisor` / `validator` / `agent`,
+plus `id` and display `label`), while `agent_id` / `agent_label` say which agent it is about. The run's
+`agents` list gives each agent a display `label` (set `label` in the scenario, or it is derived from
+the id: `agent_nvda_dc` → "NVDA DC") and a stable `color_index` for the UI.
+Routine ON_TRACK verdicts are folded into the next entry's `quiet_streak`. Each entry's `refs`
+points back into `decisions.jsonl` / `events.jsonl` for full detail. Rebuild it for any old run with
+`python -m pitstop.cli timeline --run-dir runs/<run_id> [--highlights]`.
+
+The UI reads timelines through a small stdlib HTTP server (`python -m pitstop.cli serve --port 8765`,
+CORS open, run it alongside `run`):
+
+| Endpoint | Returns |
+|---|---|
+| `GET /api/runs` | runs, newest first: `in_progress`, `flagged_agents`, entry counts |
+| `GET /api/runs/<id>/timeline` | `timeline.json`, or the partial timeline (`in_progress: true`) of a live run |
+| `GET /api/runs/<id>/timeline/stream` | SSE, one `entry` event per entry as it is written, then `end`; resumes from `Last-Event-ID` or `?after=<seq>` |
+| `GET /api/runs/<id>/decisions/<i>` | full decision record for an entry's `refs.decision_index` |
+| `GET /api/runs/<id>/events/<event_id>` | one trajectory event, for an entry's `evidence` |
+
+```js
+const es = new EventSource(`${API}/api/runs/${runId}/timeline/stream`);
+es.addEventListener("entry", (m) => addEntry(JSON.parse(m.data)));
+es.addEventListener("end", () => es.close());
+```
+
 To compare two supervisor prompts on the exact same recorded inputs, with no new research calls:
 
 ```bash
