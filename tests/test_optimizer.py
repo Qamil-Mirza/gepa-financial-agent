@@ -80,3 +80,19 @@ def test_test_split_untouched_unless_final_test(tmp_path):
     assert mod.main(_args(tmp_path, root, pol)) == 0
     labels = set(json.loads((tmp_path / "run" / "comparison.json").read_text())["runs"])
     assert labels == {"baseline/val", "gepa/val"}
+
+
+def test_reflector_side_info_uses_aliases_and_omits_ids():
+    import re
+    exs = load_jsonl("data/fixtures/dev_examples.jsonl").examples
+    ex = next(e for e in exs if e.ground_truth.status.value == "DRIFTING" and e.ground_truth.evidence_event_ids)
+
+    def cite_first_evidence(messages):
+        return json.dumps({"status": "DRIFTING", "confidence": 0.9, "drift_type": "OTHER",
+                           "evidence_event_ids": ["E1"], "explanation": "x"})
+
+    _, info = make_evaluator(MockModelClient(cite_first_evidence))("seed prompt", ex)
+    assert "example_id" not in info and "scenario_id" not in info
+    assert info["expected_evidence"] and all(re.fullmatch(r"E\d+", i) for i in info["expected_evidence"])
+    assert info["predicted_evidence"] == ["E1"]
+    assert not re.search(r"\be\d+\b", json.dumps(info)), "real event ids leaked into reflector feedback"

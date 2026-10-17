@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import logging
 import time
 from dataclasses import asdict, dataclass, field
@@ -11,7 +12,7 @@ from .crusoe_client import ModelClient
 from .evaluator import score_prediction
 from .policy_store import Policy
 from .schemas import DatasetExample
-from .supervisor import OUTPUT_CONTRACT, Supervisor, render_input
+from .supervisor import OUTPUT_CONTRACT, Supervisor, event_aliases, render_input
 
 log = logging.getLogger("gepa_financial_agent.optimizer")
 
@@ -66,12 +67,31 @@ class OptimizeConfig:
     max_tokens: int = 1024
 
 
+def _to_prompt_ids(info: dict[str, Any], example: DatasetExample) -> dict[str, Any]:
+    """Express reflector feedback in the same opaque aliases the supervisor saw; drop dataset identifiers."""
+    aliases = event_aliases(example.supervisor_input)
+    ids = "|".join(re.escape(k) for k in sorted(aliases, key=len, reverse=True))
+    pattern = re.compile(rf"(?<![\w-])(?:{ids})(?![\w-])") if aliases else None
+
+    def conv(v: Any) -> Any:
+        if isinstance(v, str):
+            return pattern.sub(lambda m: aliases[m.group(0)], v) if pattern else v
+        if isinstance(v, list):
+            return [conv(x) for x in v]
+        if isinstance(v, dict):
+            return {k: conv(x) for k, x in v.items()}
+        return v
+
+    return {k: conv(v) for k, v in info.items() if k not in ("example_id", "scenario_id")}
+
+
 def make_evaluator(client: ModelClient, *, json_mode: bool = False, max_tokens: int = 1024
                    ) -> Callable[[str, DatasetExample], tuple[float, dict[str, Any]]]:
     def evaluate(candidate: str, example: DatasetExample) -> tuple[float, dict[str, Any]]:
         sup = Supervisor(client, Policy.from_text(candidate), json_mode=json_mode, max_tokens=max_tokens)
         rec = sup.evaluate_sync(example.supervisor_input, example_id=example.example_id)
         score, info = score_prediction(rec, example)
+        info = _to_prompt_ids(info, example)
         info["input_excerpt"] = render_input(example.supervisor_input, max_events=12, max_chars=220)[:2500]
         if rec.raw_output and rec.decision is None:
             info["raw_output"] = rec.raw_output[:500]
