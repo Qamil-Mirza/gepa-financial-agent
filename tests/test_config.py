@@ -8,7 +8,7 @@ def test_settings_from_env_defaults(monkeypatch):
     s = Settings.from_env(load_dotenv_file=False)
     assert s.has_key is False
     assert s.base_url == "https://api.inference.crusoecloud.com/v1"
-    assert s.supervisor_model == "deepseek-ai/Deepseek-V4-Flash"
+    assert s.supervisor_model == "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B"
     assert s.reflection_model == "deepseek-ai/DeepSeek-V4-Pro"
     assert s.max_concurrent_inferences == 4
     assert s.thinking is None

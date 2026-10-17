@@ -134,3 +134,17 @@ def test_injected_async_client_is_never_replaced():
     for _ in range(2):
         asyncio.run(c.acomplete([{"role": "user", "content": "hi"}]))
     assert c._async is fixed
+
+
+def test_thinking_toggle_uses_the_models_chat_template_key():
+    msgs = [{"role": "user", "content": "hi"}]
+    for model, key in [("deepseek-ai/Deepseek-V4-Flash", "thinking"),
+                       ("nvidia/NVIDIA-Nemotron-3-Super-120B-A12B", "enable_thinking"),
+                       ("Qwen/Qwen3.8-27B", "enable_thinking")]:
+        fake = FakeSync([fake_response()])
+        CrusoeClient(model=model, sync_client=fake, thinking=False).complete(msgs)
+        assert fake.calls[0]["extra_body"] == {"chat_template_kwargs": {key: False}}, model
+
+
+def test_cost_known_for_nemotron_super_api_id():
+    assert estimate_cost_usd("nvidia/NVIDIA-Nemotron-3-Super-120B-A12B", 1_000_000, 0) == 0.30

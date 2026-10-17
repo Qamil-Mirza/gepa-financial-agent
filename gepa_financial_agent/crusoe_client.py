@@ -23,10 +23,17 @@ PRICES_PER_M: dict[str, tuple[float, float, float]] = {
     "nvidia/Nemotron-3-Nano-30B-A3B": (0.05, 0.20, 0.03),
     "nvidia/nemotron-3.5-lightning-30b-a3b": (0.05, 0.20, 0.03),
     "nvidia/Nemotron-3-Super-120B-A12B": (0.30, 2.40, 0.15),
+    "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B": (0.30, 2.40, 0.15),  # id as served by /v1/models
     "openai/gpt-oss-120b": (0.05, 0.20, 0.05),
     "zai-org/GLM-5.3-Flash": (0.15, 0.50, 0.03),
     "google/gemma-4-31b-it": (0.14, 0.40, 0.14),
 }
+
+
+def _thinking_key(model: str) -> str:
+    """chat_template_kwargs key that toggles reasoning: DeepSeek uses `thinking`, Nemotron and Qwen `enable_thinking`."""
+    m = model.lower()
+    return "enable_thinking" if ("nemotron" in m or "qwen" in m) else "thinking"
 
 
 def estimate_cost_usd(model: str, prompt_tokens: int, completion_tokens: int, cached_tokens: int = 0) -> float | None:
@@ -188,7 +195,7 @@ class CrusoeClient:
         if seed is not None:
             kw["seed"] = seed
         if self.thinking is not None:
-            kw["extra_body"] = {"chat_template_kwargs": {"thinking": self.thinking}}
+            kw["extra_body"] = {"chat_template_kwargs": {_thinking_key(self.model): self.thinking}}
         return kw
 
     def _to_result(self, resp: Any, t0: float) -> CompletionResult:

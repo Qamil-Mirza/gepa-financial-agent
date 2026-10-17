@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass, field
 
 CRUSOE_BASE_URL = "https://api.inference.crusoecloud.com/v1"
-DEFAULT_SUPERVISOR_MODEL = "deepseek-ai/Deepseek-V4-Flash"
+DEFAULT_SUPERVISOR_MODEL = "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B"
 DEFAULT_REFLECTION_MODEL = "deepseek-ai/DeepSeek-V4-Pro"
 
 
