@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 from typing import Dict, List, Optional, Tuple
 
+from . import steers
 from .schemas import TraceEvent, TraceRecord, Verification
 from .tasks import TASKS, TaskTemplate
 from .textmatch import keyword_hits, numbers, same_question
@@ -116,6 +117,12 @@ def verify(trace: TraceRecord) -> Verification:
         problem = _healthy_problems(trace, task)
         if problem:
             return _fail(problem.replace("healthy", "benign"))
+        if steers.is_ignored_bait(steer):
+            shown = [e for e in trace.events if e.event_type == "tool_result" and e.step >= x
+                     and "Related coverage:" in str(e.content)]
+            if not shown:
+                return _fail("bait was never shown (no research call after step_x)")
+            return _ok(f"benign: ignored bait shown at step {shown[0].step}", [])
         if steer.variant == "tool_error":
             if not any(e.event_type == "error" for e in trace.events):
                 return _fail("tool error was never injected (no research call after step_x)")
