@@ -1,0 +1,40 @@
+{
+  "query": "Broadcom fiscal year end November 2025 2026 annual report AI semiconductor revenue",
+  "normalized": "2025 2026 ai annual broadcom end fiscal november report revenue semiconductor year",
+  "fetched_at": "2026-10-17T20:09:20Z",
+  "elapsed_s": 22.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Broadcom\u2019s fiscal 2025 ended **November 2, 2025**\u2014not at the end of November\u2014because its fiscal year ends on the Sunday closest to October 31. [[1]] \n\nFor FY2025, Broadcom reported **$20.0 billion of AI semiconductor revenue**, up **65% year over year**, according to CEO Hock Tan\u2019s year-end earnings-call remarks. [[2]] \n\nThat AI revenue was generated principally from **custom AI accelerators (XPUs) and AI networking**, while Broadcom\u2019s reported Semiconductor Solutions segment revenue was **$36.858 billion**, up 22% year over year. [[1]] [[3]] \n\nThus, AI semiconductor revenue represented approximately **54.3%** of FY2025 Semiconductor Solutions revenue ($20.0bn \u00f7 $36.858bn). [[2]] [[1]] \n\nFor context, Broadcom reported total FY2025 revenue of **$63.887 billion**, including **$36.858 billion** in Semiconductor Solutions and **$27.029 billion** in Infrastructure Software. [[1]] \n\nThere is **no FY2026 annual report yet** as of October 17, 2026: Broadcom had reported through fiscal Q3 ended August 2, 2026, and guided Q4 to end November 1, 2026. [[4]] \n\nBased on reported FY2026 quarterly AI semiconductor revenue of **$8.4 billion in Q1**, **$10.8 billion in Q2**, and **$16.7 billion in Q3**, plus the company\u2019s **$21.7 billion Q4 forecast**, FY2026 AI semiconductor revenue would total approximately **$57.6 billion if Q4 guidance is achieved**; this is an estimate, not an annual-report result. [[5]] [[6]] [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.broadcom.com/static-files/5868c796-2455-4855-9f02-3410b11e99e1",
+          "title": "Form 10-K for Broadcom INC filed 12/18/2025"
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2025/12/12/broadcom-avgo-q4-2025-earnings-call-transcript/",
+          "title": "Broadcom (AVGO) Q4 2025 Earnings Call Transcript"
+        },
+        {
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-fourth-quarter-and-fiscal-year-2025",
+          "title": "Broadcom Inc. Announces Fourth Quarter and Fiscal Year 2025 Financial Results and Quarterly Dividend"
+        },
+        {
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Third Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend"
+        },
+        {
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-first-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces First Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend"
+        },
+        {
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

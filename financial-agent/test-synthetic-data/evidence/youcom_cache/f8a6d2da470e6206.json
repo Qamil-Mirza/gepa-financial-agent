@@ -1,0 +1,20 @@
+{
+  "query": "AWS segment revenue Q2 2026 Amazon earnings",
+  "normalized": "2026 amazon aws earnings q2 revenue segment",
+  "fetched_at": "2026-10-17T21:04:08Z",
+  "elapsed_s": 6.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AWS generated **$42.232 billion** of net sales in Amazon\u2019s **Q2 2026** (three months ended June 30, 2026), up **37% year over year** from **$30.873 billion** in Q2 2025. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-Second-Quarter-Results/",
+          "title": "Amazon.com, Inc. - Amazon.com Announces Second Quarter Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

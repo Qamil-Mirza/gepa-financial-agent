@@ -1,0 +1,36 @@
+{
+  "query": "Marvell Technology fiscal 2025 full year data center revenue custom AI silicon electro optics guidance",
+  "normalized": "2025 ai center custom data electro fiscal full guidance marvell optics revenue silicon technology year",
+  "fetched_at": "2026-10-17T21:08:20Z",
+  "elapsed_s": 26.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Marvell FY2025 snapshot (year ended February 1, 2025):** total revenue was **$5.767 billion**, while fourth-quarter revenue was a record **$1.817 billion**. [[1]]\n- The data-center business grew **88% year over year** in FY2025, according to Marvell\u2019s proxy statement. [[2]]\n- Marvell\u2019s June 2025 investor presentation places FY2025 data-center revenue at approximately **$3.7 billion**, versus roughly **$0.5 billion** of cloud-AI-related revenue at the earlier point shown in its comparison; the presentation identifies custom products as **more than 25% of Q4 FY2025 data-center revenue**. [[3]]\n- In Q4 FY2025, data-center revenue was **$1.366 billion**, up **78% YoY** and **24% sequentially**, and represented **75%** of company revenue. [[1]]\n- AI-related revenue accounted for approximately **50% of FY2025 data-center revenue**, implying roughly **$1.85 billion** using the presentation\u2019s ~$3.7 billion FY2025 data-center figure. [[2, 3]]\n\n**Custom AI silicon:** Marvell said its custom-AI-silicon programs had entered **volume production** by the FY2025 results release, and that it had secured additional custom-silicon design wins. [[1]]\n- Marvell also stated that it had custom products in production for **all four large U.S. hyperscalers**. [[2]]\n- Management\u2019s stated historical target was approximately **$1.5 billion of AI revenue in FY2025**\u2014about two-thirds electro-optics and one-third custom compute\u2014and it indicated that the actual result would exceed that target. [[4]]\n- The same outlook targeted **$2.5 billion of AI revenue in FY2026**, premised on custom-silicon programs reaching their first full year of high-volume shipments. [[4]]\n\n**Electro-optics:** Marvell identifies electro-optics as high-speed PAM4 DSPs, transimpedance amplifiers, laser drivers, and data-center interconnect modules; it says these products contribute substantially to AI revenue. [[2]]\n- Electro-optics was the larger portion of the original FY2025 AI-revenue plan, with the cited mix implying roughly **$1.0 billion** electro-optics and **$0.5 billion** custom compute within the $1.5 billion target. [[4]]\n- FY2026 Q1 commentary attributed data-center momentum to both rapid scaling of custom-silicon programs and robust electro-optics shipments. [[5]]\n\n**Near-term reported guidance:** At the March FY2025 results release, Marvell guided FY2026 Q1 revenue to **$1.875 billion \u00b15%**. [[1]]\n- After reporting FY2026 Q1 revenue of **$1.895 billion**, or $20 million above the prior midpoint, Marvell guided FY2026 Q2 revenue to **$2.000 billion \u00b15%**. [[5]]\n- The key investment implication is that Marvell\u2019s FY2025 data-center growth was already broad enough to produce a ~$3.7 billion business, but the incremental FY2026 AI growth case was expected to shift increasingly toward custom silicon as hyperscaler programs moved into full-year volume production, while electro-optics remained a major AI-revenue contributor. [[3, 4, 2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/109/marvell-technology-inc-reports-fourth-quarter-and-fiscal-year-2025-financial-results",
+          "title": "Marvell Technology, Inc. Reports Fourth Quarter and Fiscal Year 2025 Financial Results"
+        },
+        {
+          "url": "https://investor.marvell.com/sec-filings/all-sec-filings/content/0001104659-25-043088/0001104659-25-043088.pdf",
+          "title": "DEF 14A - 05/01/2025 - Marvell Investor Relations"
+        },
+        {
+          "url": "https://www.marvell.com/content/dam/marvell/en/company/assets/marvell-custom-ai-investor-event-2025.pdf",
+          "title": "Custom AI Investor Event"
+        },
+        {
+          "url": "https://counterpointresearch.com/en/insights/custom-silicon-and-new-interconnect-opportunities-to-drive-growth-at-marvell",
+          "title": "Custom Silicon and New Interconnect Opportunities To Drive Growth at Marvell"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/95/marvell-technology-inc-reports-first-quarter-of-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports First Quarter of Fiscal Year 2026 Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "query": "Broadcom AI revenue year over year growth latest quarter",
+  "normalized": "ai broadcom growth over quarter revenue year",
+  "fetched_at": "2026-10-17T20:03:47Z",
+  "elapsed_s": 6.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Broadcom\u2019s latest reported quarter was fiscal Q3 2026: AI semiconductor revenue was **$16.7 billion**, increasing **221% year over year** (and 54% sequentially). [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Third Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

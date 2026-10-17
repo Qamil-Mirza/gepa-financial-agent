@@ -1,0 +1,24 @@
+{
+  "query": "Microsoft Azure revenue Q3 fiscal 2026 quarterly results",
+  "normalized": "2026 azure fiscal microsoft q3 quarterly results revenue",
+  "fetched_at": "2026-10-17T21:08:12Z",
+  "elapsed_s": 6.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Microsoft reported that **Azure and other cloud services revenue increased 40% year over year** in fiscal Q3 2026 (quarter ended March 31, 2026), or **39% in constant currency**. [[1]] \n\nMicrosoft does **not** disclose a standalone quarterly dollar-revenue figure for Azure; it reports Azure within the broader Intelligent Cloud segment, whose Q3 FY2026 revenue was **$34.7 billion**, up **30%** year over year. [[2]] \n\nFor context, total Microsoft Cloud revenue was **$54.5 billion**, up **29%** year over year, while company-wide revenue was **$82.9 billion**, up **18%**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q3/press-release-webcast",
+          "title": "FY26 Q3 - Press Releases - Investor Relations - Microsoft"
+        },
+        {
+          "url": "https://www.microsoft.com/en-us/investor/events/fy-2026/earnings-fy-2026-q3",
+          "title": "Microsoft Fiscal Year 2026 Third Quarter Earnings Conference Call"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "query": "Digital Realty AI data center leasing bookings latest quarter",
+  "normalized": "ai bookings center data digital leasing quarter realty",
+  "fetched_at": "2026-10-17T21:03:06Z",
+  "elapsed_s": 11.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Digital Realty\u2019s latest reported quarter is **2Q 2026** (results released July 23, 2026). It signed **$307 million of total leasing bookings** measured as expected annualized GAAP base rent at 100% ownership; this equated to **$208 million at Digital Realty\u2019s share**. [[1]] \n\nThe release does **not** disclose a separate dollar figure labeled \u201cAI leasing bookings.\u201d The closest AI-relevant indicators are its **hyperscale-oriented capacity** strategy and **$108 million of 0\u20131 MW plus interconnection bookings**\u2014comprising **$88 million** from 0\u20131 MW leases and **$20 million** from interconnection\u2014which management said exceeded $100 million for the first time. [[1]] \n\nFor context, bookings fell from the unusually large **$707 million at 100% share / $423 million at Digital Realty\u2019s share** in 1Q 2026, a quarter that included the company\u2019s largest-ever hyperscale lease. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.digitalrealty.com/news-releases/news-release-details/digital-realty-reports-second-quarter-2026-results",
+          "title": "Digital Realty Reports Second Quarter 2026 Results"
+        },
+        {
+          "url": "https://investor.digitalrealty.com/news-releases/news-release-details/digital-realty-reports-first-quarter-2026-results",
+          "title": "Digital Realty Reports First Quarter 2026 Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

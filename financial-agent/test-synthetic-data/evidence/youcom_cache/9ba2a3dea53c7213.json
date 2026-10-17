@@ -1,0 +1,24 @@
+{
+  "query": "Equinix Q2 2026 revenue AI xScale interconnection gross bookings net interconnections annualized",
+  "normalized": "2026 ai annualized bookings equinix gross interconnection interconnections net q2 revenue xscale",
+  "fetched_at": "2026-10-17T21:15:14Z",
+  "elapsed_s": 16.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Equinix Q2 2026 snapshot:** Revenue was **$2.625 billion**, up **16% year over year** on both a reported and normalized constant-currency basis, with strong core performance and one-time **xScale** fees contributing to growth. [[1]]\n\n- **AI demand:** Equinix said it expanded its Cisco and NVIDIA collaboration to help enterprises deploy AI through standardized AI-factory architectures, secure infrastructure and testing environments across its global data-center footprint. [[1]]\n- **xScale:** The company closed **134 MW** of xScale leases in the quarter; the Hampton transaction accounted for approximately **$120 million** of fees. [[2]]\n- **Interconnection revenue:** Q2 interconnection revenue was **$256 million**, versus $251 million in Q1 2026 and $231 million in Q2 2025. [[1]]\n- **Annualized gross bookings:** Equinix delivered **$424 million**, up **23% year over year**, its second-highest quarterly volume on record and a contributor to record backlog. [[1]]\n- **Net interconnections:** Equinix added a quarterly-record **9,700 net interconnections**, reinforcing the platform\u2019s interconnection momentum. [[1]]\n- **Underlying recurring growth:** Monthly recurring revenue increased **11% year over year** on both reported and normalized constant-currency bases, marking the third consecutive quarter of double-digit MRR growth. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.equinix.com/news-events/press-releases/detail/1114/equinix-reports-second-quarter-results-raises-2026",
+          "title": "Equinix Reports Second-Quarter Results, Raises 2026 Guidance and Long-Term Outlook :: Equinix, Inc. (EQIX)"
+        },
+        {
+          "url": "https://www.theglobeandmail.com/investing/markets/stocks/EQIX/pressreleases/3730144/equinix-eqix-q2-2026-earnings-call-transcript/",
+          "title": "Equinix (EQIX) Q2 2026 Earnings Call Transcript - The Globe and Mail"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

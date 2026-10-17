@@ -1,0 +1,36 @@
+{
+  "query": "AMD embedded segment revenue Xilinx FPGA",
+  "normalized": "amd embedded fpga revenue segment xilinx",
+  "fetched_at": "2026-10-17T19:25:39Z",
+  "elapsed_s": 10.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD does not separately disclose **Xilinx FPGA revenue**; it reports the broader **Embedded** segment, which includes embedded CPUs, GPUs, APUs, FPGAs, systems-on-modules, and Adaptive SoC products. [[1]] \n\nFor FY2025 (year ended December 27, 2025), AMD Embedded revenue was **$3.454 billion**, down **3%** from **$3.557 billion** in FY2024, with AMD attributing the decline to mixed demand in certain end markets. [[2]] \n\nEmbedded operating income was **$1.243 billion** in FY2025, versus **$1.421 billion** in FY2024. [[2]] \n\nFor historical context, Embedded revenue was **$5.321 billion in FY2023**, then fell to **$3.557 billion in FY2024**, principally as customers normalized inventory; the FY2023 Embedded revenue increase had been driven primarily by inclusion of Xilinx embedded-product revenue. [[3]] [[4]] \n\nThe latest quarterly figure in the retrieved AMD disclosures is **$857 million in Q3 2025**, down **8% year over year**. [[5]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-25-000012/0000002488-25-000012.pdf",
+          "title": "UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549"
+        },
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/amd-20251227.htm",
+          "title": "February 4, 2026 - 10-K: Annual report [Section 13 and 15(d), not S-K Item 405]"
+        },
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-25-000012/amd-20241228.htm",
+          "title": "February 5, 2025 - 10-K: Annual report pursuant to Section 13 and 15(d)"
+        },
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-24-000012/amd-20231230.htm",
+          "title": "January 31, 2024 - 10-K: Annual report pursuant to Section 13 and 15(d)"
+        },
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1265/amd-reports-third-quarter-2025-financial-results",
+          "title": "AMD Reports Third Quarter 2025 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

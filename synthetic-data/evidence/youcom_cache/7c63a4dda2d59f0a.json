@@ -1,0 +1,32 @@
+{
+  "query": "global PC shipments latest quarter",
+  "normalized": "global pc quarter shipments",
+  "fetched_at": "2026-10-17T19:26:43Z",
+  "elapsed_s": 8.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Latest reported quarter: Q3 2026 (ended September).** Gartner estimates worldwide PC shipments of **55.35 million units**, down **22.4% year over year** from 71.30 million in Q3 2025. [[1]] \n\nGartner\u2019s vendor results place Lenovo first at **14.99 million units** (27.1% share), followed by HP at **10.37 million** (18.7%), Dell at **7.58 million** (13.7%), Apple at **5.84 million** (10.5%), ASUS at **4.68 million** (8.5%), and Acer at **3.87 million** (7.0%). [[1]] \n\nIDC\u2019s separate preliminary estimate is higher\u2014**62.7 million traditional PCs**, down **20.1% year over year** and **9.1% sequentially**\u2014illustrating that totals vary with each research firm\u2019s shipment definitions and coverage. [[2]] [[3]] \n\nThe reported downturn was attributed chiefly to higher memory and storage costs feeding through to PC prices, alongside inventory stockpiling earlier in the year that pulled demand forward. [[1]] [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.gartner.com/en/newsroom/press-releases/2026-10-12-gartner-says-worldwide-pc-shipments-declined-22-point-4-percent-in-third-quarter-of-2026-as-component-cost-inflation-raised-asps",
+          "title": "Gartner Says Worldwide PC Shipments Declined 22.4% in Third Quarter of 2026 As Component Cost Inflation Raised ASPs"
+        },
+        {
+          "url": "https://www.engadget.com/2281788/idc-worldwide-pc-shipments-in-q3-fell-20-percent-from-last-year/",
+          "title": "IDC: Worldwide PC shipments in Q3 fell 20 percent from last year - Engadget"
+        },
+        {
+          "url": "https://my.idc.com/getdoc.jsp?containerId=prUS53855725",
+          "title": "PC Shipments Accelerate in Q3 Signaling Steady Refresh of Existing Installed Base"
+        },
+        {
+          "url": "https://www.techpowerup.com/353538/pc-shipments-drop-20-1-in-q3-2026-hp-and-dell-hit-hardest",
+          "title": "PC Shipments Drop 20.1% in Q3 2026, HP and Dell Hit Hardest"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

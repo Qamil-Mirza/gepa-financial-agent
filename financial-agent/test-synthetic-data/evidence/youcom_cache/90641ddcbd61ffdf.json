@@ -1,0 +1,44 @@
+{
+  "query": "Equinix xScale hyperscale data center leasing AI demand",
+  "normalized": "ai center data demand equinix hyperscale leasing xscale",
+  "fetched_at": "2026-10-17T21:02:31Z",
+  "elapsed_s": 25.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Equinix xScale: AI-demand leasing read-through**\n\n**Bottom line.** Equinix\u2019s xScale business is its hyperscale offering, designed to let hyperscale customers place large \u201ccore\u201d deployments alongside their Equinix IBX access points and interconnection ecosystems; management explicitly positions the combined xScale\u2013IBX proposition for AI training-scale footprints and efficient inference connectivity. [[1]]\n\n**Leasing momentum is strong.** In Q2 2026, Equinix signed 134 MW of xScale leasing across the Americas, while its current xScale portfolio had 604 MW leased, 577 MW operational, 23 operating facilities and 13 metros; the portfolio was shown as approximately 2,000 MW of eventual capacity and more than $23 billion of total investment when fully built out. [[2]]\n\n**The near-term financial contribution was material but partly non-recurring.** The 134 MW of Q2 xScale leases included the Hampton transaction, generating approximately $120 million of non-recurring fees; Equinix reported Q2 revenue of $2.625 billion, up 16% year over year, and attributed part of that growth to one-time xScale fees. [[3]] [[4]]\n\n**Underlying demand appears broader than that leasing-fee uplift.** Annualized gross bookings reached $424 million in Q2, and Equinix added a record 9,700 net interconnections; the company characterized bookings as broad-based, including emerging customer AI use cases. [[4]] [[2]]\n\n**AI is an accelerant, rather than the sole demand driver.** Management\u2019s Q3 2025 commentary referred to sustained demand for infrastructure and interconnection supporting both AI and non-AI workloads, while the Q2 2026 release highlighted expanded Cisco/NVIDIA collaboration intended to accelerate enterprise AI deployments across Equinix\u2019s global footprint. [[5]] [[4]]\n\n**Why xScale is strategically important.** The program extends Equinix from retail colocation and interconnection into large hyperscale campuses, while retaining a differentiated connection to its IBX footprint; Equinix\u2019s investor materials reported 282 data centers, 77 markets, 36 countries, 230 cloud on-ramps and 522,000+ interconnections as of Q2 2026. [[2]]\n\n**Capital availability supports expansion.** Equinix\u2019s U.S. JV with GIC and CPP Investments is intended to raise more than $15 billion including debt, build multiple greater-than-100-MW campuses, and add more than 1.5 GW of hyperscale capacity over time; Equinix holds a 25% equity interest while GIC and CPP each hold 37.5%. [[6]]\n\n**Implications for investors.** The 134-MW quarter and pre-leased expansion capacity support the view that AI and cloud customers are converting demand into large commitments, and Equinix said a significant portion of its remaining 2026 capacity additions was already committed through bookings and presales. [[2]] [[7]]\n\n**Key caveat.** Investors should separate recurring operating growth from episodic xScale transaction fees: Equinix reported that Q2 adjusted-EBITDA margin expanded 300 basis points year over year, but approximately 150 basis points of expansion remained after excluding xScale leasing fees. [[2]]\n\n**Forward view.** Equinix raised 2026 revenue-growth guidance to 11%\u201312% and, as of the latest reported quarter ended June 30, 2026, was accelerating more than 7,000 cabinets originally planned for 2027 into Q4 2026, signaling confidence that demand can absorb earlier delivered capacity. [[2]] [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.equinix.com/sec-filings/all-sec-filings/content/0001104659-24-104921/tm2425348d1_ex99-1.htm",
+          "title": "Equinix"
+        },
+        {
+          "url": "https://d1io3yog0oux5.cloudfront.net/_28ff1161d13c7903ebb24bea08b833f3/equinix/db/2183/27054/earnings_presentation/Equinix+Q2+26+Earnings+Presentation+Final.pdf",
+          "title": "\u00a9 2026 Equinix, Inc. Q2 2026 Earnings Conference Call NASDAQ: EQIX"
+        },
+        {
+          "url": "https://www.investing.com/news/transcripts/earnings-call-transcript-equinix-tops-q2-2026-estimates-and-lifts-outlook-93CH-4822017",
+          "title": "Earnings call transcript: Equinix tops Q2 2026 estimates and lifts outlook By Investing.com"
+        },
+        {
+          "url": "https://investor.equinix.com/news-events/press-releases/detail/1114/equinix-reports-second-quarter-results-raises-2026",
+          "title": "Equinix Reports Second-Quarter Results, Raises 2026 Guidance and Long-Term Outlook :: Equinix, Inc. (EQIX)"
+        },
+        {
+          "url": "https://investor.equinix.com/news-events/press-releases/detail/1086/equinix-reports-strong-third-quarter-2025-results",
+          "title": "Equinix Reports Strong Third-Quarter 2025 Results :: Equinix, Inc. (EQIX)"
+        },
+        {
+          "url": "https://investor.equinix.com/news-events/press-releases/detail/1053/equinix-agrees-to-form-greater-than-15b-jv-to-expand",
+          "title": "Equinix Agrees to Form Greater Than $15B JV to Expand Hyperscale Data Centers in the U.S. and Support Growing AI and Cloud Innovation :: Equinix, Inc. (EQIX)"
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/equinix-eqix-q2-2026-earnings-call-transcript/",
+          "title": "Equinix (EQIX) Q2 2026 Earnings Call Transcript"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

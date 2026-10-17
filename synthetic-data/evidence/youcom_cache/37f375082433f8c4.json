@@ -1,0 +1,20 @@
+{
+  "query": "AMD Data Center segment definition fiscal 2026 annual report",
+  "normalized": "2026 amd annual center data definition fiscal report segment",
+  "fetched_at": "2026-10-17T19:44:34Z",
+  "elapsed_s": 8.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD\u2019s annual report filed February 4, 2026 (for the fiscal year ended December 27, 2025) defines the **Data Center** reportable segment as primarily including \u201cAI accelerators, CPUs for servers, GPUs, APUs, DPUs, AI NICs, FPGAs and SoC products for data centers.\u201d [[1]] \n\nThe filing further characterizes the segment\u2019s product mix as server-class CPUs, GPUs, AI accelerators, DPUs, AI NICs, FPGAs, and adaptive SoC products that address computational, visual-data-processing, and AI-workload-acceleration requirements in data centers. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/amd-20251227.htm",
+          "title": "February 4, 2026 - 10-K: Annual report [Section 13 and 15(d), not S-K Item 405]"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "query": "Marvell Technology electro-optics revenue data center fiscal 2026 quarterly",
+  "normalized": "2026 center data electro fiscal marvell optics quarterly revenue technology",
+  "fetched_at": "2026-10-17T21:10:24Z",
+  "elapsed_s": 19.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Marvell does **not** separately disclose quarterly \u201celectro-optics\u201d revenue within its data-center end market; it reports total data-center revenue, while describing electro-optics/optical interconnects as a product-level driver of that revenue. [[1]] [[2]]\n\n| Fiscal 2026 quarter | Data-center revenue |\n|---|---:|\n| Q1 | **$1,440.6 million** [[3]]|\n| Q2 | **$1,490.5 million** [[2]]|\n| Q3 | **$1,517.9 million** [[4]]|\n| Q4 | **$1,651.3 million** [[4]]|\n\nThe four reported quarters total **$6.1003 billion** in FY2026 data-center revenue, consistent with management\u2019s statement that full-year data-center revenue surpassed $6 billion. [[3]] [[2]] [[4]] [[5]] \n\nData-center revenue rose sequentially in every FY2026 quarter\u2014approximately **3.5% in Q2, 1.8% in Q3, and 8.8% in Q4**\u2014with Q4 representing **74%** of Marvell\u2019s total revenue. [[2]] [[4]] \n\nFor electro-optics specifically, management attributed Q1 momentum to \u201crobust shipments\u201d of electro-optics products and said Q2 growth was fueled by AI demand for custom silicon and electro-optics, but it did not quantify electro-optics sales as a stand-alone quarterly revenue line. [[3]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.marvell.com/sec-filings/all-sec-filings/content/0001835632-25-000115/q126_8kx532025ex-991.htm",
+          "title": "May 29, 2025 - EXHIBIT 99.1 - 8-K: Current report"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/989/marvell-technology-inc-reports-second-quarter-of-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports Second Quarter of Fiscal Year 2026 Financial Results"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/95/marvell-technology-inc-reports-first-quarter-of-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports First Quarter of Fiscal Year 2026 Financial Results"
+        },
+        {
+          "url": "https://investor.marvell.com/news-events/press-releases/detail/1011/marvell-technology-inc-reports-fourth-quarter-and-fiscal-year-2026-financial-results",
+          "title": "Marvell Technology, Inc. Reports Fourth Quarter and Fiscal Year 2026 Financial Results"
+        },
+        {
+          "url": "https://www.alphaspread.com/security/nasdaq/mrvl/investor-relations/earnings-call/q4-2026",
+          "title": "MRVL Q4-2026 Earnings Call - Alpha Spread"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "query": "AMD Q2 2026 Ryzen CPU revenue consumer segment",
+  "normalized": "2026 amd consumer cpu q2 revenue ryzen segment",
+  "fetched_at": "2026-10-17T19:46:16Z",
+  "elapsed_s": 6.0,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD reported **$3.062 billion of Q2 2026 Client revenue**, its consumer-PC CPU business, up **23% year over year** from $2.499 billion; AMD said the increase was driven primarily by strong demand for **Ryzen processors**. [[1]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://newsroom.amd.com/news/amd-2q-2026-earnings/",
+          "title": "AMD Reports Second Quarter 2026 Earnings - AMD Newsroom"
+        },
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1295/amd-reports-second-quarter-2026-financial-results",
+          "title": "AMD Reports Second Quarter 2026 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

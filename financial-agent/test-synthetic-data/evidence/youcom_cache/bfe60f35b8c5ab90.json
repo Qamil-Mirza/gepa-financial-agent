@@ -1,0 +1,20 @@
+{
+  "query": "Microsoft Azure revenue growth rate most recent quarter",
+  "normalized": "azure growth microsoft quarter rate revenue",
+  "fetched_at": "2026-10-17T20:35:01Z",
+  "elapsed_s": 9.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Microsoft\u2019s Azure and other cloud services revenue grew **43% year over year** in its most recently reported quarter, fiscal Q4 2026 (three months ended June 30, 2026); growth was also 43% in constant currency. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast",
+          "title": "FY26 Q4 - Press Releases - Investor Relations - Microsoft"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

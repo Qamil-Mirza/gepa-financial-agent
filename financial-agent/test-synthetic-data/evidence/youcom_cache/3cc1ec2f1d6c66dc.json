@@ -1,0 +1,32 @@
+{
+  "query": "What does AWS reported backlog include",
+  "normalized": "aws backlog include reported",
+  "fetched_at": "2026-10-17T21:02:06Z",
+  "elapsed_s": 17.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AWS\u2019s reported \u201cbacklog\u201d is Amazon\u2019s **remaining performance obligations**: the unrecognized value of signed customer contracts for services not yet delivered, and it is **primarily AWS-related**. [[1]] \n\nAmazon\u2019s disclosed measure includes only customer contracts with **original terms longer than one year**. [[2]] \n\nAccordingly, it represents contracted future AWS revenue that will be recognized as AWS provides the contracted services, rather than a measure of current-quarter revenue, cash received, or all potential cloud demand. [[3]] \n\nIt generally excludes cancellable arrangements and pay-as-you-go/on-demand consumption not covered by qualifying long-term commitments, so it is not a complete forecast of AWS revenue. [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.businessinsider.com/aws-backlog-revenue-enterprise-growth-slow-with-coronavirus",
+          "title": "AWS Backlog Revenue and Enterprise Growth Could Slow With Coronavirus - Business Insider"
+        },
+        {
+          "url": "https://sec-api.io/insights/financial-analysis-of-amazon-fy2025-and-the-first-half-of-2026",
+          "title": "Financial analysis of Amazon, FY2025 and the first half of 2026"
+        },
+        {
+          "url": "https://www.sotkn.com/explained/remaining-performance-obligation-explained/",
+          "title": "Remaining Performance Obligation, Explained - AI \u00b7 Semiconductors"
+        },
+        {
+          "url": "https://www.calcbench.com/blog/post/blogger2239622826015504318/Remaining-Performance-Obligations--How-to-get-this-data-and-all-that-is-in-these-disclosures",
+          "title": "$2.4 Trillion in Cloud Backlog: What the Remaining Performance Obligation Disclosures Really Say"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "query": "NVIDIA GeForce RTX revenue Q1 fiscal 2027",
+  "normalized": "2027 fiscal geforce nvidia q1 revenue rtx",
+  "fetched_at": "2026-10-17T19:40:49Z",
+  "elapsed_s": 12.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA did **not separately disclose GeForce RTX revenue** in Q1 fiscal 2027 (quarter ended April 26, 2026); it replaced the former Gaming reporting line with an **Edge Computing** category. [[1]] \n\nEdge Computing revenue\u2014covering a broader set of products and therefore **not a GeForce RTX-only figure**\u2014was **$6.4 billion**, up **10% quarter over quarter** and **29% year over year**. [[1]] \n\nFor context, NVIDIA had reported **$3.8 billion of Gaming revenue** in Q1 fiscal 2026, but that prior category is not directly comparable with FY27\u2019s broader Edge Computing line. [[2]] [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-First-Quarter-Fiscal-2027/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for First Quarter Fiscal 2027"
+        },
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2026",
+          "title": "NVIDIA Announces Financial Results for First Quarter Fiscal 2026"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "query": "NVIDIA Data Center revenue Q2 fiscal 2026",
+  "normalized": "2026 center data fiscal nvidia q2 revenue",
+  "fetched_at": "2026-10-17T19:38:56Z",
+  "elapsed_s": 5.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s Data Center revenue was **$41.1 billion** in **Q2 fiscal 2026** (quarter ended July 27, 2025), up **5% sequentially** and **56% year over year**. [[1]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2026",
+          "title": "NVIDIA Announces Financial Results for Second Quarter Fiscal 2026"
+        },
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2025/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2026/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Second Quarter Fiscal 2026"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

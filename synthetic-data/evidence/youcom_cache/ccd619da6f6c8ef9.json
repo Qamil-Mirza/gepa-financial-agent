@@ -1,0 +1,24 @@
+{
+  "query": "AMD fiscal year end and fiscal quarter end dates",
+  "normalized": "amd dates end fiscal quarter year",
+  "fetched_at": "2026-10-17T19:25:45Z",
+  "elapsed_s": 6.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD uses a **52- or 53-week fiscal year ending on the last Saturday in December**. [[1]] \n\nFor **FY2025**, the fiscal calendar was: \n\n| Fiscal period | End date |\n|---|---|\n| Q1 2025 | March 29, 2025 [[2]]|\n| Q2 2025 | June 28, 2025 [[2]]|\n| Q3 2025 | September 27, 2025 [[2]]|\n| Q4 / FY2025 | December 27, 2025 [[2]]|\n\nAccordingly, AMD\u2019s quarter ends normally fall on the last Saturday of March, June, September, and December, with exact calendar dates shifting slightly each year. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/amd-20251227.htm",
+          "title": "February 4, 2026 - 10-K: Annual report [Section 13 and 15(d), not S-K Item 405]"
+        },
+        {
+          "url": "https://ir.amd.com/financial-information/financial-results",
+          "title": "Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "query": "AMD Data Center segment revenue Q4 2025",
+  "normalized": "2025 amd center data q4 revenue segment",
+  "fetched_at": "2026-10-17T19:46:33Z",
+  "elapsed_s": 6.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD\u2019s Data Center segment generated **$5.380 billion** of revenue in **Q4 2025** (three months ended December 27, 2025), up **39% year over year** from $3.859 billion and up from $4.341 billion in Q3 2025. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1276/amd-reports-fourth-quarter-and-full-year-2025-financial-results",
+          "title": "AMD Reports Fourth Quarter and Full Year 2025 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

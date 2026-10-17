@@ -1,0 +1,20 @@
+{
+  "query": "Super Micro Computer net sales most recent quarter",
+  "normalized": "computer micro net quarter sales super",
+  "fetched_at": "2026-10-17T20:59:53Z",
+  "elapsed_s": 6.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Super Micro Computer\u2019s most recently reported quarter was fiscal Q4 2026, ended June 30, 2026, with net sales of **$11.120 billion** ($11,119.777 million). [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.supermicro.com/news/news-details/2026/Supermicro-Announces-Fourth-Quarter-and-Full-Fiscal-Year-2026-Financial-Results/default.aspx",
+          "title": "Super Micro Computer, Inc. - Supermicro Announces Fourth Quarter and Full Fiscal Year 2026 Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

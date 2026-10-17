@@ -1,0 +1,36 @@
+{
+  "query": "Intel Xeon server CPU revenue trend latest quarter",
+  "normalized": "cpu intel quarter revenue server trend xeon",
+  "fetched_at": "2026-10-17T20:05:26Z",
+  "elapsed_s": 20.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Intel does not separately disclose **Xeon server-CPU revenue**; the closest reported measure is Data Center and AI (DCAI) revenue, which also includes other data-center and AI products and, since Q1 2025, incorporates part of the former Network and Edge Group reporting. [[1]]\n\n**Latest reported quarter: Q2 2026 (ended June 27, 2026).** DCAI revenue was **$6.262 billion**, up **59% year over year**. [[2]]\n\n**Trend:** DCAI revenue rose from **$3.9 billion in Q2 2025**, to **$4.1 billion in Q3**, **$4.7 billion in Q4**, **$5.1 billion in Q1 2026**, and **$6.3 billion in Q2 2026**. [[1]] [[3]] [[4]] [[5]] [[2]] \n\nThat means the latest quarter increased by roughly **$1.16 billion, or 23% sequentially**, from Q1 2026\u2019s $5.1 billion, following a steady recovery through late 2025 and an acceleration in Q2 2026. [[5]] [[2]] \n\nThe key takeaway is that Intel\u2019s server/data-center business proxy has expanded by about **61% over four quarters** from Q2 2025 to Q2 2026, although this should not be characterized as a pure Xeon revenue series because of the DCAI segment\u2019s broader product scope and the reporting reorganization. [[1]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.intc.com/news-events/press-releases/detail/1745/intel-reports-second-quarter-2025-financial-results",
+          "title": "Intel Reports Second-Quarter 2025 Financial Results :: Intel Corporation (INTC)"
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000155/q226earningsrelease.htm",
+          "title": "Document 2 - file: q226earningsrelease.htm"
+        },
+        {
+          "url": "https://www.intc.com/news-events/press-releases/detail/1753/intel-reports-third-quarter-2025-financial-results",
+          "title": "Intel Reports Third-Quarter 2025 Financial Results :: Intel Corporation (INTC)"
+        },
+        {
+          "url": "https://www.intc.com/news-events/press-releases/detail/1759/intel-reports-fourth-quarter-and-full-year-2025-financial",
+          "title": "Intel Reports Fourth-Quarter and Full-Year 2025 Financial Results :: Intel Corporation (INTC)"
+        },
+        {
+          "url": "https://www.intc.com/news-events/press-releases/detail/1767/intel-reports-first-quarter-2026-financial-results",
+          "title": "Intel Reports First-Quarter 2026 Financial Results :: Intel Corporation (INTC)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

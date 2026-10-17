@@ -1,0 +1,20 @@
+{
+  "query": "NVIDIA Data Center revenue Q3 fiscal 2027 reported",
+  "normalized": "2027 center data fiscal nvidia q3 reported revenue",
+  "fetched_at": "2026-10-17T19:35:55Z",
+  "elapsed_s": 10.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA has not yet reported Data Center revenue for Q3 fiscal 2027; its most recent reported quarter is Q2 fiscal 2027, ended July 26, 2026, when Data Center revenue was $89.0 billion. [[1]] \n\nFor Q3 fiscal 2027, NVIDIA provided only total-company revenue guidance of $108.0 billion, plus or minus 2%, and explicitly said the outlook assumes no Data Center compute revenue from China. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Second Quarter Fiscal 2027"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "query": "AMD Instinct share of AI accelerator market",
+  "normalized": "accelerator ai amd instinct market share",
+  "fetched_at": "2026-10-17T19:26:21Z",
+  "elapsed_s": 20.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**AMD Instinct\u2019s share of the AI-accelerator market is best characterized as roughly mid-single digits by revenue\u2014about 5% in 2024 and an estimated 5\u20137% in 2025\u2014rather than a precisely reported company statistic.** [[1]]\n\n- AMD reported **more than $5 billion of Instinct accelerator revenue in 2024**; against Omdia\u2019s **$123 billion** 2024 market for shipped GPUs and AI accelerators, that implies a rough **~4.1%** share, although the calculation is not fully apples-to-apples because Omdia\u2019s market definition includes multiple accelerator categories. [[2]] [[3]]\n- For **2025**, third-party estimates place Instinct revenue at roughly **$7\u20138 billion** and AMD\u2019s AI-accelerator revenue share at approximately **5\u20137%**. [[1]]\n- A revenue-to-market-size cross-check using Omdia\u2019s **$207 billion** 2025 GPU-and-AI-accelerator market would yield only **~3.4\u20133.9%** for $7\u20138 billion of Instinct revenue, again underscoring that published percentages depend heavily on whether the denominator includes custom ASICs, CPUs with AI acceleration, inference chips, and other non-GPU products. [[3]] [[1]]\n- AMD itself does **not** disclose an Instinct market-share figure or a standalone FY2025 Instinct-revenue total in the cited annual-results release; it reported total Data Center revenue and identified continued Instinct GPU ramp as a growth driver. [[4]] [[5]]\n- The strategic takeaway is that Instinct has become the leading merchant-GPU alternative to Nvidia, but it remains materially smaller than Nvidia and competes increasingly with hyperscaler custom silicon as well as Nvidia GPUs. [[1]] [[3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://siliconanalysts.com/analysis/amd-vs-nvidia-ai-gpu-market-share-2026",
+          "title": "AMD vs NVIDIA AI GPU Market Share 2026: MI350X vs B200 Competitive Analysis"
+        },
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1236/amd-reports-fourth-quarter-and-full-year-2024-financial-results",
+          "title": "AMD Reports Fourth Quarter and Full Year 2024 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        },
+        {
+          "url": "https://omdia.tech.informa.com/pr/2025/aug/ai-data-center-chip-market-to-hit-286bn-growth-likely-peaking-as-custom-asics-gain-ground",
+          "title": "New Omdia forecast: AI data center chip market to hit $286bn, growth likely peaking as custom ASICs gain ground"
+        },
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1276/amd-reports-fourth-quarter-and-full-year-2025-financial-results",
+          "title": "AMD Reports Fourth Quarter and Full Year 2025 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        },
+        {
+          "url": "https://d1io3yog0oux5.cloudfront.net/_b0eb9fe85e9ee1621001cc760a9e1d73/amd/db/841/9223/presentation/AMD+Q4'25+Earnings+Slides+FINAL.pdf",
+          "title": "AMD Financial Results Fourth Quarter and Full Year 2025 February 3, 2026"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "query": "Super Micro Computer FY2026 full year guidance revenue",
+  "normalized": "computer full fy2026 guidance micro revenue super year",
+  "fetched_at": "2026-10-17T21:05:44Z",
+  "elapsed_s": 9.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Super Micro Computer\u2019s FY2026 full-year revenue guidance was **net sales of at least $36.0 billion**, as issued with its Q1 FY2026 results on November 4, 2025. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.supermicro.com/news/news-details/2025/Supermicro-Announces-First-Quarter-Fiscal-Year-2026-Financial-Results/default.aspx",
+          "title": "Super Micro Computer, Inc. - Supermicro Announces First Quarter Fiscal Year 2026 Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

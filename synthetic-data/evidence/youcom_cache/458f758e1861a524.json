@@ -1,0 +1,24 @@
+{
+  "query": "Micron HBM revenue most recent quarter",
+  "normalized": "hbm micron quarter revenue",
+  "fetched_at": "2026-10-17T20:04:20Z",
+  "elapsed_s": 8.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Micron did **not disclose a dollar amount for HBM revenue** in its most recent reported quarter, fiscal Q4 2026 (ended September 3, 2026). [[1]] [[2]] \n\nIt disclosed that HBM revenue grew **faster than total company revenue** in FQ4, while total revenue was **$54.23 billion**; therefore, an HBM-revenue figure cannot be derived from the release or earnings deck. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.micron.com/news/press-release/2026/Micron-Technology-Inc--Reports-Record-Fiscal-Fourth-Quarter-and-Full-Year-2026-Results/",
+          "title": "Micron Technology, Inc. - Micron Technology, Inc. Reports Record Fiscal Fourth-Quarter and Full-Year 2026 Results"
+        },
+        {
+          "url": "https://investors.micron.com/files/doc_financials/2026/q4/Q4-26-Earnings-Deck.pdf",
+          "title": "Financial Results FQ4 2026"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

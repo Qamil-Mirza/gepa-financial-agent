@@ -1,0 +1,32 @@
+{
+  "query": "NVIDIA Data Center revenue growth drivers AI demand 2024 2025",
+  "normalized": "2024 2025 ai center data demand drivers growth nvidia revenue",
+  "fetched_at": "2026-10-17T19:31:29Z",
+  "elapsed_s": 20.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**NVIDIA Data Center growth: FY2024\u2013FY2025.** NVIDIA\u2019s fiscal years ended January 28, 2024 (FY2024) and January 26, 2025 (FY2025), respectively. [[1, 2]]\n\n| Fiscal year | Data Center revenue | YoY growth | Interpretation |\n|---|---:|---:|---|\n| FY2024 | $47.5 billion | 217% | Generative-AI infrastructure buildout accelerated sharply. [[1]]|\n| FY2025 | $115.2 billion | 142% | Revenue more than doubled again as Hopper demand persisted and Blackwell began shipping at scale. [[2, 3]]|\n\n**FY2024\u2019s principal demand drivers were the initial generative-AI compute buildout and a widening customer base.** NVIDIA identified demand for data processing, large-model training and inference from large cloud-service providers, GPU-specialized cloud providers, enterprise-software firms and consumer-internet companies. [[1]] NVIDIA also highlighted growing vertical-industry adoption\u2014especially automotive, financial services and healthcare\u2014which had reached a multibillion-dollar scale. [[1]]\n\n**FY2025 was driven primarily by Hopper-based accelerated-computing systems used for large language models, recommendation engines and generative-AI applications.** NVIDIA\u2019s FY2025 filing said Data Center revenue grew 142% year over year, with the company specifically attributing the increase to Hopper-platform demand for those AI workloads. [[3]] At the broader segment level, Compute & Networking revenue rose 145% to $116.2 billion, from $47.4 billion in FY2024. [[3]]\n\n**Networking became a meaningful incremental growth contributor rather than merely an attachment to GPUs.** NVIDIA reported that Data Center compute revenue rose 162% in FY2025, while Data Center networking revenue grew 51%, driven by AI Ethernet demand including its Spectrum-X end-to-end Ethernet platform. [[3]] This matters because scaling AI clusters requires high-bandwidth, low-latency networking alongside GPUs and servers. [[3]]\n\n**Hyperscaler and cloud deployment was central to demand in FY2025.** NVIDIA said AWS, CoreWeave, Google Cloud, Microsoft Azure and Oracle Cloud were bringing GB200 systems to cloud regions globally to address surging AI customer demand. [[2]] Earlier in FY2025, NVIDIA also cited Hopper H200 instance availability at AWS, CoreWeave and Microsoft Azure, with Google Cloud and Oracle planned to follow. [[4]]\n\n**The Blackwell transition added a new leg of growth late in FY2025 rather than displacing Hopper demand prematurely.** NVIDIA began shipping production Blackwell systems in FY2025\u2019s fourth quarter, while stating that Hopper demand had driven the year\u2019s major growth. [[3]] In Q4 FY2025 alone, Data Center revenue reached $35.6 billion, up 16% sequentially and 93% year over year, and NVIDIA characterized Blackwell demand as \u201camazing.\u201d [[2]]\n\n**The underlying AI-demand story evolved from primarily training large models in FY2024 to an expanding set of training, inference and reasoning workloads in FY2025.** NVIDIA said that greater compute for training improves models while longer \u201cthinking\u201d for reasoning AI also raises compute requirements, supporting demand beyond the initial model-training cycle. [[2]] NVIDIA also positioned agentic AI and physical AI as prospective sources of the next wave of demand, although those are company outlook statements rather than realized FY2025 revenue drivers. [[2]]\n\n**Bottom line:** FY2024 reflected the explosive launch phase of generative-AI infrastructure spending, while FY2025 reflected a broader and more durable platform cycle\u2014continued Hopper adoption, expanding cloud and enterprise deployment, rising networking content, and the initial Blackwell ramp. [[1, 3, 2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2024/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2024/",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Fourth Quarter and Fiscal 2024"
+        },
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2025/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2025/",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Fourth Quarter and Fiscal 2025"
+        },
+        {
+          "url": "https://www.publicnow.com/view/5EBFB425AD1D43945A255B6E3A1E3927B06A7141",
+          "title": "Nvidia Corporation (via Public) / Annual Report for Fiscal Year Ending January 26, 2025 (Form 10-K)"
+        },
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2024/NVIDIA-Announces-Financial-Results-for-Third-Quarter-Fiscal-2025/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Third Quarter Fiscal 2025"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "query": "NVIDIA Data Center segment definition fiscal 2027 press release",
+  "normalized": "2027 center data definition fiscal nvidia press release segment",
+  "fetched_at": "2026-10-17T19:42:09Z",
+  "elapsed_s": 14.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s FY2027 earnings releases define **Data Center** as one of its two market platforms, alongside **Edge Computing**. [[1]] \n\nWithin Data Center, NVIDIA reports two sub-markets: **Hyperscale** and **ACIE**\u2014AI Clouds, Industrial and Enterprise. [[1]]\n\n**Hyperscale** comprises revenue from public-cloud providers and the world\u2019s largest consumer-internet companies, while **ACIE** covers NVIDIA\u2019s opportunity in diverse AI-purpose-built data centers and AI factories across industries and countries. [[1]] \n\nFor context, NVIDIA reported Data Center revenue of **$75.2 billion in Q1 FY2027**, including **$60.4 billion** of Data Center compute revenue and **$14.8 billion** of Data Center networking revenue under its prior compute/networking presentation. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2027",
+          "title": "NVIDIA Announces Financial Results for First Quarter Fiscal 2027"
+        },
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-First-Quarter-Fiscal-2027/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for First Quarter Fiscal 2027"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

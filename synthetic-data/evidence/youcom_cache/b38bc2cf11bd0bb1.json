@@ -1,0 +1,24 @@
+{
+  "query": "AMD client and gaming segment revenue Ryzen Radeon consoles",
+  "normalized": "amd client consoles gaming radeon revenue ryzen segment",
+  "fetched_at": "2026-10-17T19:25:36Z",
+  "elapsed_s": 8.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD\u2019s **Client and Gaming** segment generated **$14.55 billion** of revenue in FY2025 (year ended December 27, 2025), up **51%** from **$9.65 billion** in FY2024. [[1]] \n\nWithin the segment, **Client** revenue\u2014principally AMD Ryzen desktop and mobile processors\u2014was **$10.64 billion** in FY2025, versus **$7.05 billion** in FY2024. [[1]]\n\n**Gaming** revenue was **$3.91 billion** in FY2025, versus **$2.60 billion** in FY2024; AMD attributed the increase to higher semi-custom revenue, which includes game-console SoCs, and strong demand for Radeon gaming GPUs. [[1]] \n\nAMD does **not** separately disclose revenue for Ryzen, Radeon, or individual console customers/products, so the reported Gaming figure is the relevant disclosed aggregate for Radeon GPUs and semi-custom console chips. [[1]] \n\nIn Q4 FY2025, Client and Gaming revenue was **$3.94 billion**, comprising **$3.10 billion** of Client revenue and **$843 million** of Gaming revenue. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000021/amd-20251227.htm",
+          "title": "amd-20251227"
+        },
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1276/amd-reports-fourth-quarter-and-full-year-2025-financial-results",
+          "title": "AMD Reports Fourth Quarter and Full Year 2025 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "query": "TSMC HPC platform revenue share most recent quarter",
+  "normalized": "hpc platform quarter revenue share tsmc",
+  "fetched_at": "2026-10-17T20:02:51Z",
+  "elapsed_s": 8.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "TSMC\u2019s high-performance computing (HPC) platform accounted for **68% of total revenue in Q3 2026**, its most recently reported quarter; HPC revenue increased **22% sequentially**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/10/15/tsmc-tsm-q3-2026-earnings-call-transcript/",
+          "title": "TSMC (TSM) Q3 2026 Earnings Call Transcript"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

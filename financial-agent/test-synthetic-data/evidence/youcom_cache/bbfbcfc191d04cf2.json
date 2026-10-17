@@ -1,0 +1,20 @@
+{
+  "query": "Arm Holdings royalty revenue most recent quarter",
+  "normalized": "arm holdings quarter revenue royalty",
+  "fetched_at": "2026-10-17T20:35:07Z",
+  "elapsed_s": 7.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Arm Holdings\u2019 most recently reported quarterly royalty revenue was **$671 million in Q4 fiscal 2026**, the quarter ended March 31, 2026; this was up 11% year over year. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://newsroom.arm.com/news/arm-q4-fye26-results",
+          "title": "Arm delivers record-breaking quarter and full-year results \u00a0 - Arm Newsroom"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "query": "Oracle Cloud Infrastructure revenue growth most recent quarter",
+  "normalized": "cloud growth infrastructure oracle quarter revenue",
+  "fetched_at": "2026-10-17T20:06:02Z",
+  "elapsed_s": 5.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Oracle Cloud Infrastructure (IaaS) revenue grew **121% year over year** in Oracle\u2019s most recently reported quarter, **Q1 FY2027** (ended August 31, 2026), reaching **$7.4 billion**; growth was **120% in constant currency**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.oracle.com/investor-news/news-details/2026/Oracle-Announces-Q1-Results-Driven-by-Triple-Digit-Growth-in-Cloud-Infrastructure-Revenues/default.aspx",
+          "title": "Oracle - Oracle Announces Q1 Results Driven by Triple Digit Growth in Cloud Infrastructure Revenues"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

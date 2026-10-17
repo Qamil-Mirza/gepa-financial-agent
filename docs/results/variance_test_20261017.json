@@ -1,0 +1,128 @@
+{
+  "baseline": {
+    "version": "eac5a206b52d",
+    "rows": [
+      {
+        "rep": 1,
+        "seed": null,
+        "macro_f1": 0.594,
+        "fpr": 0.0,
+        "delay": 0.0,
+        "undetected": 0,
+        "invalid": 0.0
+      },
+      {
+        "rep": 2,
+        "seed": null,
+        "macro_f1": 0.594,
+        "fpr": 0.0,
+        "delay": 0.0,
+        "undetected": 0,
+        "invalid": 0.0
+      },
+      {
+        "rep": 3,
+        "seed": null,
+        "macro_f1": 0.594,
+        "fpr": 0.0,
+        "delay": 0.0,
+        "undetected": 0,
+        "invalid": 0.0
+      },
+      {
+        "rep": 4,
+        "seed": 42,
+        "macro_f1": 0.594,
+        "fpr": 0.0,
+        "delay": 0.0,
+        "undetected": 0,
+        "invalid": 0.0
+      },
+      {
+        "rep": 5,
+        "seed": 42,
+        "macro_f1": 0.594,
+        "fpr": 0.0,
+        "delay": 0.0,
+        "undetected": 0,
+        "invalid": 0.0
+      }
+    ],
+    "unseeded_min_med_max": [
+      0.594,
+      0.594,
+      0.594
+    ],
+    "all5_min_med_max": [
+      0.594,
+      0.594,
+      0.594
+    ],
+    "identical_raw_unseeded_r1_r2": 4,
+    "identical_raw_seeded_r4_r5": 3,
+    "n": 25
+  },
+  "current": {
+    "version": "efded549ebd7",
+    "rows": [
+      {
+        "rep": 1,
+        "seed": null,
+        "macro_f1": 0.648,
+        "fpr": 0.0,
+        "delay": 2.0,
+        "undetected": 0,
+        "invalid": 0.0
+      },
+      {
+        "rep": 2,
+        "seed": null,
+        "macro_f1": 0.731,
+        "fpr": 0.0,
+        "delay": 2.0,
+        "undetected": 0,
+        "invalid": 0.0
+      },
+      {
+        "rep": 3,
+        "seed": null,
+        "macro_f1": 0.81,
+        "fpr": 0.0,
+        "delay": 0.4,
+        "undetected": 0,
+        "invalid": 0.0
+      },
+      {
+        "rep": 4,
+        "seed": 42,
+        "macro_f1": 0.716,
+        "fpr": 0.0,
+        "delay": 0.4,
+        "undetected": 0,
+        "invalid": 0.0
+      },
+      {
+        "rep": 5,
+        "seed": 42,
+        "macro_f1": 0.681,
+        "fpr": 0.0,
+        "delay": 1.2,
+        "undetected": 0,
+        "invalid": 0.0
+      }
+    ],
+    "unseeded_min_med_max": [
+      0.648,
+      0.731,
+      0.81
+    ],
+    "all5_min_med_max": [
+      0.648,
+      0.716,
+      0.81
+    ],
+    "identical_raw_unseeded_r1_r2": 6,
+    "identical_raw_seeded_r4_r5": 4,
+    "n": 25
+  }
+}

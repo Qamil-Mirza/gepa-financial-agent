@@ -1,0 +1,32 @@
+{
+  "query": "Meta fiscal year 2026 Q1 AI capital expenditure data center spending",
+  "normalized": "2026 ai capital center data expenditure fiscal meta q1 spending year",
+  "fetched_at": "2026-10-17T19:45:20Z",
+  "elapsed_s": 18.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Meta Platforms \u2014 Q1 FY2026 AI/data-center spending**\n\n- Meta spent **$19.84 billion** of capital expenditures in Q1 2026 (three months ended March 31), including principal payments on finance leases; management attributed this to investments in **servers, data centers, and network infrastructure**. [[1]] [[2]]\n\n- Following the quarter, Meta raised its FY2026 capex outlook to **$125\u2013145 billion**, from **$115\u2013135 billion** previously\u2014an increase of **$10 billion at both ends** of the range. [[1]] [[3]]\n\n- The revised outlook is primarily due to expected **higher component prices**\u2014with management specifically highlighting memory pricing\u2014and, secondarily, incremental **data-center costs** to create capacity for future years. [[3]] [[4]]\n\n- Q1 operating expenses were **$33.4 billion, up 35% year over year**; infrastructure-cost growth reflected higher depreciation, data-center operating costs, and third-party cloud spending. [[3]]\n\n- Meta characterized compute as strategically central to more capable AI models and new products, and said it is expanding its owned data-center footprint, securing component supply, and adding cloud capacity scheduled to come online during 2026 and 2027. [[3]]\n\n- Those multiyear cloud arrangements and infrastructure purchase agreements produced a **$107 billion quarter-over-quarter increase in contractual commitments**, which is a commitment measure rather than Q1 cash capex. [[3]]\n\n**Analyst read-through:** Meta\u2019s Q1 result confirms a substantial acceleration in AI-infrastructure investment, but the FY2026 capex-guide increase was predominantly an **input-cost / component-inflation revision**, rather than solely a new demand-driven buildout; incremental future-capacity data-center spending was explicitly a lesser contributor. [[3]] [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.atmeta.com/investor-news/press-release-details/2026/Meta-Reports-First-Quarter-2026-Results/default.aspx",
+          "title": "Meta - Meta Reports First Quarter 2026 Results"
+        },
+        {
+          "url": "https://s21.q4cdn.com/399680738/files/doc_financials/2026/q1/META-Q1-2026-Earnings-Call-Transcript.pdf",
+          "title": "1 Meta Platforms, Inc. (META) First Quarter 2026 Results Conference Call"
+        },
+        {
+          "url": "https://s21.q4cdn.com/399680738/files/doc_financials/2026/q1/META-Q1-2026-Prepared-Remarks.pdf",
+          "title": "META Q1 2026 Prepared Remarks"
+        },
+        {
+          "url": "https://www.theglobeandmail.com/investing/markets/stocks/META/pressreleases/1604248/meta-meta-q1-2026-earnings-call-transcript/",
+          "title": "Meta (META) Q1 2026 Earnings Call Transcript - The Globe and Mail"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

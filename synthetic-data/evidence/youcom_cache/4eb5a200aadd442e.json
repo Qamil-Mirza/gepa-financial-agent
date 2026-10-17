@@ -1,0 +1,64 @@
+{
+  "query": "antitrust lawsuits against Google Amazon Meta Microsoft",
+  "normalized": "against amazon antitrust google lawsuits meta microsoft",
+  "fetched_at": "2026-10-17T19:29:57Z",
+  "elapsed_s": 78.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Major U.S. government antitrust actions against the four companies, as of October 17, 2026:** [[1]]\n\n| Company | Principal case(s) | Core allegation / outcome | Current posture |\n|---|---|---|---|\n| **Google (Alphabet)** | **DOJ and states v. Google\u2014search distribution** (filed 2020) | The D.C. District Court held in August 2024 that Google unlawfully maintained a monopoly in general search and search advertising under Sherman Act \u00a72. [[2]]| In 2026, the court imposed conduct remedies: limits on exclusive distribution contracts involving Search, Chrome, Assistant, and Gemini; specified data-sharing; and search/text-ad syndication obligations. [[2]]|\n| **Google (Alphabet)** | **DOJ and states v. Google\u2014ad tech** (filed January 2023) | DOJ and states alleged monopolization of key \u201cad tech stack\u201d markets used by web publishers to buy and sell digital advertising. [[3]]| The Eastern District of Virginia found Google liable for monopolizing open-web digital-advertising markets, and the 2026 remedy includes interoperability, data-sharing, anti-discrimination, and restrictions on self-preferencing in bidding. [[3]] [[4]]|\n| **Amazon** | **FTC, 17 states, and Puerto Rico v. Amazon** (filed September 26, 2023) | The plaintiffs allege Amazon illegally maintained monopoly power in the online-superstore market and in online marketplace services for sellers through interlocking exclusionary and unfair practices. [[5]]| The complaint focuses particularly on alleged anti-discounting tactics and alleged conditioning of Prime eligibility on use of Amazon fulfillment services. [[6]]|\n| **Meta** | **FTC v. Meta/Facebook** (filed 2020) | The FTC alleged that Meta maintained a monopoly in personal social networking by acquiring competitive threats Instagram and WhatsApp. [[7]]| Meta won the District Court ruling in November 2025, but the FTC filed an appeal in January 2026 to the D.C. Circuit; thus the government challenge remains unresolved on appeal. [[7]]|\n| **Microsoft** | **United States v. Microsoft** (filed May 18, 1998) | The landmark monopolization case challenged Microsoft\u2019s conduct surrounding Windows and browser distribution, with the DOJ complaint filed in the District of Columbia in 1998. [[8]] [[9]]| The case is historical rather than a current operating-business antitrust suit; the DOJ\u2019s final-judgment record identifies it as Civil Action No. 98-1232. [[10]]|\n| **Microsoft** | **FTC challenge to Microsoft\u2013Activision Blizzard** | The FTC alleged the acquisition could allow Microsoft to suppress rivals in Xbox consoles, subscriptions, and cloud gaming. [[11]]| Microsoft completed the acquisition of Activision Blizzard on October 13, 2023, for a reported transaction value of $79.6 billion; this was merger enforcement rather than a classic monopolization case. [[12]]|\n\n**Bottom line:** Google faces the most consequential current U.S. antitrust remedies because courts have found liability in both search and open-web ad-tech monopolization matters. [[2]] [[3]] Meta\u2019s central monopolization case is in appellate litigation, Amazon\u2019s marketplace-monopolization case remains the major unresolved federal challenge to its retail platform practices, and Microsoft\u2019s defining monopolization case is historical while its recent major antitrust fight concerned the Activision acquisition. [[7]] [[5]] [[10]] [[11]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.justice.gov/atr/case/us-and-plaintiff-states-v-google-llc",
+          "title": "Antitrust Division"
+        },
+        {
+          "url": "https://www.justice.gov/opa/pr/department-justice-wins-significant-remedies-against-google",
+          "title": "Office of Public Affairs"
+        },
+        {
+          "url": "https://www.justice.gov/opa/pr/department-justice-prevails-landmark-antitrust-case-against-google",
+          "title": "Office of Public Affairs"
+        },
+        {
+          "url": "https://www.justice.gov/opa/pr/department-justice-again-wins-substantial-relief-against-google",
+          "title": "Office of Public Affairs"
+        },
+        {
+          "url": "https://www.ftc.gov/legal-library/browse/cases-proceedings/1910129-1910130-amazoncom-inc-amazon-ecommerce",
+          "title": "Amazon.com, Inc. (Amazon eCommerce)"
+        },
+        {
+          "url": "https://www.ftc.gov/news-events/news/press-releases/2023/09/ftc-sues-amazon-illegally-maintaining-monopoly-power",
+          "title": "FTC Sues Amazon for Illegally Maintaining Monopoly Power"
+        },
+        {
+          "url": "https://www.ftc.gov/news-events/news/press-releases/2026/01/ftc-appeals-ruling-meta-monopolization-case",
+          "title": "FTC Appeals Ruling in Meta Monopolization Case"
+        },
+        {
+          "url": "https://www.justice.gov/atr/complaint-us-v-microsoft-corp",
+          "title": "Antitrust Division"
+        },
+        {
+          "url": "https://www.justice.gov/atr/us-v-microsoft-courts-findings-fact",
+          "title": "Antitrust Division"
+        },
+        {
+          "url": "https://www.justice.gov/atr/final-judgment-us-v-microsoft-corporation-state-new-york-et-al-v-microsoft-corporation",
+          "title": "Antitrust Division | Final Judgment : U.S. V. Microsoft Corporation; ..."
+        },
+        {
+          "url": "https://www.ftc.gov/legal-library/browse/cases-proceedings/2210077-microsoftactivision-blizzard-matter",
+          "title": "Microsoft/Activision Blizzard, In the Matter of"
+        },
+        {
+          "url": "https://tako.com/card/yggv1WB92kAFwPe0-8Jj/",
+          "title": "Microsoft Corporation acquisition of Activision Blizzard, Inc."
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

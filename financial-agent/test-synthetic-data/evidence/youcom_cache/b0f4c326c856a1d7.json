@@ -1,0 +1,32 @@
+{
+  "query": "Arm fiscal 2026 Neoverse CPU deployments data center hyperscaler Amazon AWS AWS Graviton",
+  "normalized": "2026 amazon arm aws center cpu data deployments fiscal graviton hyperscaler neoverse",
+  "fetched_at": "2026-10-17T21:05:43Z",
+  "elapsed_s": 22.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Arm fiscal 2026 (year ended March 31, 2026): data-center deployment takeaways.** [[1]]\n\n- Arm reported that cumulative **Neoverse deployments surpassed 1 billion CPU cores** during FYE26, spanning general-purpose and custom cloud silicon, including NVIDIA Grace, AWS Graviton, Google Axion, and Microsoft Cobalt. [[2]]\n- Arm expected its CPUs to reach **nearly 50% of deployments among leading hyperscalers** during the year; by the FYE26 full-year release, it characterized its CPU-compute share among top hyperscalers as **about 50%**. [[2]] [[1]]\n- The company cited increasing use of Neoverse CPUs as **host/head nodes paired with AI accelerators** for training and inference, a strategic driver of data-center CPU content as AI clusters scale. [[2]]\n- Financially, Arm reported that **data-center royalty revenue more than doubled year over year in FYE26**, contributing to record full-year royalty revenue of **$2.61 billion**. [[1]]\n\n**AWS / Graviton specifically.** [[3]]\n\n- AWS launched fifth-generation **Graviton5**, using **192 cores**, versus 96 cores in Graviton4\u2014i.e., a doubling of core count\u2014and Arm said the product delivered up to **25% higher performance** and **33% lower latency** than Graviton4. [[3]]\n- Arm identified Graviton5 as built on the higher-performance **Neoverse CSS V3** platform, alongside AWS\u2019s use of Arm-based Nitro DPUs and Trainium accelerators in an integrated cloud system design. [[4]]\n- Arm also reported that AWS\u2019s broader custom-silicon business\u2014encompassing **Graviton, Trainium, and Nitro**\u2014was running at **more than $20 billion annually** and growing triple digits year over year. [[1]]\n- The deployment implication is that AWS is not merely offering Arm instances as a niche alternative: Graviton\u2019s higher core density and integration with AWS\u2019s accelerator/networking stack support Arm\u2019s expanding share of hyperscale AI and general-purpose compute. [[3]] [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://newsroom.arm.com/news/arm-q4-fye26-results",
+          "title": "Arm delivers record-breaking quarter and full-year results \u00a0 - Arm Newsroom"
+        },
+        {
+          "url": "https://investors.arm.com/node/7711/html",
+          "title": "SEC Filing"
+        },
+        {
+          "url": "https://investors.arm.com/node/7826/html",
+          "title": "SEC Filing"
+        },
+        {
+          "url": "https://newsroom.arm.com/news/arm-q3-fye26-results",
+          "title": "Arm delivers fourth consecutive billion-dollar revenue quarter, extending record-breaking momentum - Arm Newsroom"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "query": "TSMC HPC revenue year over year growth most recent quarter",
+  "normalized": "growth hpc over quarter revenue tsmc year",
+  "fetched_at": "2026-10-17T20:03:05Z",
+  "elapsed_s": 13.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "TSMC\u2019s High Performance Computing (HPC) revenue grew approximately **80.1% year over year in Q3 2026**, calculated from total revenue of NT$1,494.24 billion with HPC representing 68%, versus NT$989.92 billion and a 57% HPC mix in Q3 2025. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.tsmc.com/schinese/encrypt/files/encrypt_file/qr/phase4_reports/2026-10/f53a64fd40fc0b453f94e077e5aba8cad506f27b/3Q26%20ManagementReport.pdf",
+          "title": "FOR IMMEDIATE RELEASE Operating Results Review: CONTACT Jeff Su"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

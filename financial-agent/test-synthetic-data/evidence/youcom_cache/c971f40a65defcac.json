@@ -1,0 +1,24 @@
+{
+  "query": "Microsoft Azure segment revenue growth Q3 2025 Microsoft earnings AI contribution",
+  "normalized": "2025 ai azure contribution earnings growth microsoft q3 revenue segment",
+  "fetched_at": "2026-10-17T21:05:02Z",
+  "elapsed_s": 9.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Microsoft\u2019s fiscal Q3 2025, ended March 31, 2025, saw **Azure and other cloud services revenue grow 33% year over year** on a reported basis, or **35% in constant currency**. [[1]] \n\nAI services contributed **16 percentage points** of that 33% Azure growth\u2014meaning AI was responsible for nearly half of the reported year-over-year growth rate. [[2]] \n\nFor context, Microsoft\u2019s broader Intelligent Cloud segment generated **$26.75 billion** of revenue, up **21% year over year**, while Microsoft Cloud revenue was **$42.4 billion**, up **20%**. [[1]] \n\nMicrosoft also said that scaling AI infrastructure pressured cloud profitability: Intelligent Cloud gross-margin percentage declined despite gross margin increasing $1.9 billion, and cloud/AI engineering investment lifted operating expenses. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.microsoft.com/en-us/investor/earnings/fy-2025-q3/press-release-webcast",
+          "title": "FY25 Q3 - Press Releases - Investor Relations - Microsoft"
+        },
+        {
+          "url": "https://www.microsoft.com/en-us/investor/earnings/fy-2025-q3/intelligent-cloud-performance",
+          "title": "FY25 Q3 - Intelligent Cloud Performance - Investor Relations - Microsoft"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "query": "Oracle OCI remaining performance obligations RPO Q1 fiscal 2027",
+  "normalized": "2027 fiscal obligations oci oracle performance q1 remaining rpo",
+  "fetched_at": "2026-10-17T20:08:43Z",
+  "elapsed_s": 8.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Oracle\u2019s remaining performance obligations (RPO) were **$664 billion** at the end of Q1 fiscal 2027 (quarter ended August 31, 2026), up **$209 billion year over year**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.oracle.com/news/announcement/q1fy27-earnings-release-2026-09-10/",
+          "title": "Oracle Announces Q1 Results Driven by Triple Digit Growth in Cloud Infrastructure Revenues"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

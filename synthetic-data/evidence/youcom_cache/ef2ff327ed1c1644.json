@@ -1,0 +1,20 @@
+{
+  "query": "How does AMD define its Data Center reporting segment and what products are included",
+  "normalized": "amd center data define included products reporting segment",
+  "fetched_at": "2026-10-17T19:25:46Z",
+  "elapsed_s": 10.0,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD defines its **Data Center** reporting segment as the business that primarily supplies compute, acceleration and networking products for data-center deployments. The segment is designed to address computational processing, visual-data processing and AI-workload acceleration requirements in data centers. [[1]] \n\nThe products included are: \n- **Server CPUs**, principally **AMD EPYC** processors. [[1]]\n- **Data-center GPUs and AI accelerators**, principally **AMD Instinct** products, including MI200, MI300, MI325 and MI350-series accelerators; AMD also identifies Radeon PRO V Series as a data-center graphics brand. [[1]]\n- **APUs** and other **data-center SoC products**. [[1]]\n- **DPUs**, including AMD Pensando DPUs, which offload infrastructure services from host CPUs. [[1]]\n- **AI NICs**, including Pensando Pollara 400 and Vulcano products for GPU-cluster connectivity. [[1]]\n- **FPGAs and adaptive SoCs**, such as Virtex, Kintex, Artix, Spartan, Zynq and Versal devices, along with Alveo acceleration cards. [[1]] \n\nAMD\u2019s filing therefore treats the segment as broader than just server processors or AI GPUs: it encompasses the compute, programmable-logic, acceleration and networking building blocks used in enterprise, cloud, hyperscale and other data-center systems. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/amd-20251227.htm",
+          "title": "February 4, 2026 - 10-K: Annual report [Section 13 and 15(d), not S-K Item 405]"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

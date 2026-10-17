@@ -1,0 +1,20 @@
+{
+  "query": "Alphabet fiscal year 2026 Q1 AI capital expenditure data center spending",
+  "normalized": "2026 ai alphabet capital center data expenditure fiscal q1 spending year",
+  "fetched_at": "2026-10-17T19:44:26Z",
+  "elapsed_s": 11.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Alphabet spent **$35.7 billion of CapEx in Q1 FY2026** (quarter ended March 31, 2026), with the \u201coverwhelming majority\u201d directed to technical infrastructure supporting AI opportunities. [[1]] \n\nWithin that technical-infrastructure spending, approximately **60% was servers**\u2014including AI compute\u2014and **40% was data centers and networking equipment**; Alphabet did not disclose the technical-infrastructure subtotal, so these percentages should not be applied mechanically to total CapEx. [[1]] \n\nFor FY2026, Alphabet raised CapEx guidance to **$180 billion\u2013$190 billion**, from **$175 billion\u2013$185 billion**, incorporating investment associated with the Intersect acquisition that closed in March. [[1]] \n\nManagement attributed the investment intensity to \u201cunprecedented\u201d internal and external demand for AI compute, while Google Cloud revenue rose **63% year over year** to more than **$20 billion** and backlog reached more than **$460 billion**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://abc.xyz/investor/events/event-details/2026/2026-Q1-Earnings-Call-2026-nW8kCrBAKS/default.aspx",
+          "title": "Alphabet Investor Relations - 2026 Q1 Earnings Call"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

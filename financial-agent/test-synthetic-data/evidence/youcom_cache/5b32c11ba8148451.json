@@ -1,0 +1,28 @@
+{
+  "query": "AWS AI workload contribution growth Q2 2026 Amazon comment AI revenue",
+  "normalized": "2026 ai amazon aws comment contribution growth q2 revenue workload",
+  "fetched_at": "2026-10-17T21:04:38Z",
+  "elapsed_s": 17.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "- **AWS growth:** AWS revenue was **$42.2 billion in Q2 2026**, up **36.7% year over year**\u2014its fastest growth in 18 quarters\u2014and Amazon said the business reached a **$169 billion annualized revenue run rate**. [[1]]\n\n- **AI-revenue disclosure:** Amazon said AWS\u2019s **AI business exceeded a $25 billion annual revenue run rate** and was growing at a **triple-digit year-over-year rate**; this equates to more than **$6.25 billion on a simple quarterly run-rate basis** and at least roughly **15% of AWS\u2019s $169 billion annualized revenue**, although Amazon did not formally disclose quarterly AI revenue or its precise share of AWS growth. [[1]]\n\n- **Management\u2019s key comment on workload contribution:** Andy Jassy said AWS was seeing strong growth in both **AI** and **non-AI (\u201ccore\u201d)** workloads, with each supporting the other rather than AI being an isolated revenue stream. [[2]]\n\n- **Mechanism:** Management said AI adoption encourages customers to move to AWS and increases core-service consumption; moreover, post-training reinforcement learning and AI-agent tool use are largely CPU-intensive, benefiting AWS core compute as well as AI accelerators. [[3]]\n\n- **Important caveat:** Therefore, it would be inaccurate to attribute all\u2014or a defined portion\u2014of the 36.7% AWS growth rate to AI: Amazon disclosed rapid AI revenue growth, but **did not quantify AI\u2019s percentage-point contribution** to Q2 AWS growth. [[3, 1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-Second-Quarter-Results/",
+          "title": "Amazon.com, Inc. - Amazon.com Announces Second Quarter Results"
+        },
+        {
+          "url": "https://finance.yahoo.com/quote/AMZN/earnings/AMZN-Q2-2026-earnings_call-657334.html",
+          "title": "Amazon.com, Inc. (AMZN) Q2 FY2026 earnings call transcript"
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/amazon-amzn-q2-2026-earnings-call-transcript/",
+          "title": "Amazon (AMZN) Q2 2026 Earnings Call Transcript"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

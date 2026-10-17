@@ -1,0 +1,40 @@
+{
+  "query": "Larry Ellison net worth and outside investments",
+  "normalized": "ellison investments larry net outside worth",
+  "fetched_at": "2026-10-17T20:07:01Z",
+  "elapsed_s": 31.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Net worth.** Forbes estimated Larry Ellison\u2019s real-time net worth at **$167.2 billion as of October 17, 2026**, a figure that changes with market prices and reflects the change since the prior trading day\u2019s close. [[1]] \nThe wealth is overwhelmingly tied to Oracle: Bloomberg describes Ellison as Oracle\u2019s founder and largest shareholder, owning **around 40%** of the company, while Oracle\u2019s 2026 proxy states that he is its founder, executive chair, CTO, and largest shareholder. [[2, 3]]\n\n**Major outside-Oracle investments and assets.** \n\n- **Skydance / Paramount:** The Ellison family is the controlling shareholder of Paramount Skydance through Harbor Lights Entertainment, with approximately **77.5% of Class A voting stock** and **47.3% of combined Class A plus non-voting Class B stock** reported in the company\u2019s Q1 2026 Form 10-Q. [[4]]\n- **L\u0101na\u02bbi, Hawaii:** Through P\u016blama L\u0101na\u02bbi, Ellison owns **98% of the island\u2019s acreage**, acquired in 2012 for about **$300 million**; the holdings include substantial land, housing, a water utility, and two Four Seasons resorts. [[5]]\n- **Tesla:** Ellison\u2019s most recently clearly disclosed stake was about **1.4% of Tesla**, according to Tesla\u2019s 2022 proxy, but he left Tesla\u2019s board in June 2022 and Bloomberg notes that the stake has not subsequently been publicly updated. [[2]]\n- **Sports and leisure assets:** Bloomberg identifies investments in a sailing team and the Indian Wells tennis event, in addition to his L\u0101na\u02bbi real estate. [[2]]\n- **X/Twitter:** Ellison made a **$1 billion equity commitment** toward Elon Musk\u2019s 2022 acquisition of Twitter, within a $7.14 billion group of outside equity commitments disclosed for the transaction. [[6]]\n\n**Important caveat.** These disclosed holdings should not be interpreted as a complete, mark-to-market investment portfolio: Ellison\u2019s externally visible wealth is concentrated in Oracle, while L\u0101na\u02bbi, resorts, sports properties, private-company interests, and the family\u2019s Paramount/Skydance control position are comparatively illiquid and not consistently publicly valued. [[1, 2, 4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.forbes.com/profile/larry-ellison/",
+          "title": "Larry Ellison"
+        },
+        {
+          "url": "https://www.bloomberg.com/billionaires/profiles/lawrence-j-ellison/",
+          "title": "Larry Ellison: Bloomberg Billionaires Index"
+        },
+        {
+          "url": "https://www.stocktitan.net/sec-filings/ORCL/def-14a-oracle-corp-definitive-proxy-statement-79178c066627.html",
+          "title": "Oracle: Ellison pledged 413M shares for personal debt"
+        },
+        {
+          "url": "https://ir.paramount.com/static-files/4dbf1a6c-94eb-42fe-a8e7-28ccb1b86f78",
+          "title": "UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549"
+        },
+        {
+          "url": "https://www.civilbeat.org/2025/09/billionaire-larry-ellison-shuts-down-vacation-home-division-on-lanai/",
+          "title": "Billionaire Larry Ellison Shuts Down Vacation Home Division On Lana\u2018i - Honolulu Civil Beat"
+        },
+        {
+          "url": "https://variety.com/2022/digital/news/musk-twitter-larry-ellison-financing-1235258991/",
+          "title": "Elon Musk Lines Up Additional $7.1 Billion for Twitter Takeover, Including $1 Billion From Larry Ellison"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

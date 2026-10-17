@@ -1,0 +1,20 @@
+{
+  "query": "Intel segment reorganization what does the DCAI segment include",
+  "normalized": "dcai include intel reorganization segment",
+  "fetched_at": "2026-10-17T20:06:04Z",
+  "elapsed_s": 11.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Following Intel\u2019s first-quarter 2025 reorganization, the **Data Center and AI (DCAI)** segment includes the portion of the former **Network and Edge Group (NEX)** integrated into DCAI, alongside Intel\u2019s pre-existing data-center and AI business. [[1]] \n\nIntel split NEX between **CCG and DCAI** rather than retaining NEX as a separately reported segment; DCAI therefore captures the NEX activities managed with Intel\u2019s data-center/AI operations, while the client-aligned portion moved to CCG. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.intc.com/news-events/press-releases/detail/1737/intel-reports-first-quarter-2025-financial-results",
+          "title": "Intel Reports First-Quarter 2025 Financial Results :: Intel Corporation (INTC)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "query": "Oracle OCI sequential quarter revenue growth Q4 fiscal 2026",
+  "normalized": "2026 fiscal growth oci oracle q4 quarter revenue sequential",
+  "fetched_at": "2026-10-17T20:10:03Z",
+  "elapsed_s": 12.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Oracle Cloud Infrastructure (OCI/IaaS) revenue grew sequentially by approximately **18.4%** in fiscal Q4 2026: Q4 revenue was **$5.8 billion**, versus **$4.9 billion** in fiscal Q3 2026\u2014an increase of roughly **$0.9 billion**. [[1, 2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.oracle.com/investor-news/news-details/2026/Oracle-Announces-Record-Q4-and-FY-2026-Results-Driven-by-Cloud-Infrastructure--Cloud-Applications/default.aspx",
+          "title": "Oracle - Oracle Announces Record Q4 and FY 2026 Results Driven by Cloud Infrastructure & Cloud Applications"
+        },
+        {
+          "url": "https://investor.oracle.com/investor-news/news-details/2026/Oracle-Announces-Fiscal-Year-2026-Third-Quarter-Financial-Results/default.aspx",
+          "title": "Oracle - Oracle Announces Fiscal Year 2026 Third Quarter Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

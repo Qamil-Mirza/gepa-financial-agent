@@ -1,0 +1,32 @@
+{
+  "query": "Oracle OCI AI pipeline FY2027 earnings call",
+  "normalized": "ai call earnings fy2027 oci oracle pipeline",
+  "fetched_at": "2026-10-17T20:09:27Z",
+  "elapsed_s": 22.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Oracle OCI AI pipeline \u2014 Q1 FY2027 earnings-call takeaway (reported September 10, 2026):** Oracle characterized demand as capacity-constrained rather than demand-constrained: OCI cloud-infrastructure revenue rose 121% year over year to $7.4 billion, while the company deployed 850 megawatts of AI capacity and more than 300,000 GPUs during the quarter. [[1]]\n\n**Contracted pipeline/backlog:** Remaining performance obligations (RPO) reached **$664 billion**, increasing **$26 billion sequentially**; management said it expects approximately half of RPO to convert to sales in the next 36 months. [[2, 3]]\n\n**New AI bookings:** Oracle said it closed **more than $30 billion** of additional AI contracts in Q1. [[3]] Management stressed that these bookings generally used customer prepayments, customer-owned hardware, supplier financing, or similar structures, so they should not require *incremental Oracle cash*\u2014but they can still entail capital expenditure. [[3, 1]]\n\n**Capacity and pricing evidence:** GPU utilization was **97.9%**, and Oracle said capacity coming up for renewal was being resold at a **20% premium**, supporting the view that OCI\u2019s near-term bottleneck is bringing power, data centers, and GPUs online rather than winning contracts. [[4, 3]]\n\n**FY2027 outlook:** Management raised full-year revenue guidance to at least **$90 billion**\u2014over **34%** growth\u2014and guided to **$8.10** of non-GAAP EPS, explicitly expecting OCI growth to accelerate through the balance of FY2027 as additional RPO converts into revenue. [[3]]\n\n**Investment implication:** The pipeline is unusually visible and large, but execution and financing remain the core risks: Q1 capital expenditures were about **$28 billion**, while Oracle retained FY2027 gross CapEx guidance of **$90\u201395 billion** and said net cash CapEx should be no more than **$70 billion**. [[1]]\n\n**Bottom line:** Oracle\u2019s FY2027 call supports a bullish OCI-AI revenue setup\u2014large contracted RPO, accelerating deployments, very high utilization, and price renewal strength\u2014but investors should distinguish signed backlog from near-term revenue and recognize that conversion depends on timely delivery of AI data-center capacity. [[3, 1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.alphaspread.com/security/nyse/orcl/investor-relations/earnings-call/q1-2027",
+          "title": "ORCL Q1-2027 Earnings Call - Alpha Spread"
+        },
+        {
+          "url": "https://www.cnbc.com/2026/09/10/oracle-orcl-q1-earnings-report-2027.html",
+          "title": "Oracle (ORCL) Q1 earnings report 2027"
+        },
+        {
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/09/11/oracle-orcl-q1-2027-earnings-call-transcript/",
+          "title": "Oracle (ORCL) Q1 2027 Earnings Call Transcript"
+        },
+        {
+          "url": "https://www.roic.ai/quote/ORAC.TO/transcripts/2027-year/1-quarter",
+          "title": "Oracle Corporation (ORAC.TO) Q1 FY2027 Earnings Call Transcript - September 10, 2026"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

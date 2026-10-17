@@ -1,0 +1,209 @@
+{
+  "current": "baseline",
+  "versions": {
+    "gepa_20261017_122148": {
+      "created_at": "2026-10-17T12:22:49",
+      "metadata": {
+        "mocked": false,
+        "run_dir": "runs/gepa/20261017_122148",
+        "test": {
+          "baseline/test": 0.5915678524374176,
+          "gepa/test": 0.7666666666666666
+        },
+        "val": {
+          "baseline/val": 0.5410628019323672,
+          "gepa/val": 0.6888888888888888
+        },
+        "void": "label leak: fixture event IDs encoded the scenario kind and were shown to the supervisor and reflector; all metrics for this version are invalid"
+      },
+      "version": "efded549ebd7"
+    },
+    "gepa_20261017_122338": {
+      "created_at": "2026-10-17T12:26:15",
+      "metadata": {
+        "mocked": false,
+        "run_dir": "runs/gepa/20261017_122338",
+        "test": {
+          "baseline/test": 0.5942028985507246,
+          "gepa/test": 0.5915678524374176
+        },
+        "val": {
+          "baseline/val": 0.5410628019323672,
+          "gepa/val": 0.5410628019323672
+        },
+        "void": "label leak: fixture event IDs encoded the scenario kind and were shown to the supervisor and reflector; all metrics for this version are invalid"
+      },
+      "version": "b31ca3fe7873"
+    },
+    "gepa_clean_150": {
+      "created_at": "2026-10-17T13:06:11",
+      "metadata": {
+        "caveat": "fixture splits contained identical prompts across train/val/test (fixed in 69cc67a); not for promotion",
+        "mocked": false,
+        "run_dir": "runs/gepa/clean_150",
+        "test": {},
+        "val": {
+          "baseline/val": 0.5412748171368862,
+          "gepa/val": 0.737037037037037
+        }
+      },
+      "version": "b6409d47114b"
+    },
+    "gepa_clean_60": {
+      "created_at": "2026-10-17T13:04:07",
+      "metadata": {
+        "caveat": "fixture splits contained identical prompts across train/val/test (fixed in 69cc67a); not for promotion",
+        "mocked": false,
+        "run_dir": "runs/gepa/clean_60",
+        "test": {},
+        "val": {
+          "baseline/val": 0.5175983436853002,
+          "gepa/val": 0.5412748171368862
+        }
+      },
+      "version": "eac5a206b52d"
+    },
+    "gepa_nano_150": {
+      "created_at": "2026-10-17T14:33:47",
+      "metadata": {
+        "mocked": false,
+        "note": "nano_60 (runs/gepa/nano_60) was a null run: its only proposal was rejected, so the policy is unchanged (eac5a206b52d, the baseline) and it is not registered as a separate version",
+        "run_dir": "runs/gepa/nano_150",
+        "status": "nano supervisor; evaluated; not promoted",
+        "supervisor_model": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+        "test": {
+          "baseline/test_macro_f1": {
+            "max": 0.37894736842105264,
+            "mean": 0.36673042482903745,
+            "min": 0.35950110051357304,
+            "values": [
+              0.36303991252050305,
+              0.3719298245614035,
+              0.36023391812865496,
+              0.37894736842105264,
+              0.35950110051357304
+            ]
+          },
+          "baseline/undetected": [
+            3,
+            1,
+            0,
+            1,
+            1
+          ],
+          "gepa/test_macro_f1": {
+            "max": 0.4096749811035525,
+            "mean": 0.37846317234433613,
+            "min": 0.35581699346405227,
+            "values": [
+              0.4096749811035525,
+              0.3680555555555556,
+              0.35581699346405227,
+              0.39158884441903313,
+              0.3671794871794872
+            ]
+          },
+          "gepa/undetected": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "repeats": 5,
+          "results": "docs/results/nano_test_20261017.json"
+        },
+        "val": {
+          "baseline/val": 0.411,
+          "gepa/val": 0.486
+        }
+      },
+      "version": "1c80e4ea7311"
+    },
+    "gepa_team_150": {
+      "created_at": "2026-10-17T13:35:29",
+      "metadata": {
+        "mocked": false,
+        "note": "val only; gepa_team_300 (best val of the three) was the one taken to test",
+        "run_dir": "runs/gepa/team_150",
+        "status": "evaluated, not promoted",
+        "test": {},
+        "val": {
+          "baseline/val": 0.5146876932591218,
+          "gepa/val": 0.5217560217560218
+        }
+      },
+      "version": "b68862eff145"
+    },
+    "gepa_team_300": {
+      "created_at": "2026-10-17T13:48:56",
+      "metadata": {
+        "mocked": false,
+        "run_dir": "runs/gepa/team_300",
+        "status": "evaluated, not promoted",
+        "test": {
+          "baseline/test_macro_f1": {
+            "max": 0.5876282970974507,
+            "mean": 0.5494138052198808,
+            "min": 0.5188763642869924,
+            "values": [
+              0.5382101558572147,
+              0.5782585331183803,
+              0.5240956757393661,
+              0.5876282970974507,
+              0.5188763642869924
+            ]
+          },
+          "baseline/undetected": [
+            2,
+            0,
+            0,
+            0,
+            0
+          ],
+          "gepa/test_macro_f1": {
+            "max": 0.5807420279251265,
+            "mean": 0.5526670355374482,
+            "min": 0.5319693094629155,
+            "values": [
+              0.5700300876466228,
+              0.5405143875732111,
+              0.5319693094629155,
+              0.540079365079365,
+              0.5807420279251265
+            ]
+          },
+          "gepa/undetected": [
+            3,
+            2,
+            2,
+            2,
+            2
+          ],
+          "repeats": 5,
+          "results": "docs/results/final_test_20261017.json"
+        },
+        "val": {
+          "baseline/val": 0.5486524822695036,
+          "gepa/val": 0.5567762733720181
+        }
+      },
+      "version": "4b331483c090"
+    },
+    "gepa_team_60": {
+      "created_at": "2026-10-17T13:26:31",
+      "metadata": {
+        "mocked": false,
+        "note": "val only; gepa_team_300 (best val of the three) was the one taken to test",
+        "run_dir": "runs/gepa/team_60",
+        "status": "evaluated, not promoted",
+        "test": {},
+        "val": {
+          "baseline/val": 0.5292050944224858,
+          "gepa/val": 0.5467571178949532
+        }
+      },
+      "version": "4ee577ec1b94"
+    }
+  }
+}

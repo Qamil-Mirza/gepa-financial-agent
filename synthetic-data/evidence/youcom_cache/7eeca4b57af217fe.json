@@ -1,0 +1,20 @@
+{
+  "query": "NVIDIA Data Center revenue growth year-over-year Q2 fiscal 2027 vs Q2 fiscal 2026",
+  "normalized": "2026 2027 center data fiscal growth nvidia over q2 revenue year",
+  "fetched_at": "2026-10-17T19:44:46Z",
+  "elapsed_s": 11.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s Data Center revenue was **$89.0 billion in Q2 fiscal 2027**, versus approximately **$41.0 billion in Q2 fiscal 2026**, an increase of roughly **$48.0 billion** and **117% year over year**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Second Quarter Fiscal 2027"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

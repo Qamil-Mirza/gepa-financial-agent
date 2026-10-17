@@ -1,0 +1,20 @@
+{
+  "query": "Micron cloud memory business unit revenue latest quarter",
+  "normalized": "business cloud memory micron quarter revenue unit",
+  "fetched_at": "2026-10-17T20:04:26Z",
+  "elapsed_s": 5.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Micron\u2019s Cloud Memory Business Unit (CMBU) generated **$16.283 billion of revenue in fiscal Q4 2026**, ended September 30, 2026. [[1]] This was a record, up **18% sequentially** from $13.769 billion in FQ3 2026, and represented **30%** of Micron\u2019s consolidated quarterly revenue. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.micron.com/files/doc_financials/2026/q4/Q4-26-Earnings-Deck.pdf",
+          "title": "Financial Results FQ4 2026"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

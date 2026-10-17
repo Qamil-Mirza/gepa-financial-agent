@@ -1,0 +1,32 @@
+{
+  "query": "NVIDIA Data Center revenue Q3 fiscal 2026 growth drivers",
+  "normalized": "2026 center data drivers fiscal growth nvidia q3 revenue",
+  "fetched_at": "2026-10-17T19:41:04Z",
+  "elapsed_s": 14.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s Data Center revenue was a record **$51.2 billion in Q3 FY2026** (quarter ended October 26, 2025), increasing **25% sequentially** and **66% year over year**. [[1]]\n\n**Primary growth drivers**\n\n- **GB300/Blackwell production ramp:** Data Center compute revenue increased **56% year over year**, driven principally by the ramp of GB300 systems; GB300 had overtaken GB200 and represented roughly **two-thirds of Blackwell revenue** during the quarter. [[2]] [[3]]\n- **Sustained AI-infrastructure capacity demand:** NVIDIA said cloud GPUs were sold out and that its installed GPU base\u2014including Blackwell, Hopper, and Ampere\u2014was fully utilized, reflecting continuing demand for both AI model training and inference workloads. [[1]] [[2]]\n- **Networking became a material incremental contributor:** Networking revenue reached **$8.2 billion**, up **162% year over year**, supported by NVLink scale-up and double-digit growth in Spectrum-X Ethernet and Quantum-X InfiniBand. [[4]]\n- **System-scale AI-factory deployments:** Large customer projects supported demand for GPUs and networking together, including AWS and HUMAIN\u2019s planned deployment of up to 150,000 AI accelerators and xAI/HUMAIN\u2019s 500-megawatt data-center initiative. [[2]]\n- **Broader adoption of NVIDIA switching in AI clusters:** NVIDIA stated that a majority of AI deployments included its switches, with Ethernet GPU attach rates roughly comparable with InfiniBand; Meta, Microsoft, Oracle, and xAI were cited as building gigawatt-scale AI factories using Spectrum-X Ethernet. [[2]] \n\nIn short, the 66% Data Center growth was not solely a GPU-volume story: it combined the high-value GB300 transition, exceptional AI-compute demand, and rapidly expanding sales of NVIDIA\u2019s interconnect and networking stack. [[3]] [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2025/NVIDIA-Announces-Financial-Results-for-Third-Quarter-Fiscal-2026/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Third Quarter Fiscal 2026"
+        },
+        {
+          "url": "https://www.rev.com/transcripts/nvidia-q3-2026-earnings-conference-call",
+          "title": "$NVDA NVIDIA Q3 2026 Earnings Conference Call"
+        },
+        {
+          "url": "https://vectorshift.ai/research/companies/nvidia/earnings/2026-q3",
+          "title": "NVIDIA CORP Q3 2026 earnings call transcript \u00b7 VectorShift Research"
+        },
+        {
+          "url": "https://s201.q4cdn.com/141608511/files/doc_financials/2026/q3/NVDA-Q3-2026-Earnings-Call-19-November-2025-5_00-PM-ET.pdf",
+          "title": "NVIDIA Corp. (NVDA)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

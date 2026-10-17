@@ -1,0 +1,48 @@
+{
+  "query": "interest rates Federal Reserve impact on data center REIT valuations",
+  "normalized": "center data federal impact interest rates reit reserve valuations",
+  "fetched_at": "2026-10-17T21:03:07Z",
+  "elapsed_s": 35.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Bottom line:** Federal Reserve tightening is generally a valuation headwind for data-center REITs, while easing is generally supportive, because policy-rate surprises have historically had economically meaningful negative effects on equity REIT prices; one study estimates an unexpected 25-basis-point Fed cut is associated with roughly a 2% rise in U.S. equity-REIT prices on average. [[1]]\n\n**The primary valuation channel is the required return.** A data-center REIT\u2019s enterprise value is commonly framed as stabilized property NOI divided by a cap rate, or as the present value of future cash flows discounted at a required return; higher risk-free rates and often wider credit/equity risk premiums raise those required returns, pushing values lower if NOI is unchanged. [[2]] [[1]]\n\n**Cap-rate sensitivity is especially material because the sector begins from low yields.** Data-center REITs were reported at an implied cap rate of about 4.4% in 2025, the lowest among major REIT property sectors; holding NOI constant, a 50-basis-point move from 4.4% to 4.9% reduces the simple NOI/cap-rate value by about 10.2%. [[3]] [[4]]\n\n**Rates also affect the cost and availability of growth capital.** Data centers require substantial upfront development expenditure, so higher borrowing costs reduce the spread between a project\u2019s stabilized yield and its financing cost, can make acquisitions less accretive, and can constrain development if debt and equity markets become less receptive. [[5]] [[6]]\n\n**Digital Realty illustrates both the exposure and the partial insulation.** At December 31, 2025, it had $18.557 billion of debt, but 92.2% was fixed-rate or swapped to fixed, with a 2.90% effective interest rate; that limits the immediate earnings hit from a Fed move, although refinancing and new-development funding ultimately reset at prevailing market rates. [[5]]\n\n**The cost of capital nonetheless matters for expansion.** Digital Realty\u2019s 2026 plan contemplated $3.25\u2013$3.75 billion of net development capex, while its long-term-debt issuance guidance indicated 4.0%\u20134.5% pricing\u2014well above the 2.90% effective rate on its existing debt stack. [[6]] [[5]]\n\n**Equity-market valuation can move faster than property appraisals.** Public REIT share prices reprice immediately around changes in expected Fed policy, whereas private-market cap rates and transaction values usually adjust more gradually; the empirical evidence specifically finds significant negative equity-REIT reactions to contractionary monetary surprises. [[1]]\n\n**Data-center fundamentals can offset, but not eliminate, rate pressure.** Strong leasing, contractual rent escalators, constrained power availability, and high development yields can increase expected NOI enough to support valuations despite higher discount rates; Digital Realty, for example, guided to average stabilized development yields above 10%. [[6]]\n\n**This makes the key question the spread, not merely the policy rate.** If stabilized yields and NOI growth remain robust while financing costs rise modestly, development can still create value; if cap rates rise faster than NOI growth or debt costs rise above achievable project returns, NAV, acquisition economics, and the public valuation multiple are likely to compress. [[2]] [[6]]\n\n**Current policy context remains restrictive relative to the sector\u2019s legacy debt costs.** On September 16, 2026, the FOMC raised the federal-funds target range to 3.75%\u20134.00%, citing elevated inflation, so investors should focus on Treasury yields, credit spreads, refinancing calendars, and cap-rate evidence rather than assuming near-term borrowing costs will revert to the low coupons embedded in existing debt. [[7]] [[5]]\n\n**Investor takeaway:** Favor data-center REITs with long-duration fixed-rate debt, ample liquidity, credible preleasing, high incremental development yields, and limited near-term refinancing needs; treat highly levered operators or externally growth-dependent models as more rate-sensitive. [[5]] [[8]] [[6]]\n\n**A useful monitoring dashboard is:** 10-year Treasury yields and credit spreads; implied and transaction cap rates; debt maturities and fixed/floating mix; interest-coverage and net-debt/EBITDA; leasing and rent growth; power availability; and the spread between prospective development yields and marginal financing costs. [[2]] [[5]] [[8]] [[6]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://link.springer.com/article/10.1007/s11146-024-09992-1",
+          "title": "The Impact of Monetary Policy on REITs: Evidence from FOMC Announcements"
+        },
+        {
+          "url": "https://www.federalreserve.gov/publications/november-2025-financial-stability-report-asset-valuations.htm",
+          "title": "Financial Stability Report - 1. Asset Valuations"
+        },
+        {
+          "url": "https://www.credaily.com/briefs/data-centers-lead-reit-investment-surge-with-low-cap-rates/",
+          "title": "Data Centers Lead REIT Investment Surge With Low Cap Rates - CRE Daily"
+        },
+        {
+          "url": "https://knowledge-leader.colliers.com/aaron-jodka/quick-hits-valuations-surge-for-data-center-reits/",
+          "title": "Quick Hits"
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1494877/000110465926015365/dlr-20251231x10k.htm",
+          "title": "DIGITAL REALTY TRUST, INC._December 31, 2025"
+        },
+        {
+          "url": "https://investor.digitalrealty.com/news-releases/news-release-details/digital-realty-reports-fourth-quarter-2025-results",
+          "title": "Digital Realty Reports Fourth Quarter 2025 Results"
+        },
+        {
+          "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a.htm",
+          "title": "Federal Reserve Board - Federal Reserve issues FOMC statement"
+        },
+        {
+          "url": "https://investor.digitalrealty.com/static-files/4bac803d-f2a7-400a-b4db-1e8804a60414",
+          "title": "Financial Supplement Table of Contents Fourth Quarter 2025"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

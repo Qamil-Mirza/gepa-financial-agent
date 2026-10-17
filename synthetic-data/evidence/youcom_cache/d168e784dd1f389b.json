@@ -1,0 +1,32 @@
+{
+  "query": "Intel client computing group revenue Core Ultra laptops",
+  "normalized": "client computing core group intel laptops revenue ultra",
+  "fetched_at": "2026-10-17T20:05:32Z",
+  "elapsed_s": 12.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Intel does not separately disclose revenue from **Core Ultra laptops**; it reports the broader **Client Computing Group (CCG)** segment, which includes notebook, desktop and other client-platform revenue. [[1]] \n\nFor FY2024, CCG generated **$30.3 billion** of revenue, up **4%** year over year; in Q4 2024, CCG revenue was **$8.0 billion**, down **9%** year over year. [[1]] \n\nThe closest disclosed laptop-specific figure is CCG **notebook revenue**: **$4.888 billion in Q3 2024**, versus $4.503 billion in Q3 2023. [[2]] \n\nCore Ultra is a processor product family rather than a reported revenue segment: Intel said more than **5 million AI PCs** had shipped since the December 2023 Core Ultra launch as of Q1 2024, but that shipment statistic is not equivalent to Core Ultra laptop revenue. [[3]] \n\nFor context, CCG revenue was **$32.2 billion in FY2025**, down 3% from the prior year, including **$8.2 billion in Q4 2025**, down 7% year over year. [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.intc.com/news-events/press-releases/detail/1726/intel-reports-fourth-quarter-and-full-year-2024-financial",
+          "title": "Intel Reports Fourth-Quarter and Full-Year 2024 Financial Results :: Intel Corporation (INTC)"
+        },
+        {
+          "url": "https://www.intc.com/news-events/press-releases/detail/1716/intel-reports-third-quarter-2024-financial-results",
+          "title": "Intel Reports Third-Quarter 2024 Financial Results :: Intel Corporation (INTC)"
+        },
+        {
+          "url": "https://www.intc.com/news-events/press-releases/detail/1692/intel-reports-first-quarter-2024-financial-results",
+          "title": "Intel Reports First-Quarter 2024 Financial Results :: Intel Corporation (INTC)"
+        },
+        {
+          "url": "https://www.intc.com/news-events/press-releases/detail/1759/intel-reports-fourth-quarter-and-full-year-2025-financial",
+          "title": "Intel Reports Fourth-Quarter and Full-Year 2025 Financial Results :: Intel Corporation (INTC)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}
