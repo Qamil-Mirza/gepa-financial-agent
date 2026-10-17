@@ -92,6 +92,16 @@ def _to_prompt_ids(info: dict[str, Any], example: DatasetExample) -> dict[str, A
     return {k: conv(v) for k, v in info.items() if k not in ("example_id", "scenario_id")}
 
 
+def strip_code_fences(text: str) -> str:
+    """Drop a code fence the reflection model wrapped around its proposal (docs/RESULTS.md, Known issues)."""
+    lines = text.strip().splitlines()
+    if lines and lines[0].startswith("```"):
+        lines = lines[1:]
+    if lines and lines[-1].strip() == "```":
+        lines = lines[:-1]
+    return "\n".join(lines).strip()
+
+
 def make_evaluator(client: ModelClient, *, json_mode: bool = False, max_tokens: int = 1024
                    ) -> Callable[[str, DatasetExample], tuple[float, dict[str, Any]]]:
     def evaluate(candidate: str, example: DatasetExample) -> tuple[float, dict[str, Any]]:
@@ -155,6 +165,8 @@ def run_optimization(seed_policy: Policy, train: list[Any], val: list[Any],
     )
     elapsed = time.time() - t0
     best_text = result.best_candidate if isinstance(result.best_candidate, str) else next(iter(result.best_candidate.values()))
+    if result.best_idx != 0:  # the seed is kept byte-for-byte so an unchanged prompt keeps its version hash
+        best_text = strip_code_fences(best_text)
     best = Policy.from_text(best_text, name=f"gepa_{run_dir.name}")
     result_path = run_dir / "result.json"
     payload = result.to_dict()

@@ -1,10 +1,12 @@
 """Command line entry points.
 
   python -m pitstop.cli check                     # verify Crusoe inference (and optionally You.com)
-  python -m pitstop.cli run --scenario scenarios/nvda_amd.json
+  python -m pitstop.cli run --scenario scenarios/nvda_amd.json [--correct-on-drift] [--no-report]
+  python -m pitstop.cli run --model <crusoe id> --shadow-prompt prompts/gepa/<name>.txt   # 2 supervisors, same inputs
   python -m pitstop.cli compare --run-dir runs/<id> --prompt-a prompts/supervisor_v0.txt --prompt-b prompts/<new>.txt
   python -m pitstop.cli timeline --run-dir runs/<id>   # rebuild + print the curated drift timeline
   python -m pitstop.cli serve --port 8765               # timeline API + live SSE stream for the UI
+  python -m pitstop.cli demo --port 8770                # GEPA demo page (pitstop/demo/)
 """
 from __future__ import annotations
 
@@ -20,6 +22,7 @@ from rich.table import Table
 
 from .config import ROOT, load_settings
 from .llm import LLMClient, UsageTracker
+from .agents.synthesizer import ReportSynthesizer
 from .research.youcom import FinanceResearchClient
 from .schemas import Scenario, SupervisorInput
 from .orchestrator import Swarm
@@ -60,14 +63,21 @@ async def cmd_run(args) -> None:
     s = load_settings()
     scenario = Scenario.model_validate_json(Path(args.scenario).read_text())
     worker_llm = _llm(s, s.worker_model, 0.4)
-    sup_llm = _llm(s, s.supervisor_model, 0.0)
+    model = args.model or s.supervisor_model
+    sup_llm = _llm(s, model, 0.0)
+    # same model, own client (own usage counter), different prompt; never halts or touches the timeline
+    shadow = Supervisor(_llm(s, model, 0.0), Path(args.shadow_prompt)) if args.shadow_prompt else None
     research = FinanceResearchClient(
         api_key=s.ydc_api_key, cache_dir=Path(args.cache_dir or s.cache_dir), mode=args.mode,
         effort=s.youcom_effort, max_live_calls=args.max_research_calls or s.max_research_calls,
     )
+    synthesizer = None if args.no_report else ReportSynthesizer(
+        LLMClient(s.report_model, api_key=s.crusoe_api_key, base_url=s.crusoe_base_url, temperature=0.2,
+                  max_tokens=4000, usage=UsageTracker()), ROOT / "prompts" / "worker")
     swarm = Swarm(scenario, worker_llm=worker_llm, supervisor=Supervisor(sup_llm, Path(args.prompt)),
                   research=research, prompts_dir=ROOT / "prompts" / "worker", runs_dir=s.runs_dir,
-                  halt_on_drift=args.halt_on_drift)
+                  halt_on_drift=args.halt_on_drift, correct_on_drift=args.correct_on_drift,
+                  max_corrections=args.max_corrections, synthesizer=synthesizer, shadow_supervisor=shadow)
     await swarm.run_all()
 
 
@@ -124,6 +134,16 @@ async def cmd_serve(args) -> None:
         server.server_close()
 
 
+async def cmd_demo(args) -> None:
+    from .demo.server import DEFAULT_SNAPSHOT, make_server
+    server = make_server(Path(args.snapshot or DEFAULT_SNAPSHOT), host=args.host, port=args.port)
+    console.print(f"[green]GEPA demo on http://{args.host}:{server.server_port}/[/]")
+    try:
+        await asyncio.to_thread(server.serve_forever)
+    finally:
+        server.server_close()
+
+
 def main() -> None:
     p = argparse.ArgumentParser(prog="pitstop")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -131,10 +151,18 @@ def main() -> None:
     r = sub.add_parser("run")
     r.add_argument("--scenario", default=str(ROOT / "scenarios" / "nvda_amd.json"))
     r.add_argument("--prompt", default=str(ROOT / "prompts" / "supervisor_v0.txt"))
+    r.add_argument("--model", help="supervisor model (default: PITSTOP_SUPERVISOR_MODEL)")
+    r.add_argument("--shadow-prompt", help="also judge every input with this prompt (same model); "
+                                          "logged to decisions_shadow.jsonl, never halts")
     r.add_argument("--mode", choices=["live", "replay"], default="live",
                    help="live: cache-first, call You.com on miss; replay: cache only")
     r.add_argument("--cache-dir"); r.add_argument("--max-research-calls", type=int)
     r.add_argument("--halt-on-drift", action="store_true", help="stop an agent at its intervention point")
+    r.add_argument("--correct-on-drift", action="store_true",
+                   help="at an intervention point, block the query and send the agent a correction")
+    r.add_argument("--max-corrections", type=int, default=2,
+                   help="corrections per agent before --halt-on-drift (if set) halts it")
+    r.add_argument("--no-report", action="store_true", help="skip the final report agent")
     m = sub.add_parser("compare")
     m.add_argument("--run-dir", required=True); m.add_argument("--agent")
     m.add_argument("--prompt-a", default=str(ROOT / "prompts" / "supervisor_v0.txt"))
@@ -145,9 +173,12 @@ def main() -> None:
     v = sub.add_parser("serve")
     v.add_argument("--host", default="127.0.0.1"); v.add_argument("--port", type=int, default=8765)
     v.add_argument("--runs-dir")
+    d = sub.add_parser("demo")
+    d.add_argument("--host", default="127.0.0.1"); d.add_argument("--port", type=int, default=8770)
+    d.add_argument("--snapshot", help="default: demo/snapshot.json")
     args = p.parse_args()
     asyncio.run({"check": cmd_check, "run": cmd_run, "compare": cmd_compare,
-                 "timeline": cmd_timeline, "serve": cmd_serve}[args.cmd](args))
+                 "timeline": cmd_timeline, "serve": cmd_serve, "demo": cmd_demo}[args.cmd](args))
 
 
 if __name__ == "__main__":
