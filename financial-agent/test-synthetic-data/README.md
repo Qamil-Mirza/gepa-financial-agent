@@ -34,7 +34,7 @@ at every cutoff.
 cd financial-agent/test-synthetic-data
 PY=../synthetic-data/.venv/bin/python   # reuses synthetic-data/.env for API keys
 $PY build_hard_set.py prefetch   # ~45 live You.com calls (~$5), once
-$PY build_hard_set.py generate   # 75 rollouts; --max-youcom-calls caps extra live calls (default 30)
+$PY build_hard_set.py generate   # 75 rollouts; --max-youcom-calls caps extra live calls (default 50)
 $PY build_hard_set.py export     # re-verify -> data/test.jsonl
 $PY build_hard_set.py stats
 ```

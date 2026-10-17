@@ -43,7 +43,7 @@ class BudgetExceeded(RuntimeError):
 
 class ResearchBank:
     def __init__(self, cache_dir: Path = config.YOUCOM_CACHE_DIR, live_budget: int = 0,
-                 max_concurrent: int = 2, timeout_s: float = 180.0):
+                 max_concurrent: int = 2, timeout_s: float = 125.0):
         self.cache_dir = cache_dir
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.live_budget = live_budget

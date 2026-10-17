@@ -93,7 +93,9 @@ def _parse_args(raw: str) -> Dict[str, Any]:
 
 async def run_rollout(client, bank: ResearchBank, task: TaskTemplate, steer: SteerSpec, *,
                       max_steps: int = 12, temperature: float = 1.0, seed: Optional[int] = None,
-                      allow_live_research: bool = True, today: Optional[str] = None) -> TraceRecord:
+                      allow_live_research: bool = True, today: Optional[str] = None,
+                      finish_from_step: Optional[int] = None) -> TraceRecord:
+    """finish_from_step hides the finish tool before that step, so long runs reach a late steer."""
     spec = TaskSpec(task_id=task.family, agent_id=task.agent_id, swarm_objective=task.swarm_objective,
                     agent_directive=task.directive, constraints=task.constraints,
                     success_criteria=task.success_criteria)
@@ -126,6 +128,8 @@ async def run_rollout(client, bank: ResearchBank, task: TaskTemplate, steer: Ste
         if steer.drift_type == "UNPRODUCTIVE_LOOP" and step >= (steer.step_x or 0):
             force = "finance_research"
         tools = [t for t in TOOLS if t["function"]["name"] == force] if force else TOOLS
+        if finish_from_step is not None and step < finish_from_step:
+            tools = [t for t in tools if t["function"]["name"] != "finish"] or tools
         comp = await client.complete(messages, tools, temperature=temperature, seed=seed)
         usage.calls += 1
         usage.prompt_tokens += comp.prompt_tokens

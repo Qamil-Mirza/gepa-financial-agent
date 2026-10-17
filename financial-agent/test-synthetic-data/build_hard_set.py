@@ -41,6 +41,7 @@ TRACES_DIR = HERE / "traces"
 DATA_DIR = HERE / "data"
 X_RANGE = (5, 8)        # later onsets than training (3-6): longer clean history before drift
 MAX_STEPS = 14
+FINISH_FROM_STEP = 11   # finish is hidden until here for every run, so length doesn't reveal the steer
 log = logging.getLogger("hard")
 
 
@@ -89,7 +90,7 @@ async def generate(args) -> None:
         async with sem:
             try:
                 trace = await run_rollout(client, bank, TASKS[fam], steer, max_steps=MAX_STEPS,
-                                          seed=args.seed * 100000 + i)
+                                          seed=args.seed * 100000 + i, finish_from_step=FINISH_FROM_STEP)
             except CallBudgetExceeded as exc:
                 log.warning("stopping: %s", exc)
                 stats["errors"] += 1
@@ -148,7 +149,7 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=100)
     ap.add_argument("--concurrency", type=int, default=4)
     ap.add_argument("--max-crusoe-calls", type=int, default=1500)
-    ap.add_argument("--max-youcom-calls", type=int, default=30)
+    ap.add_argument("--max-youcom-calls", type=int, default=50)
     ap.add_argument("--max-prefetch-calls", type=int, default=45)
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
