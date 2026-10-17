@@ -109,8 +109,11 @@ def main(argv=None) -> int:
             print("CRUSOE_API_KEY not set; use --mock.")
             return 2
         client, label = CrusoeClient.from_settings(s, "supervisor"), "[REAL Crusoe inference]"
-    for p in policies:
-        asyncio.run(run_policy(p, client, examples, args.delay, args.every_n, label))
+    async def run_all():  # one event loop for every policy: the shared async client stays on one loop
+        for p in policies:
+            await run_policy(p, client, examples, args.delay, args.every_n, label)
+
+    asyncio.run(run_all())
     comparison = current_policy_comparison(store)
     if comparison:
         print(f"\n=== held-out comparison for the current policy, from {comparison} ===")

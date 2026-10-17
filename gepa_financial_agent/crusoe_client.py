@@ -159,11 +159,17 @@ class CrusoeClient:
         self._asem_loop: asyncio.AbstractEventLoop | None = None
         # Only build real SDK clients when a key exists; an injected fake for one mode must not
         # force construction of the other (openai v3 raises on a missing key at construction).
+        self._async_factory: Any = None
         if key and (sync_client is None or async_client is None):
-            from openai import AsyncOpenAI, OpenAI
-            sync_client = sync_client or OpenAI(api_key=key, base_url=base_url, timeout=timeout, max_retries=0)
-            async_client = async_client or AsyncOpenAI(api_key=key, base_url=base_url, timeout=timeout, max_retries=0)
+            import openai
+            sync_client = sync_client or openai.OpenAI(api_key=key, base_url=base_url, timeout=timeout, max_retries=0)
+            if async_client is None:
+                # AsyncOpenAI's connection pool is bound to the event loop that first used it, so an owned
+                # async client is rebuilt whenever the running loop changes (e.g. repeated asyncio.run).
+                self._async_factory = lambda: openai.AsyncOpenAI(api_key=key, base_url=base_url, timeout=timeout,
+                                                                 max_retries=0)
         self._sync, self._async = sync_client, async_client
+        self._async_client_loop: asyncio.AbstractEventLoop | None = None
         log.info("CrusoeClient model=%s base_url=%s max_concurrent=%d", model, base_url, max_concurrent)
 
     @classmethod
@@ -212,6 +218,7 @@ class CrusoeClient:
                     return self._to_result(self._sync.chat.completions.create(**kw), t0)
                 except Exception as e:  # noqa: BLE001
                     if not _is_retryable(e):
+                        self.tracker.record_error()
                         raise
                     if attempt == self.max_retries:
                         self.tracker.record_error()
@@ -228,6 +235,12 @@ class CrusoeClient:
             self._asem, self._asem_loop = asyncio.Semaphore(self._max_concurrent), loop
         return self._asem
 
+    def _async_client(self) -> Any:
+        loop = asyncio.get_running_loop()
+        if self._async_factory is not None and self._async_client_loop is not loop:
+            self._async, self._async_client_loop = self._async_factory(), loop
+        return self._async
+
     async def acomplete(self, messages, *, max_tokens=1024, temperature=0.0, json_mode=False, seed=None) -> CompletionResult:
         kw = self._kwargs(messages, max_tokens, temperature, json_mode, seed)
         async with self._async_sem():
@@ -235,9 +248,10 @@ class CrusoeClient:
                 for attempt in range(self.max_retries + 1):
                     t0 = time.perf_counter()
                     try:
-                        return self._to_result(await self._async.chat.completions.create(**kw), t0)
+                        return self._to_result(await self._async_client().chat.completions.create(**kw), t0)
                     except Exception as e:  # noqa: BLE001
                         if not _is_retryable(e):
+                            self.tracker.record_error()
                             raise
                         if attempt == self.max_retries:
                             self.tracker.record_error()

@@ -72,6 +72,7 @@ def test_non_retryable_error_propagates():
     with pytest.raises(ValueError):
         c.complete([{"role": "user", "content": "hi"}])
     assert len(fake.calls) == 1
+    assert c.tracker.snapshot()["errors"] == 1  # non-retryable failures are counted too
 
 
 def test_truncated_flag():
@@ -94,3 +95,42 @@ def test_mock_client_is_marked_and_tracks_in_flight():
 def test_estimate_cost():
     assert estimate_cost_usd("deepseek-ai/Deepseek-V4-Flash", 1_000_000, 0) == pytest.approx(0.14)
     assert estimate_cost_usd("unknown/model", 10, 10) is None
+
+
+def test_async_sdk_client_is_rebuilt_per_event_loop(monkeypatch):
+    import openai
+    built = []
+
+    class FakeAsyncOpenAI:
+        def __init__(self, **kw):
+            self.loop = None
+            built.append(self)
+
+            async def create(**kw):
+                loop = asyncio.get_running_loop()
+                if self.loop is None:
+                    self.loop = loop
+                if self.loop is not loop:
+                    raise RuntimeError("Event loop is closed")
+                return fake_response()
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=create))
+
+    monkeypatch.setattr(openai, "AsyncOpenAI", FakeAsyncOpenAI)
+    c = CrusoeClient(model="x", api_key="k", sync_client=FakeSync([]))
+    msgs = [{"role": "user", "content": "hi"}]
+    for _ in range(2):  # e.g. demo_supervision.py runs one asyncio.run per policy
+        assert asyncio.run(c.acomplete(msgs)).text == '{"ok": true}'
+    assert len(built) == 2
+
+
+def test_injected_async_client_is_never_replaced():
+    class Fixed:
+        def __init__(self):
+            async def create(**kw):
+                return fake_response()
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=create))
+    fixed = Fixed()
+    c = CrusoeClient(model="x", async_client=fixed)
+    for _ in range(2):
+        asyncio.run(c.acomplete([{"role": "user", "content": "hi"}]))
+    assert c._async is fixed
