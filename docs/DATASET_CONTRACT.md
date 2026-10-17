@@ -7,6 +7,20 @@ Invalid lines are skipped and reported with line numbers; they are never silentl
 ## File format
 UTF-8 JSONL, one `DatasetExample` object per line. Blank lines ignored. Unknown fields are rejected.
 
+## Accepted layouts
+`load_jsonl` accepts two layouts and detects which one each row uses:
+
+1. **This layout:** `DatasetExample` as described below.
+2. **The synthetic-data layout** (`synthetic-data/DATASET_FORMAT.md`): rows that have `scenario_family` are converted by `dataset.from_teammate_row`:
+   - `scenario_family` becomes the tag `family:<x>`, plus the tag `source:gautam_v1`;
+   - `split` becomes `split_hint`;
+   - the top-level `drift_onset_step` moves to `ground_truth.drift_onset_step`;
+   - `source_references[*].source_id` and `published_at` are kept, and prompts show the source IDs so the supervisor can check citations.
+
+In both layouts the split you give is respected: `split_hint` forces the scenario's split, so the data is never re-split. Scenarios that share an identical prompt are always kept in the same split.
+
+**IDs must be opaque.** `event_id`, `scenario_id` and `example_id` must not encode the label or the scenario kind. The synthetic-data format is the model to follow: `evt_001`, `tr_6b78894f89`, `tr_6b78894f89@5`. Prompts use aliases (`E1..En`) anyway, but opaque IDs also keep logs and demos clean.
+
 ## DatasetExample
 | field | type | required | notes |
 |---|---|---|---|

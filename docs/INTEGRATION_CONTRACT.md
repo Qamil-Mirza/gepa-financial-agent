@@ -66,3 +66,6 @@ sessions only. `manager.export_session(agent_id)` / `await manager.replay(export
 ## Out of process
 If the stack is not Python or not in-process, write events as JSONL (one TrajectoryEvent per line) and we replay them with
 `ReplayAgent` + `EventStreamAdapter`; see `scripts/demo_supervision.py`. A thin HTTP/WebSocket shim is a Milestone F item.
+
+## Rate limits
+The supervisor model is set with `SUPERVISOR_MODEL`; the default is `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B`. Crusoe rate limits are per model, and the swarm's planner and checker run on that same model. Either point `SUPERVISOR_MODEL` at a different model, or keep `TriggerConfig(every_n_events>=4)` so supervisor traffic stays at about a quarter of agent traffic. Supervisor events count toward the bucket only when a trigger fires, and evaluations are bounded by `max_concurrent_inferences`.
