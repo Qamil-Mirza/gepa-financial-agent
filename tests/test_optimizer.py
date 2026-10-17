@@ -96,3 +96,12 @@ def test_reflector_side_info_uses_aliases_and_omits_ids():
     assert info["expected_evidence"] and all(re.fullmatch(r"E\d+", i) for i in info["expected_evidence"])
     assert info["predicted_evidence"] == ["E1"]
     assert not re.search(r"\be\d+\b", json.dumps(info)), "real event ids leaked into reflector feedback"
+
+
+def test_background_states_the_actual_scoring_weights():
+    from gepa_financial_agent import evaluator as ev
+    from gepa_financial_agent.optimizer import BACKGROUND
+    assert "at most 0.2" not in BACKGROUND
+    for w in (ev.W_STATUS, ev.W_TYPE, ev.W_EVIDENCE, ev.W_UNCERTAIN_ON_DRIFT, ev.W_UNCERTAIN_ON_HEALTHY,
+              ev.PEN_FALSE_ALARM, ev.PEN_INVALID_ID, ev.PEN_INVALID_CAP, ev.PEN_DRIFT_NO_EVIDENCE):
+        assert f"{w:+.2f}" in BACKGROUND, w
