@@ -19,7 +19,7 @@ uv run python scripts/smoke_test.py --supervise      # one REAL drift judgment (
 |---|---|
 | `scripts/smoke_test.py` | `--list-models` checks Crusoe connectivity and supported parameters; `--supervise [EXAMPLE_ID]` runs one judgment |
 | `scripts/evaluate_supervisor.py` | `--split val --heuristic [--policy NAME ...] [--dataset PATH ...]` compares policies on a split |
-| `scripts/optimize_supervisor.py` | `--max-metric-calls 60 --max-workers 4 [--promote] [--skip-test]` runs real GEPA, then compares baseline vs optimized |
+| `scripts/optimize_supervisor.py` | `--max-metric-calls 60 --max-workers 4 [--final-test] [--promote]` runs real GEPA, then compares baseline vs optimized on val (test only with `--final-test`) |
 | `scripts/demo_supervision.py` | `--delay 0.2 [--mock]` shows three replayed agents supervised concurrently, using baseline and current policies |
 
 Add `--mock` to any script to use the deterministic stub client. Mock output is always labeled `MOCK`.

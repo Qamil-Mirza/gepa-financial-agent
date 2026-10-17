@@ -32,7 +32,9 @@ How `parse_decision` handles model output:
 - **Recovering JSON:** it pulls the JSON object out of surrounding prose or code fences.
 - **Unknown evidence IDs:** IDs that are not in the trajectory are dropped and recorded in `invalid_evidence_ids`; the decision itself is kept.
 - **Truncated output:** an empty response with `finish_reason == "length"` becomes an explicit `truncated_output` error, never `ON_TRACK`.
-- **Ground truth stays out:** `build_messages` takes a `SupervisorInput`, never a `DatasetExample`, so ground-truth labels cannot reach the prompt.
+- **Ground truth stays out:** `build_messages` takes a `SupervisorInput`, never a `DatasetExample`.
+- **Opaque event aliases:** the prompt never shows real event IDs. `event_aliases` renders them as `E1..En` by trajectory position, and `parse_decision` maps the cited aliases back to real IDs; anything else counts as fabricated evidence. Datasets often encode the scenario, and so the label, in their IDs: an earlier version leaked the label this way (see the Correction in `PROGRESS.md`). `tests/test_supervisor.py::test_no_fixture_prompt_contains_a_label_token` guards it.
+- **Robust parsing:** `extract_json` scans every `{` with `json.JSONDecoder.raw_decode` and keeps the last object that has a `status` key, so braces in prose or reasoning and draft objects don't break parsing. Enum values are case-insensitive.
 
 ## 3. Bounded concurrency
 
@@ -54,6 +56,10 @@ Not every event triggers an inference. `TriggerConfig` (defaults `every_n_events
 
 `evaluate_pending()` evaluates each pending, non-evaluating session exactly once. Several triggers that fire between two calls are coalesced into a single evaluation.
 
+**Failure isolation:**
+- A redelivered event (same `event_id`, same content) is ignored, so at-least-once delivery is safe. The same `event_id` with different content is rejected with `ValueError`, which the adapter logs and drops.
+- An exception while evaluating one session becomes an `EvaluationRecord` with a `session_error`; `evaluate_pending` gathers with `return_exceptions=True`. One bad session never stops the others.
+
 ## 5. Scoring (GEPA per-example reward)
 
 `evaluator.score_prediction(record, example)` returns a score in [-0.5, 1.0] plus a feedback dict that GEPA's reflection model reads.
@@ -73,7 +79,7 @@ Not every event triggers an inference. `TriggerConfig` (defaults `every_n_events
 
 **Why degenerate strategies lose:**
 
-- **Always UNCERTAIN:** the score is capped at 0.20.
+- **Always UNCERTAIN:** it earns 0.20 on healthy agents and 0.15 on clear drift, plus the evidence bonus. On the dev fixtures it averages about 0.33–0.37, below a real detector (about 0.55). This is not a hard cap: UNCERTAIN on an UNCERTAIN example earns the full +0.60, and the evidence bonus checks overlap, not precision (a known weakness, deferred).
 - **Always ON_TRACK:** it scores 0.6 only on healthy agents and 0 on every drift.
 - **Always DRIFTING:** it is penalized −0.30 on every healthy agent.
 
@@ -86,12 +92,13 @@ The feedback string names the exact error, for example "overconfident: only one 
 - **Installed API:** gepa 0.1.4. `gepa.optimize_anything.optimize_anything(seed_candidate=str, evaluator=fn(candidate, example) -> (score, side_info), dataset=train, valset=val, objective=..., background=..., config=GEPAConfig(engine=EngineConfig(max_metric_calls, run_dir, seed, parallel, max_workers), reflection=ReflectionConfig(reflection_lm=CrusoeReflectionLM, reflection_minibatch_size)))`. The PRD's `OptimizeAnythingConfig`/`max_evals` names do not exist in this version.
 - **What gets optimized:** only the policy text. `OUTPUT_CONTRACT` (`supervisor.py`) is a fixed suffix appended to every candidate, so all candidates share one output schema.
 - **Split discipline:**
-  - `split_by_scenario` keeps every prefix of a scenario in the same split.
+  - `split_by_scenario` keeps every prefix of a scenario in the same split. It stratifies scenarios by their `kind:` tag, or by the full trajectory's label when there are no tags, so every kind, including hard negatives, reaches every split.
   - GEPA sees only train (reflection minibatches) and val (candidate selection).
-  - `scripts/optimize_supervisor.py` evaluates the test split once, after selection; `--skip-test` leaves it untouched.
+  - `scripts/optimize_supervisor.py` touches the test split only with `--final-test`. The intended flow is to choose on val, then run one final test evaluation, for example `evaluate_supervisor.py --split test` repeated to measure noise.
+  - Reflector feedback (`optimizer._to_prompt_ids`) uses the same aliases the supervisor saw and drops `example_id` and `scenario_id`. Labels and rationales do reach the reflector: that is the training signal, and it only comes from train minibatches.
   - Optimization uses only frozen trajectories; the package never calls You.com.
 - **Artifacts in `runs/gepa/<ts>/`:** `config.json`, `seed_policy.txt`, `best_policy.txt`, `result.json`, GEPA's `candidates.json`, `run_log.txt`, `gepa_state.bin`, `comparison.json`/`comparison.txt`, per-split `eval_*/predictions.jsonl` and `metrics.json`, and `artifacts.json` with separate supervisor and reflection usage.
-- **Versioning:** each run saves `policies/versions/gepa_<ts>.txt` and registers it in `policies/versions/manifest.json`. `--promote` (`PolicyStore.promote`) copies a version to `policies/current.txt`. Old versions are never changed.
+- **Versioning:** each real run saves `policies/versions/gepa_<ts>.txt` and registers it in `policies/versions/manifest.json`. Mock runs are saved as `mock_<ts>`. `--promote` (`PolicyStore.promote`) copies a version to `policies/current.txt`, and refuses (exit 3) when the run was mocked. Old version texts are never changed.
 
 ## 7. Supervisor model vs reflection model
 
@@ -114,7 +121,7 @@ Both are served by Crusoe Managed Inference through the OpenAI-compatible SDK at
 - the policy manifest records `mocked` for each saved version;
 - mock reflection output contains `[MOCK REFLECTION ...]`.
 
-Mock runs prove that the pipeline is wired correctly, nothing more. They are never promoted.
+Mock runs prove that the pipeline is wired correctly, nothing more. `optimize_supervisor.py` refuses to promote them.
 
 ## 9. Optional dependency metadata (DAG failsafe)
 
@@ -123,7 +130,8 @@ Mock runs prove that the pipeline is wired correctly, nothing more. They are nev
 ## 10. Known limitations
 
 - **Uncalibrated confidence:** `confidence` is a model estimate, not a calibrated probability.
-- **Small synthetic data:** the current numbers come from deterministic dev fixtures (`scripts/make_dev_fixtures.py`), with only 19 val and 25 test examples. One flipped example moves val macro-F1 by about 0.1. Credible results need the teammate dataset described in `docs/DATASET_CONTRACT.md`.
+- **Small synthetic data:** the current numbers come from deterministic dev fixtures (`scripts/make_dev_fixtures.py`), with 28 val and 28 test examples. One flipped example moves macro-F1 by several points. Credible results need the teammate dataset described in `docs/DATASET_CONTRACT.md`.
+- **Dataset validation:** `LoadReport.summary()` lists each invalid line with its line number and reason. The scripts exit with code 4 on invalid lines unless `--allow-invalid` is passed. A missing `supervisor_input.observation_step` is filled in from the top-level one, and a conflicting value is rejected.
 - **UNCERTAIN-at-onset is our convention:** `expand_prefixes` labels the onset step UNCERTAIN because our fixture generator was built that way. The thresholds GEPA learns (for example "≥2 identical repeats" for UNPRODUCTIVE_LOOP) may be fitting that generator rather than drift in general.
 - **Rate limits:** 30 requests/min per model without a payment method bounds GEPA budgets and evaluation size.
 - **Observational only:** supervision never blocks or corrects agents.
