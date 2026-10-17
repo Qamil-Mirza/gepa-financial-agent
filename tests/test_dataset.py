@@ -76,3 +76,27 @@ def test_truncate_relabels_prefix_before_onset():
 def test_label_distribution():
     exs = [make_example("a"), make_example("b", status="DRIFTING", drift_type="OTHER")]
     assert label_distribution(exs) == {"ON_TRACK": 1, "DRIFTING": 1, "UNCERTAIN": 0}
+
+
+def test_split_stratifies_by_kind_tag_so_every_kind_is_in_every_split():
+    from pathlib import Path
+    exs = load_jsonl(Path(__file__).resolve().parents[1] / "data/fixtures/dev_examples.jsonl").examples
+    sp = split_by_scenario(exs, seed=0)
+    kinds = lambda part: {t for e in part for t in e.tags if t.startswith("kind:")}
+    assert kinds(sp.train) == kinds(sp.val) == kinds(sp.test) == kinds(exs)
+    groups = [{e.scenario_id for e in part} for part in (sp.train, sp.val, sp.test)]
+    assert not (groups[0] & groups[1]) and not (groups[0] & groups[2]) and not (groups[1] & groups[2])
+
+
+def test_split_without_tags_stratifies_by_full_trajectory_label():
+    exs = []
+    for label, dtype in (("ON_TRACK", None), ("DRIFTING", "GOAL_DEVIATION"), ("DRIFTING", "UNPRODUCTIVE_LOOP")):
+        for s in range(5):
+            sid = f"{label}_{dtype}_{s}"
+            full = make_example(sid, n_events=6, onset=3 if dtype else None, status=label, drift_type=dtype,
+                                evidence=[f"{sid}_e4"] if dtype else ())
+            exs.extend(expand_prefixes([full], cutoffs=[2, 5]))
+    sp = split_by_scenario(exs, seed=0)
+    for part in (sp.train, sp.val, sp.test):
+        full_labels = {(e.ground_truth.status.value, e.ground_truth.drift_type) for e in part if e.observation_step == 5}
+        assert len(full_labels) == 3, full_labels

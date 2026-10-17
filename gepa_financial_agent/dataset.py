@@ -65,27 +65,51 @@ class DatasetSplits:
         return f"train={len(self.train)} val={len(self.val)} test={len(self.test)}"
 
 
-def split_by_scenario(examples: list[DatasetExample], train_frac: float = 0.6, val_frac: float = 0.2,
-                      seed: int = 0) -> DatasetSplits:
-    """Assign whole scenarios to splits so no prefix of one trajectory leaks across splits.
+def _stratum(scenario_examples: list[DatasetExample]) -> str:
+    """kind:<x> tag when present, else the label of the scenario's longest (full) trajectory."""
+    for ex in scenario_examples:
+        for t in ex.tags:
+            if t.startswith("kind:"):
+                return t
+    full = max(scenario_examples, key=lambda e: e.observation_step)
+    gt = full.ground_truth
+    return f"label:{gt.status.value}/{gt.drift_type.value if gt.drift_type else '-'}"
 
-    A scenario with any example carrying split_hint is forced to that split.
-    """
-    forced: dict[str, str] = {}
-    for ex in examples:
-        if ex.split_hint:
-            forced[ex.scenario_id] = ex.split_hint
-    free = sorted({ex.scenario_id for ex in examples} - set(forced))
-    random.Random(seed).shuffle(free)
-    n = len(free)
+
+def _allocate(n: int, train_frac: float, val_frac: float) -> tuple[int, int]:
     n_train = int(round(n * train_frac))
     n_val = int(round(n * val_frac))
     if n >= 3:
         n_train = max(1, min(n_train, n - 2))
         n_val = max(1, min(n_val, n - n_train - 1))
+    return n_train, n_val
+
+
+def split_by_scenario(examples: list[DatasetExample], train_frac: float = 0.6, val_frac: float = 0.2,
+                      seed: int = 0) -> DatasetSplits:
+    """Assign whole scenarios to splits so no prefix of one trajectory leaks across splits.
+
+    Scenarios are stratified (by `kind:` tag, else by the full trajectory's label) so every kind of
+    scenario, including hard negatives, reaches every split. A scenario with any example carrying
+    split_hint is forced to that split.
+    """
+    by_scenario: dict[str, list[DatasetExample]] = {}
+    forced: dict[str, str] = {}
+    for ex in examples:
+        by_scenario.setdefault(ex.scenario_id, []).append(ex)
+        if ex.split_hint:
+            forced[ex.scenario_id] = ex.split_hint
+    strata: dict[str, list[str]] = {}
+    for sid in sorted(set(by_scenario) - set(forced)):
+        strata.setdefault(_stratum(by_scenario[sid]), []).append(sid)
+    rng = random.Random(seed)
     assignment = dict(forced)
-    for i, sid in enumerate(free):
-        assignment[sid] = "train" if i < n_train else ("val" if i < n_train + n_val else "test")
+    for key in sorted(strata):
+        free = strata[key]
+        rng.shuffle(free)
+        n_train, n_val = _allocate(len(free), train_frac, val_frac)
+        for i, sid in enumerate(free):
+            assignment[sid] = "train" if i < n_train else ("val" if i < n_train + n_val else "test")
     splits = DatasetSplits()
     for ex in examples:
         getattr(splits, assignment[ex.scenario_id]).append(ex)
