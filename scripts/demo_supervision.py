@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import glob
 import sys
 import time
 from pathlib import Path
@@ -76,6 +75,16 @@ async def run_policy(policy, client, examples, delay, every_n, mocked_label):
     print(f"  usage: {manager.stats()['usage']}")
 
 
+def current_policy_comparison(store: PolicyStore) -> Path | None:
+    """comparison.txt of the real GEPA run that produced the promoted policy, or None."""
+    m = store._manifest()
+    meta = m["versions"].get(m.get("current") or "", {}).get("metadata", {})
+    if meta.get("mocked") or not meta.get("run_dir"):
+        return None
+    path = Path(meta["run_dir"]) / "comparison.txt"
+    return path if path.exists() else None
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--policy", action="append", default=None, help="repeatable; default: baseline, and current if different")
@@ -102,10 +111,10 @@ def main(argv=None) -> int:
         client, label = CrusoeClient.from_settings(s, "supervisor"), "[REAL Crusoe inference]"
     for p in policies:
         asyncio.run(run_policy(p, client, examples, args.delay, args.every_n, label))
-    latest = sorted(glob.glob("runs/gepa/*/comparison.txt"))
-    if latest:
-        print(f"\n=== held-out comparison from {latest[-1]} ===")
-        print(Path(latest[-1]).read_text())
+    comparison = current_policy_comparison(store)
+    if comparison:
+        print(f"\n=== held-out comparison for the current policy, from {comparison} ===")
+        print(comparison.read_text())
     return 0
 
 

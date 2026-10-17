@@ -54,3 +54,30 @@ def test_three_agents_stream_through_adapter():
     assert adapter.queue.empty() and manager.stats()["pending"] == 0
     for a in agents:  # every event reached the right session, none leaked
         assert [e.event_id for e in manager.sessions[a.agent_id].events] == [e.event_id for e in a.events]
+
+
+def _load_demo():
+    import importlib.util
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("demo_supervision", root / "scripts" / "demo_supervision.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_demo_shows_comparison_of_current_policy_run_not_latest_dir(tmp_path):
+    from gepa_financial_agent.policy_store import PolicyStore
+    demo = _load_demo()
+    real_run, mock_run = tmp_path / "runs" / "20261017_120000", tmp_path / "runs" / "mock_check"
+    for d, label in ((real_run, "REAL"), (mock_run, "MOCK")):
+        d.mkdir(parents=True)
+        (d / "comparison.txt").write_text(label)
+    store = PolicyStore(tmp_path / "policies")
+    store.save_version("real policy", "gepa_real", {"mocked": False, "run_dir": str(real_run)})
+    store.save_version("mock policy", "gepa_mock", {"mocked": True, "run_dir": str(mock_run)})
+    assert demo.current_policy_comparison(store) is None  # nothing promoted yet
+    store.promote("gepa_real")
+    assert demo.current_policy_comparison(store) == real_run / "comparison.txt"
+    store.promote("gepa_mock")
+    assert demo.current_policy_comparison(store) is None  # never show a mock run's table
