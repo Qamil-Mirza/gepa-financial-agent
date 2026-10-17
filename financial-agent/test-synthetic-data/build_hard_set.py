@@ -5,7 +5,7 @@
   python build_hard_set.py export     # re-verify and write data/test.jsonl
   python build_hard_set.py stats
 
-Run with the synthetic-data venv:  ../synthetic-data/.venv/bin/python build_hard_set.py <cmd>
+Run with the synthetic-data venv:  ../../synthetic-data/.venv/bin/python build_hard_set.py <cmd>
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from collections import Counter
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent / "synthetic-data"))
+sys.path.insert(0, str(HERE.parents[1] / "synthetic-data"))  # repo-root synthetic-data/
 sys.path.insert(0, str(HERE))
 
 from hard_tasks import HARD_TASKS  # noqa: E402
