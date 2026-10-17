@@ -1,0 +1,24 @@
+{
+  "query": "AMD EPYC server CPU revenue contribution to data center segment",
+  "normalized": "amd center contribution cpu data epyc revenue segment server",
+  "fetched_at": "2026-10-17T19:25:28Z",
+  "elapsed_s": 10.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD does **not** disclose EPYC server-CPU revenue as a separate dollar amount or percentage of its Data Center segment; the segment aggregates server CPUs with AI accelerators, GPUs, DPUs/NICs, FPGAs, and other data-center products. [[1]] \n\nFor FY2025, AMD reported Data Center revenue of **$16.635 billion**, up from **$12.579 billion** in FY2024; management attributed the increase to demand for both fifth-generation EPYC processors and Instinct MI350 GPUs, but did not quantify either product family\u2019s individual contribution. [[2]] [[1]] \n\nThus, EPYC is a material driver of Data Center revenue and growth, but any precise EPYC revenue contribution\u2014or EPYC share of the $16.6 billion segment total\u2014would be an external estimate rather than an AMD-reported figure. [[2]] [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-26-000018/amd-20251227.htm",
+          "title": "February 4, 2026 - 10-K: Annual report [Section 13 and 15(d), not S-K Item 405]"
+        },
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1276/amd-reports-fourth-quarter-and-full-year-2025-financial-results",
+          "title": "AMD Reports Fourth Quarter and Full Year 2025 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "query": "How does NVIDIA define its Data Center reporting segment and what is included in it",
+  "normalized": "center data define included nvidia reporting segment",
+  "fetched_at": "2026-10-17T19:25:02Z",
+  "elapsed_s": 10.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s **Data Center** is a **market platform**\u2014not its separately reported operating segment; NVIDIA reports operating results through **Compute & Networking** and **Graphics**, with the former also including Automotive platforms and related software. [[1]] \n\nNVIDIA defines the Data Center platform as serving compute-intensive workloads including **AI, data processing, graphics, robotics, and scientific computing**. [[2]] \n\nIt is an end-to-end accelerated-computing offering composed of: \n- **Compute processors:** GPUs, CPUs and DPUs. [[1]]\n- **Networking and interconnects:** NVLink switches, NICs/networking adapters, scale-out networking, Ethernet and InfiniBand platforms, and NVLink compute fabric. [[1]]\n- **Systems:** data-center-scale systems integrating those components. [[1]]\n- **Software and services:** CUDA; CUDA-X acceleration libraries; AI models and training datasets; APIs, SDKs and domain-specific application frameworks. [[1]] \n\nThus, the Data Center revenue line captures NVIDIA\u2019s data-center compute and networking platforms for accelerated computing and AI solutions, rather than GPU chip sales alone. [[1]] For context, NVIDIA disclosed Data Center revenue of **$193.737 billion** in FY2026 (year ended January 25, 2026), including **$162.361 billion** of compute revenue. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+          "title": "nvda-20260125"
+        },
+        {
+          "url": "https://investor.nvidia.com/files/doc_financials/2026/q4/10K-NVDA.pdf",
+          "title": "FORM 10-K NVIDIA CORPORATION"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "query": "NVIDIA gaming segment GeForce revenue most recent quarter",
+  "normalized": "gaming geforce nvidia quarter revenue segment",
+  "fetched_at": "2026-10-17T19:24:44Z",
+  "elapsed_s": 11.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA no longer reports a standalone **GeForce/Gaming** revenue line beginning in FY2027; it has been incorporated into the broader **Edge Computing** category. [[1]] \n\nFor the most recently reported quarter, **Q2 FY2027 ended July 26, 2026**, Edge Computing revenue was **$7.2 billion**, up **13% quarter over quarter** and **27% year over year**. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://gamesreviews.com/news/08/nvidia-q2-fy27-96-2b-beat-but-geforce-gaming-revenue-shrinks-to-7-2b/",
+          "title": "Nvidia Q2 FY27: $96.2B Beat, But GeForce Gaming Revenue Shrinks to $7.2B - GamesReviews.com"
+        },
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Second Quarter Fiscal 2027"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

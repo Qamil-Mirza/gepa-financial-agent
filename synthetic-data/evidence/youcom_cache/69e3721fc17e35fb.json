@@ -1,0 +1,52 @@
+{
+  "query": "Microsoft Xbox Google Pixel Amazon Alexa Meta Quest sales",
+  "normalized": "alexa amazon google meta microsoft pixel quest sales xbox",
+  "fetched_at": "2026-10-17T19:30:07Z",
+  "elapsed_s": 101.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "\u201cSales\u201d are not directly comparable across these four products because the companies disclose different measures\u2014platform/segment revenue, installed devices, or third-party shipment estimates rather than product-specific sales. [[1, 2]]\n\n| Product | Best disclosed sales indicator | What it does\u2014and does not\u2014measure |\n|---|---:|---|\n| **Microsoft Xbox** | **$23.455bn FY2025 Gaming revenue**, up 9% year over year; Xbox hardware revenue fell 25%. [[1]]| This is the entire Gaming business\u2014Xbox hardware, first- and third-party content, Game Pass, cloud gaming, advertising and other cloud services\u2014not console sales alone. [[1]] Microsoft does not provide current console-unit sales in the annual-report disclosure cited here. [[1]]|\n| **Google Pixel** | Alphabet\u2019s **Subscriptions, Platforms and Devices** revenue was **$48.03bn in FY2025**, versus $40.34bn in FY2024. [[3]]| This category includes subscriptions and platforms as well as devices, so it is **not Pixel revenue**. [[4]] Alphabet does not separately disclose Pixel units or Pixel revenue; a third-party-derived estimate puts 2025 Pixel shipments at roughly **15m units**, but that is not company-reported. [[5]]|\n| **Amazon Alexa** | Amazon said there were **more than 600m Alexa devices** in use as of February 26, 2025. [[6]]| This is an installed/device base across Alexa-enabled products, not annual Echo-unit sales or Alexa revenue. [[6]] Amazon does not provide a separately reported Alexa hardware or service-revenue line in the material retrieved. [[6]]|\n| **Meta Quest** | Meta\u2019s **Reality Labs FY2025 revenue was $2.207bn** and its operating loss was **$19.193bn**. [[7, 8]]| Reality Labs includes virtual-, augmented- and mixed-reality consumer hardware, software and content, so the revenue is **not Quest-only**. [[2]] Meta does not publicly disclose Quest unit sales; IDC data reported by Forbes estimates **1.7m Quest shipments in the first three quarters of 2025**, down 16% year over year. [[9]]|\n\n**Bottom line:** Xbox is the only one of the four with a large, directly reported product-ecosystem revenue figure; Pixel and Quest must be assessed through broad reporting categories plus external shipment estimates; Alexa\u2019s most meaningful disclosed figure is its 600m-plus device footprint rather than sales revenue. [[1, 3, 6, 7]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.microsoft.com/investor/reports/ar25/index.html",
+          "title": "Microsoft 2025 Annual Report"
+        },
+        {
+          "url": "https://investor.atmeta.com/investor-news/press-release-details/2025/Meta-Reports-Third-Quarter-2025-Results/default.aspx",
+          "title": "Meta - Meta Reports Third Quarter 2025 Results"
+        },
+        {
+          "url": "https://tako.com/card/PsBeJhjtD61kyH1BCbwo/",
+          "title": "Alphabet Inc. Google Subscriptions, Platforms, and Devices Total Revenues (Annual)"
+        },
+        {
+          "url": "https://abc.xyz/2025-q1-earnings-call",
+          "title": "Alphabet Investor Relations - 2025 Q1 Earnings Call"
+        },
+        {
+          "url": "https://axis-intelligence.com/google-pixel-statistics/",
+          "title": "Google Pixel Statistics 2026: Market Share, Sales, Camera Scores & Growth Data - Axis Intelligence"
+        },
+        {
+          "url": "https://www.aboutamazon.com/news/devices/new-alexa-generative-artificial-intelligence",
+          "title": "Introducing Alexa+: skills, cost, and availability"
+        },
+        {
+          "url": "https://tako.com/card/pECikhKEQYAEvAkDZJLn/",
+          "title": "Meta Platforms, Inc. Reality Labs Total Revenues (Annual)"
+        },
+        {
+          "url": "https://tako.com/card/jMlOswQ7e01x_TZi_k-x/",
+          "title": "Meta Platforms, Inc. Reality Labs EBIT (Annual)"
+        },
+        {
+          "url": "https://www.forbes.com/sites/andrewwilliams/2026/01/05/meta-quest-series-future-looks-bleaker-as-shipments-decline/",
+          "title": "Meta Quest Series Future Looks Bleaker As Shipments Decline"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

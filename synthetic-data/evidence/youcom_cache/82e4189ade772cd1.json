@@ -1,0 +1,28 @@
+{
+  "query": "NVIDIA Data Center revenue Q2 FY2027 drivers growth",
+  "normalized": "center data drivers fy2027 growth nvidia q2 revenue",
+  "fetched_at": "2026-10-17T19:31:46Z",
+  "elapsed_s": 11.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**NVIDIA Data Center revenue was $89.0 billion in Q2 FY2027** (quarter ended July 26, 2026), increasing **18% sequentially** and **117% year over year**; it represented about **92.5%** of total company revenue of $96.2 billion. [[1]]\n\n**Primary growth drivers**\n\n- **Blackwell Ultra infrastructure ramp:** NVIDIA\u2019s 10-Q identifies the ramp of Blackwell Ultra as the direct driver of Data Center growth, while Blackwell accounted for the majority of system shipments. [[2]]\n- **Broad hyperscaler demand:** Hyperscale Data Center revenue reached **$48.7 billion**, up **13% QoQ** and **102% YoY**, driven by sustained strength in Blackwell/Blackwell Ultra deployments. [[2]]\n- **Faster growth outside traditional hyperscalers:** AI Clouds, Industrial & Enterprise (\u201cACIE\u201d) revenue rose to **$40.3 billion**, up **25% QoQ** and **138% YoY**, pointing to incremental demand from neoclouds, AI-model makers, industrial customers, and enterprises. [[2, 3]]\n- **AI-infrastructure buildout widened across customer types:** NVIDIA characterized demand as extending across hyperscalers, AI labs, AI-native firms, enterprises, and sovereign customers, supported by an expanding global AI-infrastructure buildout. [[3]]\n- **More valuable full-system content per gigawatt:** NVIDIA\u2019s platform extends beyond GPUs to CPUs, NVLink, and InfiniBand/Ethernet networking; management said the revenue opportunity increased from roughly **$18 billion/GW for Hopper** to **$25 billion/GW for Grace Blackwell**, increasing revenue content as customers deploy AI factories. [[3]]\n- **China was not material to the result:** Hopper Data Center sales to China were less than **1% of Data Center revenue** in the quarter, so the growth was principally generated elsewhere. [[2]]\n\n**Bottom line:** Q2 FY2027 growth was not solely a unit-volume rebound\u2014it reflected the Blackwell Ultra product-cycle ramp, accelerating purchases by hyperscalers, outsized expansion in neocloud/enterprise/industrial demand, and higher platform content per AI data-center deployment. [[2, 3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Second Quarter Fiscal 2027"
+        },
+        {
+          "url": "https://investor.nvidia.com/files/doc_financials/2027/NVDA-2027-Q2-10Q-Final-including-exhibits.pdf",
+          "title": "UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549"
+        },
+        {
+          "url": "https://investor.nvidia.com/files/content_files/TRANSCRIPT_-NVIDIA-Corp-NVDA-US-Q2-2027-Earnings-Call-26-August-2026-5_00-PM-ET.pdf",
+          "title": "Corrected Transcript 1-877-FACTSET www.callstreet.com Total Pages: 16"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

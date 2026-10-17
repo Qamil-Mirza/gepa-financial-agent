@@ -1,0 +1,20 @@
+{
+  "query": "NVIDIA Data Center revenue FY2026 full year",
+  "normalized": "center data full fy2026 nvidia revenue year",
+  "fetched_at": "2026-10-17T19:45:16Z",
+  "elapsed_s": 9.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s **Data Center revenue was $193.7 billion in fiscal 2026**, a **68% increase year over year**. NVIDIA\u2019s FY2026 ended on **January 25, 2026**. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2026/",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Fourth Quarter and Fiscal 2026"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "query": "NVIDIA stock price October 17 2026",
+  "normalized": "17 2026 nvidia october price stock",
+  "fetched_at": "2026-10-17T19:38:24Z",
+  "elapsed_s": 16.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA (NASDAQ: NVDA) did not trade on Saturday, October 17, 2026. [[1]] The most recent regular-session close was **$214.13 per share** on Friday, October 16, 2026, down **$3.10 (1.43%)** for the day. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.calendar-365.com/calendar/2026/October.html",
+          "title": "October 2026 Calendar"
+        },
+        {
+          "url": "https://finance.yahoo.com/quote/NVDA/history/",
+          "title": "NVIDIA Corporation (NVDA) Stock Historical Prices & Data - Yahoo ..."
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

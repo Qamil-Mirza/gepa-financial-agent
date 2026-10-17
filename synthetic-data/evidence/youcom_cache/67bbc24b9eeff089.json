@@ -1,0 +1,32 @@
+{
+  "query": "AMD stock price performance and analyst price targets",
+  "normalized": "amd analyst performance price stock targets",
+  "fetched_at": "2026-10-17T19:26:11Z",
+  "elapsed_s": 36.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**AMD (NASDAQ: AMD) \u2014 stock performance and Wall Street targets, as of the October 16, 2026 close.** [[1]]\n\n- AMD closed at **$528.75** on October 16, 2026, versus **$214.16** at December 31, 2025, implying a **146.9% year-to-date gain**. [[1]] [[2]]\n- Over the trailing 12 months, AMD rose from **$233.08 on October 17, 2025** to **$528.75 on October 16, 2026**, a reported **126.9% increase**. [[1]]\n- The stock reached a closing high of **$649.42 on October 6, 2026** and was therefore **18.6% below that peak** at the October 16 close. [[1]]\n- The same trailing-year period included a low of **$190.95 on March 3, 2026**, illustrating substantial volatility despite the strong overall return. [[1]]\n\n**Analyst price-target snapshot**\n\n| Measure | Value | Implied move vs. $528.75 |\n|---|---:|---:|\n| Consensus / average 12-month target | **$636.21** | **+20.3%** |\n| Median target | **$635.50** | **+20.2%** |\n| Lowest target | **$365** | **\u221231.0%** |\n| Highest target | **$1,250** | **+136.4%** |\n\nThe S&P Global-based consensus covered **55 analysts** and rated AMD a **\u201cStrong Buy.\u201d** [[3]] \n\nThe rating distribution reported by another source was **44 Buy, 11 Hold, and zero Sell**, which is constructive but also shows that the consensus target is not a unanimous forecast. [[4]] \n\nRecent bullish target revisions included **Citigroup to $800 from $575** on October 6, **Mizuho to $705 from $580** on October 6, **Stifel to $700 from $635** on October 5, and **BofA to $720 from $620** on September 25. [[4]]\n\n**Takeaway:** AMD\u2019s share-price performance has been exceptional\u2014roughly **+147% YTD** through October 16\u2014but the consensus target then indicated a more moderate **~20% additional upside**, while the unusually wide **$365\u2013$1,250** target range signals very high disagreement over the durability and valuation of its AI/data-center growth outlook. [[1]] [[3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://tako.com/card/vTNggFaKXaLT-0lRWPMY/",
+          "title": "Advanced Micro Devices Stock Overview"
+        },
+        {
+          "url": "https://tako.com/card/SDiNlYnraM8GKWF5YbIi/",
+          "title": "Advanced Micro Devices Stock Overview"
+        },
+        {
+          "url": "https://stockanalysis.com/stocks/amd/forecast/",
+          "title": "Advanced Micro Devices (AMD) Stock Forecast & Price Targets"
+        },
+        {
+          "url": "https://tickernerd.com/stock/amd-forecast/",
+          "title": "AMD Stock Forecast 2026-2027 - Advanced Micro Devices, Inc. Price Targets & Predictions"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

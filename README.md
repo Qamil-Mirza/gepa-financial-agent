@@ -1,8 +1,30 @@
 # gepa-financial-agent
 
-A task-scoped drift supervisor for multi-agent financial research swarms. Each agent gets its own lightweight supervisor session. All sessions share one Crusoe-hosted model and one versioned system prompt, which is optimized with [GEPA](https://github.com/gepa-ai/gepa).
+Built at the **Crusoe x Cerebral Valley Recursive Agents Hackathon** (Oct 17, 2026, SF).
 
-This repo covers workstream 3 of `docs/PRD.md`: the supervisor plus the GEPA pipeline. The financial agent stack and the synthetic dataset are owned by teammates; they connect through `docs/INTEGRATION_CONTRACT.md` and `docs/DATASET_CONTRACT.md`.
+A multi-agent financial research swarm on Crusoe Managed Inference, watched by a task-scoped drift supervisor whose system prompt is optimized with [GEPA](https://github.com/gepa-ai/gepa). Three workstreams, defined in `docs/PRD.md`: (1) the agent stack, (2) synthetic labeled drift traces, (3) the supervisor and GEPA pipeline.
+
+## Team
+| Name | GitHub | Focus |
+|---|---|---|
+| Qamil Mirza | @Qamil-Mirza | supervisor + GEPA pipeline (workstream 3) |
+| Arjun Mittal | @Arjunmittal16 | agent stack (workstream 1) |
+| Gautam | @gautam-bh | synthetic drift dataset (workstream 2) |
+
+## Layout (and who owns what)
+```
+main.py, agent/, data/sources.py, scripts/check_crusoe.py   agent stack (workstream 1)
+synthetic-data/                                             drift-trace generator + dataset (workstream 2); start at synthetic-data/HANDOFF.md
+gepa_financial_agent/, policies/, scripts/*.py, tests/      drift supervisor + GEPA pipeline (workstream 3)
+data/fixtures/                                              deterministic dev fixtures for workstream 3 (plumbing/tests only)
+docs/                                                       PRD, contracts, architecture, progress log
+```
+Contracts between workstreams: `docs/INTEGRATION_CONTRACT.md` (agent stack -> supervisor) and `docs/DATASET_CONTRACT.md` / `synthetic-data/DATASET_FORMAT.md` (dataset -> evaluator).
+
+---
+
+# Workstream 3: drift supervisor + GEPA pipeline
+
 
 ## Quickstart
 
@@ -81,3 +103,33 @@ How to read these numbers:
 ## Mock vs real
 
 `MockModelClient` is a deterministic stub. It proves the pipeline is wired correctly, not that GEPA works. Every record carries `mocked`, every script prints `MODE: MOCK` or `MODE: REAL`, and mock policies are never promoted. All numbers above come from real Crusoe inference.
+
+---
+
+# Workstreams 1–2: agent stack and synthetic data
+
+## Agent stack quickstart
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env          # then paste your Crusoe key into .env
+python scripts/check_crusoe.py
+python main.py "your goal here"
+```
+
+Planner breaks the goal into subtasks -> workers (sub-agents) do each one -> checker grades
+each result and sends failures back with feedback -> synthesizer writes the final answer.
+Every run is saved to `runs/`, and past checker feedback is fed to the planner next time.
+
+| Role | Model |
+|---|---|
+| Planner, checker, synthesizer | `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B` |
+| Workers | `nvidia/Nemotron-3.5-Lightning-30B-A3B` |
+
+## Synthetic drift dataset
+`synthetic-data/` holds the trace generator (real Nemotron workers, real You.com Finance Research answers, private steers, deterministic verifier) and the exported dataset `synthetic-data/data/{train,val,test}.jsonl`. Read `synthetic-data/HANDOFF.md` first; the field contract is `synthetic-data/DATASET_FORMAT.md`.
+
+## Crusoe notes
+- Endpoint: `https://api.inference.crusoecloud.com/v1` (OpenAI-compatible)
+- Rate limits are per model: 30 RPM without a payment method. Spread agent roles across models.
+- See `docs/skills/` for model IDs, reasoning toggles, and troubleshooting. Exact model IDs are case-sensitive; `GET /v1/models` is authoritative.

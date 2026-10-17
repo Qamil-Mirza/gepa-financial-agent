@@ -1,0 +1,20 @@
+{
+  "query": "NVIDIA Data Center revenue fiscal 2027 Q1 quarter ending April 2026 growth drivers",
+  "normalized": "2026 2027 april center data drivers ending fiscal growth nvidia q1 quarter revenue",
+  "fetched_at": "2026-10-17T19:35:07Z",
+  "elapsed_s": 14.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s Data Center revenue in **Q1 fiscal 2027 (quarter ended April 26, 2026)** was a record **$75.246 billion**, increasing **21% sequentially** from $62.314 billion in Q4 FY2026 and **92% year over year** from $39.112 billion in Q1 FY2026. [[1]]\n\n**Principal growth drivers:** \n- The principal product catalyst was the continuing ramp of **Blackwell 300** systems. [[1]]\n- Networking demand was also a major contributor, specifically for **InfiniBand, Spectrum-X Ethernet, and NVLink** solutions. [[1]]\n- By legacy product grouping, Data Center **compute** revenue reached **$60.4 billion**\u2014up **18% sequentially** and **77% year over year**\u2014while Data Center **networking** revenue reached **$14.8 billion**, up **35% sequentially** and **199% year over year**. [[1]]\n- Customer demand was broad: hyperscalers accounted for roughly **50%** of Data Center revenue and grew sequentially, while the other approximately 50% came from increasingly diversified buyers, including **AI clouds, industrial, enterprise, and sovereign-AI customers**. [[1]] \n\nIn short, the 92% annual growth was not solely an accelerator-volume story: it reflected the Blackwell 300 ramp plus rapidly expanding high-performance networking attach, supported by both hyperscale deployments and a widening non-hyperscale AI-infrastructure customer base. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000051/q1fy27cfocommentary.htm",
+          "title": "CFO Commentary on First Quarter Fiscal 2027 Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

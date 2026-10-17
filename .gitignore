@@ -1,8 +1,27 @@
+# Secrets — NEVER commit these (this repo is PUBLIC)
 .env
-.DS_Store
-.venv/
+.env.*
+!.env.example
+*.key
+auth.json
+openclaw.json
+models.json
+
+# Python
 __pycache__/
-*.pyc
-runs/
-.pytest_cache/
+*.py[cod]
+.venv/
+venv/
 *.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Agent / GEPA run artifacts
+logs/
+runs/
+*.log
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

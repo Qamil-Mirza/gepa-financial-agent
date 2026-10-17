@@ -1,0 +1,36 @@
+{
+  "query": "NVIDIA Data Center revenue fiscal 2025 Q4 quarter ending October 2024 growth drivers",
+  "normalized": "2024 2025 center data drivers ending fiscal growth nvidia october q4 quarter revenue",
+  "fetched_at": "2026-10-17T19:36:14Z",
+  "elapsed_s": 17.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "NVIDIA\u2019s quarter ending **October 27, 2024** was **Q3 of fiscal 2025**, not fiscal-Q4; it reported **Data Center revenue of $30.771 billion**, up **17% sequentially** from $26.272 billion and **112% year over year** from $14.514 billion. [[1]] [[2]] \n\nThat represents sequential growth of about **$4.499 billion** and year-over-year growth of about **$16.257 billion**. [[2]]\n\n**Principal growth drivers** were: \n- Demand for the **Hopper computing platform** to train and infer large-language models, recommendation engines, and other generative-AI applications. [[3]]\n- Stronger Data Center **compute** sales\u2014$27.6 billion, up **22% QoQ** and **132% YoY**\u2014including significant growth in the H200 offering. [[3]]\n- Demand across customer groups: cloud service providers contributed approximately **50%** of Data Center revenue, with the balance from consumer-internet and enterprise companies. [[3]]\n- Broad compute and networking demand, including AI Ethernet/Spectrum-X, InfiniBand and Ethernet switches, SmartNICs, and BlueField DPUs. [[3]]\n- Expanding cloud availability of Hopper H200 instances, including at AWS, CoreWeave, and Microsoft Azure. [[4]] \n\nFor clarity, NVIDIA\u2019s actual **Q4 FY2025** ended **January 26, 2025**, when Data Center revenue reached **$35.6 billion**, up 16% QoQ and 93% YoY. [[5]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2024/NVIDIA-Announces-Financial-Results-for-Third-Quarter-Fiscal-2025/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Third Quarter Fiscal 2025"
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000315/q3fy25cfocommentary.htm",
+          "title": "CFO Commentary on Third Quarter Fiscal 2025 Results"
+        },
+        {
+          "url": "https://s201.q4cdn.com/141608511/files/doc_financials/2025/Q325/Q3FY25-CFO-Commentary.pdf",
+          "title": "CFO Commentary on Third Quarter Fiscal 2025 Results Q3 Fiscal 2025 Summary GAAP"
+        },
+        {
+          "url": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-third-quarter-fiscal-2025",
+          "title": "NVIDIA Announces Financial Results for Third Quarter Fiscal 2025"
+        },
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2025/NVIDIA-Announces-Financial-Results-for-Fourth-Quarter-and-Fiscal-2025/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Fourth Quarter and Fiscal 2025"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

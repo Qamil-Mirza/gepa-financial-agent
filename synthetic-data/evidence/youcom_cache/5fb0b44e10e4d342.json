@@ -1,0 +1,48 @@
+{
+  "query": "Jensen Huang and Lisa Su CEO compensation and background",
+  "normalized": "background ceo compensation huang jensen lisa su",
+  "fetched_at": "2026-10-17T19:27:39Z",
+  "elapsed_s": 19.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Jensen Huang \u2014 NVIDIA**\n\n- Huang is NVIDIA\u2019s founder, president and CEO; before founding the company, he worked at LSI Logic and AMD. He holds a B.S. in electrical engineering from Oregon State University and an M.S. in electrical engineering from Stanford University. [[1]]\n- He co-founded NVIDIA in 1993 and has led it as CEO since inception.\n- NVIDIA credits its GPU invention in 1999 with catalyzing PC gaming, modern computer graphics and the modern-AI era; the company is now centered on accelerated computing and generative AI. [[1]]\n- Huang\u2019s **FY2025 reported total compensation was $49.87 million**: $1.486 million salary, $38.811 million in stock awards, $6.000 million in non-equity incentive compensation, and $3.569 million in other compensation. [[2]]\n- The reported total is grant-date/accounting compensation in the proxy\u2019s Summary Compensation Table, rather than necessarily the cash Huang ultimately realizes from equity awards. [[2]]\n- FY2025 was NVIDIA\u2019s fiscal year ended **January 26, 2025**, and the total was up from approximately $34.2 million in FY2024. [[3]] [[2]]\n\n**Lisa Su \u2014 AMD**\n\n- Dr. Lisa Su is AMD\u2019s chair, president and CEO; she has been president and CEO since October 2014, joined AMD in January 2012, and became board chair in February 2022. [[4]]\n- Before AMD, she was CTO and subsequently SVP/GM of Networking and Multimedia at Freescale, spent 13 years at IBM including as VP of its Semiconductor R&D Center, and earlier worked at Texas Instruments. [[4]] [[5]]\n- Su earned bachelor\u2019s, master\u2019s and doctorate degrees in electrical engineering from MIT. [[5]]\n- AMD describes her leadership as transforming the company into a high-performance and adaptive-computing business focused on next-generation computing and AI solutions. [[6]]\n- Su\u2019s **fiscal-2025 reported total compensation was $55.162 million**: $1.291 million salary, $41.669 million in stock awards, $8.952 million in option awards, $3.125 million in non-equity incentive compensation, and $124,188 in other compensation. [[7]]\n- Thus, equity awards represented roughly **92%** of Su\u2019s reported FY2025 package ($50.621 million of $55.162 million), while cash salary plus annual incentive compensation was about $4.417 million. [[7]]\n- AMD\u2019s fiscal 2025 ended December 27, 2025; its proxy states that named executive officers received an annual incentive-plan payout equal to **121% of target**. [[8]]\n\n**Comparison**\n\n- On the disclosed fiscal-year basis, Su\u2019s FY2025 total compensation exceeded Huang\u2019s FY2025 total by approximately **$5.30 million**, although the companies\u2019 fiscal year-ends differ and both totals are heavily influenced by grant-date equity valuation. [[7]] [[2]]\n- Both executives are semiconductor engineers by training and long-tenured leaders, but Huang is NVIDIA\u2019s founder-CEO while Su joined AMD nearly two decades after its founding and became CEO in 2014. [[1]] [[4]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://nvidianews.nvidia.com/bios/jensen-huang",
+          "title": "Jensen Huang"
+        },
+        {
+          "url": "https://stocktools.ai/ceos/jensen-huang",
+          "title": "Jensen Huang Compensation \u2014 $49.9M in FY2025 (Nvidia)"
+        },
+        {
+          "url": "https://www.theregister.com/2025/05/08/big_bucks_huang_gets_fiscal_payday/",
+          "title": "Nvidia boss gets 45% pay bump but is the billionaire happy?"
+        },
+        {
+          "url": "https://ir.amd.com/governance/board-of-directors",
+          "title": "Board of Directors :: Advanced Micro Devices, Inc. (AMD)"
+        },
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/568/amd-appoints-dr-lisa-su-as-president-and-chief-executive-officer",
+          "title": "AMD Appoints Dr. Lisa Su as President and Chief Executive Officer :: Advanced Micro Devices, Inc. (AMD)"
+        },
+        {
+          "url": "https://www.amd.com/en/corporate/leadership/lisa-su.html",
+          "title": "Dr. Lisa Su - AMD Chair and Chief Executive Officer"
+        },
+        {
+          "url": "https://aflcio.org/paywatch/AMD",
+          "title": "Lisa Su"
+        },
+        {
+          "url": "https://ir.amd.com/financial-information/sec-filings/content/0001193125-26-129057/d85856ddef14a.htm",
+          "title": "March 27, 2026 - DEF 14A: Definitive proxy statements"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

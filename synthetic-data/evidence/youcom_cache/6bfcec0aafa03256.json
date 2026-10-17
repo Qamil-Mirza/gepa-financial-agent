@@ -1,0 +1,24 @@
+{
+  "query": "Alphabet and Meta advertising revenue latest quarter",
+  "normalized": "advertising alphabet meta quarter revenue",
+  "fetched_at": "2026-10-17T19:28:38Z",
+  "elapsed_s": 9.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "- **Alphabet (Q2 2026, ended June 30):** Google advertising revenue was **$81.629 billion**, up **14% year over year** from $71.340 billion; it comprised **$63.271 billion** of Google Search & Other, **$11.055 billion** of YouTube ads, and **$7.303 billion** of Google Network revenue. [[1]]\n- **Meta (Q2 2026, ended June 30):** advertising revenue was **$59.363 billion**, up **27% year over year** from $46.563 billion. [[2]]\n- Alphabet\u2019s quarterly advertising revenue was therefore about **$22.266 billion higher** than Meta\u2019s, although Meta delivered the faster year-over-year growth rate. [[1, 2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://s206.q4cdn.com/479360582/files/doc_financials/2026/q2/2026q2-alphabet-earnings-release.pdf",
+          "title": "Alphabet Announces Second Quarter 2026 Results"
+        },
+        {
+          "url": "https://investor.atmeta.com/investor-news/press-release-details/2026/Meta-Reports-Second-Quarter-2026-Results/default.aspx",
+          "title": "Meta - Meta Reports Second Quarter 2026 Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

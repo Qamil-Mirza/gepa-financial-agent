@@ -1,0 +1,24 @@
+{
+  "query": "AMD Data Center revenue FY2026 full year",
+  "normalized": "amd center data full fy2026 revenue year",
+  "fetched_at": "2026-10-17T19:45:44Z",
+  "elapsed_s": 12.7,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD has **not reported FY2026 full-year Data Center revenue** as of October 17, 2026; it is scheduled to report Q3 FY2026 results on November 3, 2026, so the fiscal year is still incomplete. [[1]] \n\nThe latest reported cumulative figure is **$12.493 billion for the first half of FY2026**, comprising **$5.775 billion in Q1** and **$6.718 billion in Q2**. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1300/amd-to-report-fiscal-third-quarter-2026-financial-results",
+          "title": "AMD to Report Fiscal Third Quarter 2026 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        },
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1295/amd-reports-second-quarter-2026-financial-results",
+          "title": "AMD Reports Second Quarter 2026 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

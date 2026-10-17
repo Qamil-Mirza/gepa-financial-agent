@@ -1,0 +1,24 @@
+{
+  "query": "NVIDIA and AMD gross margin outlook guidance",
+  "normalized": "amd gross guidance margin nvidia outlook",
+  "fetched_at": "2026-10-17T19:27:23Z",
+  "elapsed_s": 10.4,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Latest quarterly gross-margin outlooks:** NVIDIA guided **Q3 FY2027 GAAP and non-GAAP gross margin to 74.0%, \u00b150 basis points**, alongside $108.0 billion of revenue guidance; its Q2 FY2027 actual GAAP and non-GAAP gross margin was 75.0%. [[1]] \n\nAMD guided **Q3 2026 non-GAAP gross margin to approximately 56%**, alongside revenue of approximately $13.0 billion, \u00b1$0.3 billion; it reported Q2 2026 GAAP gross margin of 54% and non-GAAP gross margin of 56%. [[2]] \n\nOn the companies\u2019 stated outlook measures, NVIDIA\u2019s 74.0% guided margin is **18 percentage points above** AMD\u2019s 56% guided non-GAAP margin, but the comparison is not fully like-for-like because NVIDIA provided both GAAP and non-GAAP guidance while AMD disclosed only non-GAAP gross-margin guidance. [[1, 2]] \n\nSequentially, NVIDIA\u2019s midpoint implies a **100-basis-point decline** from its 75.0% Q2 FY2027 GAAP/non-GAAP margin, whereas AMD\u2019s 56% non-GAAP outlook is **flat** versus its Q2 2026 non-GAAP result. [[1, 2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+          "title": "NVIDIA Corporation - NVIDIA Announces Financial Results for Second Quarter Fiscal 2027"
+        },
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1295/amd-reports-second-quarter-2026-financial-results",
+          "title": "AMD Reports Second Quarter 2026 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

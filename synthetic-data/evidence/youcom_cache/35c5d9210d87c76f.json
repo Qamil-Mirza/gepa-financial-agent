@@ -1,0 +1,24 @@
+{
+  "query": "AMD Q2 2026 Data Center revenue split Instinct EPYC",
+  "normalized": "2026 amd center data epyc instinct q2 revenue split",
+  "fetched_at": "2026-10-17T19:44:14Z",
+  "elapsed_s": 11.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "AMD did not disclose a dollar revenue split between Instinct accelerators and EPYC server CPUs for Q2 2026; it reported them together within its Data Center segment. [[1]] \n\nData Center revenue was **$6.718 billion** in Q2 2026, up **107% year over year**, with AMD attributing the performance to strong demand for both EPYC processors and Instinct GPUs. [[1]] \n\nThe available qualitative detail is that EPYC sales increased by **more than 70% year over year**, while Instinct sales **more than doubled year over year**, but neither figure was quantified in dollars; therefore, an Instinct-versus-EPYC revenue allocation cannot be reliably calculated from AMD\u2019s reported results. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://ir.amd.com/news-events/press-releases/detail/1295/amd-reports-second-quarter-2026-financial-results",
+          "title": "AMD Reports Second Quarter 2026 Financial Results :: Advanced Micro Devices, Inc. (AMD)"
+        },
+        {
+          "url": "https://finance.yahoo.com/quote/AMD/earnings/AMD-Q2-2026-earnings_call-660937.html",
+          "title": "Advanced Micro Devices, Inc. (AMD) Q2 FY2026 earnings call transcript"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

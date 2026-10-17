@@ -1,0 +1,24 @@
+{
+  "query": "Alphabet fiscal year 2025 Q3 capital expenditure AI data center spending",
+  "normalized": "2025 ai alphabet capital center data expenditure fiscal q3 spending year",
+  "fetched_at": "2026-10-17T19:47:00Z",
+  "elapsed_s": 14.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Alphabet\u2019s **Q3 2025 capital expenditures were $24.0 billion**, with the vast majority directed to technical infrastructure supporting AI and cloud demand. [[1]] \n\nAlphabet allocated approximately **60%** of Q3 CapEx\u2014about **$14.4 billion**\u2014to servers, which includes AI compute infrastructure such as GPUs and Google\u2019s TPUs. [[1]] \n\nApproximately **40%**\u2014about **$9.6 billion**\u2014went to data-center facilities and networking equipment. [[1]] \n\nManagement said the buildout was driven by strong Cloud-customer demand and broader growth opportunities, while highlighting investments in NVIDIA GPUs and internally designed TPUs to expand AI infrastructure capacity. [[1]] \n\nAt the time of the Q3 release on October 29, 2025, Alphabet raised its expected **full-year 2025 CapEx to $91 billion\u2013$93 billion**, from its prior $85 billion outlook. [[1]] \n\nThe higher infrastructure investment was already increasing earnings pressure: Q3 depreciation rose **$1.6 billion year over year to $5.6 billion**, or **41%**, and Alphabet expected depreciation growth to accelerate slightly in Q4, alongside higher data-center operating costs such as energy. [[1]] \n\nFor context, Alphabet ultimately spent **$91.4 billion** in CapEx for full-year 2025; its later FY2026 plan called for **$175 billion\u2013$185 billion**, illustrating the planned step-up in AI data-center investment. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://abc.xyz/investor/events/event-details/2025/2025-Q3-Earnings-Call-2025-4OI4Bac_Q9/default.aspx",
+          "title": "Alphabet Investor Relations - 2025 Q3 Earnings Call"
+        },
+        {
+          "url": "https://abc.xyz/investor/events/event-details/2026/2025-Q4-Earnings-Call-2026-Dr_C033hS6/default.aspx",
+          "title": "Alphabet Investor Relations - 2025 Q4 Earnings Call"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}
