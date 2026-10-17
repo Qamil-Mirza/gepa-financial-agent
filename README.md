@@ -42,6 +42,7 @@ uv run python scripts/smoke_test.py --supervise      # one REAL drift judgment (
 | `scripts/smoke_test.py` | `--list-models` checks Crusoe connectivity and supported parameters; `--supervise [EXAMPLE_ID]` runs one judgment |
 | `scripts/evaluate_supervisor.py` | `--split val --heuristic [--policy NAME ...] [--dataset PATH ...]` compares policies on a split |
 | `scripts/optimize_supervisor.py` | `--max-metric-calls 60 --max-workers 4 [--final-test] [--promote]` runs real GEPA, then compares baseline vs optimized on val (test only with `--final-test`) |
+| `scripts/summarize_repeats.py` | `--dataset PATH --split test --runs 'runs/eval/team_final_r*' --out FILE.json` aggregates repeated evaluations into mean/min/max per policy (no model calls) |
 | `scripts/demo_supervision.py` | `--delay 0.2 [--mock]` shows three replayed agents supervised concurrently, using baseline and current policies |
 
 Add `--mock` to any script to use the deterministic stub client. Mock output is always labeled `MOCK`.
@@ -59,46 +60,22 @@ Add `--mock` to any script to use the deterministic stub client. Mock output is 
 
 See `docs/INTEGRATION_CONTRACT.md`. In short: `SupervisorManager.register_agent(...)`, then `observe(agent_id, event)` per event, then `evaluate_pending()`, or push events through `EventStreamAdapter`. The architecture is described in `docs/ARCHITECTURE.md`.
 
-## Results (real Crusoe inference, dev fixtures)
+## Results (real Crusoe inference, teammate dataset)
 
-**Headline, test split (n=25), repeated 3 times:**
+Full writeup: `docs/RESULTS.md`. Raw per-repeat numbers: `docs/results/final_test_20261017.json`.
 
-| policy | test macro-F1, median (min–max) | FPR | undetected drift |
-|---|---|---|---|
-| baseline (hand-written) | 0.594 (0.594–0.594) | 0.0 in all runs | 0 |
-| GEPA (promoted) | 0.731 (0.648–0.810) | 0.0 in all runs | 0 |
+Setup: supervisor `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B`, reflection `deepseek-ai/DeepSeek-V4-Pro`, dataset `synthetic-data/data/dataset.jsonl` (179 train / 54 val / 82 test, task families disjoint across splits). Test is the mean and spread over 5 repeats:
 
-Every one of 5 GEPA repeats beat every baseline run. The gain is robust in direction but uncertain in size; the 5 runs are 3 unseeded plus 2 with `seed=42`, and the raw data is in `docs/results/variance_test_20261017.json`.
+| policy | test macro-F1 mean (min–max) | FPR | undetected drift scenarios | detection delay |
+|---|---|---|---|---|
+| baseline (hand-written, **current**) | 0.549 (0.519–0.588) | 0.147 | 0.4 (0–2) | 0.40 |
+| gepa_team_300 (evaluated, not promoted) | 0.553 (0.532–0.581) | 0.141 | 2.2 (2–3) | 1.04 |
 
-The trade is detection delay. With the GEPA policy, detection came 0.4 to 2.0 steps after onset, against 0.0 for baseline, with 0 undetected drift scenarios in every run.
+- **GEPA works end to end, but its effect is modest or unproven at this data size.** The ranges overlap, and the GEPA policy misses more drift scenarios, so the promotion rule fails and `policies/current.txt` stays the baseline.
+- **It specialized in GOAL_DEVIATION.** On test it scores 70/70 on GOAL_DEVIATION (baseline 62/70) but 1/30 on CONSTRAINT_VIOLATION (baseline 15/30). The other drift types also drop: OBSOLETE_DIRECTIVE 12/30 vs 24/30, UNSUPPORTED_CONCLUSION 4/30 vs 19/30.
+- **Val could not separate the policies.** The val gains of the three GEPA runs (0.007 to 0.018 macro-F1) are smaller than the baseline's own val spread across repeats (0.515 to 0.549).
 
-Inference is not deterministic even at temperature 0, and Crusoe does not honor `seed`, so the headline table reports the median of 3 unseeded repeats. The GEPA policy's spread is much wider than baseline's.
-
-**Single run, n=25 test:** the run that produced the promoted policy is `runs/gepa/20261017_122148`, with a 60-call budget, seed 0, supervisor `deepseek-ai/Deepseek-V4-Flash` and reflection `deepseek-ai/DeepSeek-V4-Pro`. The table is copied from its `comparison.txt`:
-
-```
-label                  policy     mode  n    macroF1  acc    P_drift  R_drift  FPR    FNR    invalid  evid_ok  score  ms      usd
-baseline/val           eac5a206b5 REAL  19   0.541    0.789  0.500    1.000    0.083  0.000  0.000    1.000    0.574  1060    0.0017
-gepa/val               efded549eb REAL  19   0.689    0.842  0.600    0.750    0.000  0.250  0.000    1.000    0.618  1191    0.0019
-baseline/test          eac5a206b5 REAL  25   0.592    0.800  0.692    1.000    0.000  0.000  0.000    1.000    0.656  1142    0.0046
-gepa/test              efded549eb REAL  25   0.767    0.840  0.727    0.889    0.000  0.111  0.000    1.000    0.686  1212    0.0031
-```
-
-| | mean detection delay (test, this run) | delay across the 3 repeats | undetected drift scenarios (test) |
-|---|---|---|---|
-| baseline | 0.2 steps | 0.0, 0.0, 0.0 | 0 |
-| gepa | 1.2 steps | 2.0, 2.0, 0.4 | 0 |
-
-How to read these numbers:
-
-- **Detection is later, not missed.** The GEPA policy learned to answer UNCERTAIN at drift onset and DRIFTING only once there is more evidence. That explains the higher detection delay and the R_drift drop from 1.000 to 0.889.
-- **The sets are small.** These are dev fixtures generated by `scripts/make_dev_fixtures.py`, with 19 val and 25 test examples. One flipped example moves val macro-F1 by about 0.1, so these numbers do not show that the gain generalizes.
-- **A longer run did not help.** The 150-call run (`runs/gepa/20261017_122338`) did not beat baseline: test macro-F1 was 0.592 against baseline's 0.594. Our explanation:
-  - val noise is about as large as the improvements GEPA was trying to measure;
-  - its 11 iterations chased one-example swings on the 19-example val split;
-  - it spent $0.095 on reflection, against $0.017 for the 60-call run.
-
-  See `PROGRESS.md`.
+Earlier results on our dev fixtures (a 0.59 → 0.77 test gain) are void: the fixture event IDs leaked the label. See `PROGRESS.md` and the manifest.
 
 ## Mock vs real
 

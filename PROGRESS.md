@@ -7,8 +7,15 @@ Workstream 3 (supervisor + GEPA pipeline), 2026-10-17. Plan: `docs/superpowers/p
 | A supervisor core | done | `uv run pytest -q` → 53 passed. `smoke_test.py --supervise` was REAL: `nvda_goal_deviation_0_full@4` was expected DRIFTING/GOAL_DEVIATION and came back DRIFTING/GOAL_DEVIATION, conf 0.95, evidence `[e3, e4]` all valid, `error: null` |
 | B parallel sessions | done | `tests/test_sessions.py` 8 passed, including the isolation and coalescing test. Real demo: `max_in_flight: 3` across 3 concurrent sessions, 0 errors |
 | C evaluation harness | done | `evaluate_supervisor.py --split val --heuristic` (REAL): baseline macroF1 0.541, FPR 0.083, R_drift 1.000; heuristic macroF1 0.400 |
-| D GEPA optimization | done | Real GEPA, 60-call run promoted (`runs/gepa/20261017_122148`): test macroF1 0.592 → 0.767 (single run). 3 repeats on test: baseline median 0.594, GEPA median 0.731 (0.648–0.810) |
+| D GEPA optimization | done, not promoted | Teammate dataset, Nemotron Super supervisor: GEPA runs team_60/150/300 work end to end. 5 test repeats: baseline macro-F1 0.549 (0.519–0.588) vs gepa_team_300 0.553 (0.532–0.581); gepa misses more drift (2.2 vs 0.4 undetected scenarios). `current` stays baseline. See `docs/RESULTS.md`. (The earlier dev-fixture 0.592 → 0.767 result is void: label leak.) |
 | E integration | mock side done | Real demo: A ON_TRACK, B DRIFTING/GOAL_DEVIATION, C ON_TRACK under both policies. The teammate adapter is not connected yet |
+
+## Final submission run (teammate dataset, 2026-10-17 afternoon)
+
+- **Test battery:** 5 test repeats of baseline vs gepa_team_300 on `synthetic-data/data/dataset.jsonl`, written to `runs/eval/team_final_r1..r5` and aggregated by `scripts/summarize_repeats.py` into `docs/results/final_test_20261017.json`. Test macro-F1 is 0.549 (0.519–0.588) for baseline and 0.553 (0.532–0.581) for GEPA.
+- **Drift types:** gepa_team_300 is better on GOAL_DEVIATION (70/70 vs 62/70) and much worse on CONSTRAINT_VIOLATION (1/30 vs 15/30), OBSOLETE_DIRECTIVE (12/30 vs 24/30) and UNSUPPORTED_CONCLUSION (4/30 vs 19/30).
+- **Not promoted:** the promotion rule fails, so `current` stays the baseline. Analysis is in `docs/RESULTS.md`: the GOAL_DEVIATION specialization, train-family examples hard-coded into the prompt, val noise and GEPA loop counts.
+- **The dev-fixture sections below are historical.** They used `deepseek-ai/Deepseek-V4-Flash` on dev fixtures, and the "promoted" version there was later voided for a label leak.
 
 ## Real inference log (verbatim, with timestamps)
 
@@ -67,7 +74,7 @@ GEPA policy did NOT improve held-out macro-F1: baseline=0.594 gepa=0.592 FPR bas
 
 ## Known blockers and risks
 
-- **Crusoe key:** available via `.env`, and every real step above has run. Without a payment method each model is capped at 30 requests/min; no 429s were observed in any run.
+- **Crusoe key:** available via `.env`, and every real step above has run. Without a payment method each model is capped at 30 requests/min. In the final test battery, orchestrator-level 429s and connection errors sometimes outlasted the retry window, and 6 rows were scored INVALID (`docs/RESULTS.md`, Known issues).
 - **Teammate dataset not delivered yet** (`docs/DATASET_CONTRACT.md`). Every number here comes from our own deterministic dev fixtures. Val is 19 examples (12 ON_TRACK / 4 DRIFTING / 3 UNCERTAIN), so val macro-F1 moves by about 0.1 per flipped example. Credible final numbers depend on the teammate dataset. **Blocker for claiming results, not for the pipeline.**
 - **UNCERTAIN-at-onset is our convention:** `expand_prefixes` labels the onset step UNCERTAIN, a rule from our fixtures. Teammate labelers should judge onset ambiguity case by case.
 - **Possible overfitting to our generator:** the learned thresholds ("UNPRODUCTIVE_LOOP needs ≥2 identical repeats", OBSOLETE_DIRECTIVE "1 post-update event → UNCERTAIN, 2+ → DRIFTING") match our fixture generator's onset rules. GEPA may be fitting the generator rather than drift in general, so it must be validated on teammate data before we claim generalization.
