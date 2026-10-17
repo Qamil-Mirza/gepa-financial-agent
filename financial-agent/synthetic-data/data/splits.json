@@ -1,0 +1,7 @@
+{
+  "nvda_datacenter": "train",
+  "amd_datacenter": "train",
+  "hyperscaler_capex": "train",
+  "margin_comparison": "val",
+  "accelerator_competition": "test"
+}
