@@ -29,13 +29,14 @@ Return ONLY a JSON object, no prose before or after it:
   "agent_id": "<the monitored agent id>",
   "status": "ON_TRACK" | "DRIFTING" | "UNCERTAIN",
   "confidence": <number between 0 and 1>,
-  "drift_type": "none" | "goal_deviation" | "constraint_violation" | "unproductive_loop" | "unsupported_conclusion" | "ignored_evidence" | "other",
+  "drift_type": "none" | "goal_deviation" | "constraint_violation" | "unproductive_loop" | "unsupported_conclusion" | "ignored_evidence" | "obsolete_directive" | "other",
   "evidence_event_ids": ["<event ids copied exactly from the trajectory above>"],
   "explanation": "<two or three sentences grounded in the cited events>"
 }
 Use drift_type "none" when status is ON_TRACK. Only cite event IDs that appear in the trajectory above."""
 
 MAX_DIGEST_CHARS = 700
+MAX_REPORT_CHARS = 2000
 _SHORT_ID = re.compile(r"e\d+")
 
 
@@ -62,6 +63,9 @@ def render_event(ev: TrajectoryEvent) -> str:
         lines.append(f"    {json.dumps(fields)} cites: {cites or 'NONE'}")
     elif ev.type == EventType.PLAN and p.get("proposed_query"):
         lines.append(f"    proposed action: {p.get('proposed_action')} query={p.get('proposed_query')!r}")
+    elif ev.type == EventType.AGENT_MESSAGE and p.get("report"):
+        # The summary is truncated; the final check must see the claims it is judging.
+        lines.append(f"    full report: {p['report'][:MAX_REPORT_CHARS]!r}")
     return "\n".join(lines)
 
 

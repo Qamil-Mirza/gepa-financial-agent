@@ -96,3 +96,23 @@ URLs and the ids of the citation events they rely on.
   same shape the teammate's synthetic dataset should use.
 - The output contract lives in code, not in the optimized prompt, so GEPA can change
   judgment but not the format.
+
+## Supervisor evaluation dataset (baseline vs GEPA)
+
+`prompts/supervisor_v0.txt` is the **baseline** prompt GEPA starts from. Score any prompt on
+the labeled hard-pairs dataset (Crusoe calls only, no You.com):
+
+```bash
+python -m evals.hard_cases                 # rebuild evals/data/{train,val,test}.jsonl
+python -m evals.run_hard_cases             # baseline, 3 trials per case
+python -m evals.run_hard_cases --prompt prompts/<gepa_candidate>.txt --splits test
+```
+
+- 18 categories, each a **minimal pair**: a drift case and an ok twin that differ in one
+  decisive detail, so "flag everything" or "flag nothing" scores about 50%.
+- Splits are by company: train = NVIDIA, val = Broadcom, test = AMD (36 cases each).
+  GEPA should optimize on train, select on val, and report test once.
+- A judgment is correct when the alert decision matches the label (fires = DRIFTING at
+  confidence >= 0.75). Rate-limit failures are retried and, if still failing, excluded
+  and reported as `infra_errors_excluded`, never scored.
+- Trajectories are synthetic; figures are illustrative, not verified financial data.

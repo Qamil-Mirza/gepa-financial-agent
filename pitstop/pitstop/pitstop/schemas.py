@@ -116,6 +116,7 @@ class DriftType(str, Enum):
     UNPRODUCTIVE_LOOP = "unproductive_loop"
     UNSUPPORTED_CONCLUSION = "unsupported_conclusion"
     IGNORED_EVIDENCE = "ignored_evidence"
+    OBSOLETE_DIRECTIVE = "obsolete_directive"
     OTHER = "other"
 
 
