@@ -70,6 +70,8 @@ class OptimizeConfig:
     run_dir: str = field(default_factory=lambda: f"runs/gepa/{time.strftime('%Y%m%d_%H%M%S')}")
     json_mode: bool = False
     max_tokens: int = 1024
+    acceptance_criterion: str = "strict_improvement"  # or "improvement_or_equal" (gepa 0.1.4)
+    perfect_score: float | None = None  # when set, skip reflection on minibatches the parent already aces
 
 
 def _to_prompt_ids(info: dict[str, Any], example: DatasetExample) -> dict[str, Any]:
@@ -118,9 +120,12 @@ class OptimizationArtifacts:
     reflection_usage: dict[str, Any] | None
 
 
-def run_optimization(seed_policy: Policy, train: list[DatasetExample], val: list[DatasetExample],
-                     supervisor_client: ModelClient, reflection_lm: Callable[..., str], cfg: OptimizeConfig
-                     ) -> OptimizationArtifacts:
+def run_optimization(seed_policy: Policy, train: list[Any], val: list[Any],
+                     supervisor_client: ModelClient, reflection_lm: Callable[..., str], cfg: OptimizeConfig, *,
+                     evaluator: Callable[[str, Any], tuple[float, dict[str, Any]]] | None = None,
+                     objective: str = OBJECTIVE, background: str = BACKGROUND) -> OptimizationArtifacts:
+    """Run GEPA on the policy text. `evaluator` defaults to our supervisor on DatasetExamples; host systems
+    (e.g. adapters/pitstop.py) pass their own evaluator, objective and background."""
     import gepa.optimize_anything as oa  # installed gepa==0.1.4 API
 
     run_dir = Path(cfg.run_dir)
@@ -130,22 +135,23 @@ def run_optimization(seed_policy: Policy, train: list[DatasetExample], val: list
         "supervisor_model": supervisor_client.model,
         "reflection_model": getattr(getattr(reflection_lm, "client", None), "model", type(reflection_lm).__name__),
         "seed_policy": {"name": seed_policy.name, "version": seed_policy.version},
-        "dataset": {"train": len(train), "val": len(val)}, "objective": OBJECTIVE,
+        "dataset": {"train": len(train), "val": len(val)}, "objective": objective,
     }, indent=2) + "\n", encoding="utf-8")
     (run_dir / "seed_policy.txt").write_text(seed_policy.text, encoding="utf-8")
 
     config = oa.GEPAConfig(
         engine=oa.EngineConfig(max_metric_calls=cfg.max_metric_calls, run_dir=str(run_dir), seed=cfg.seed,
                                parallel=cfg.max_workers > 1, max_workers=cfg.max_workers, raise_on_exception=False,
-                               display_progress_bar=False),
-        reflection=oa.ReflectionConfig(reflection_lm=reflection_lm, reflection_minibatch_size=cfg.reflection_minibatch_size),
+                               display_progress_bar=False, acceptance_criterion=cfg.acceptance_criterion),
+        reflection=oa.ReflectionConfig(reflection_lm=reflection_lm, reflection_minibatch_size=cfg.reflection_minibatch_size,
+                                       skip_perfect_score=cfg.perfect_score is not None, perfect_score=cfg.perfect_score),
     )
     log.info("starting GEPA: train=%d val=%d max_metric_calls=%d run_dir=%s", len(train), len(val), cfg.max_metric_calls, run_dir)
     t0 = time.time()
     result = oa.optimize_anything(
         seed_candidate=seed_policy.text,
-        evaluator=make_evaluator(supervisor_client, json_mode=cfg.json_mode, max_tokens=cfg.max_tokens),
-        dataset=train, valset=val, objective=OBJECTIVE, background=BACKGROUND, config=config,
+        evaluator=evaluator or make_evaluator(supervisor_client, json_mode=cfg.json_mode, max_tokens=cfg.max_tokens),
+        dataset=train, valset=val, objective=objective, background=background, config=config,
     )
     elapsed = time.time() - t0
     best_text = result.best_candidate if isinstance(result.best_candidate, str) else next(iter(result.best_candidate.values()))
