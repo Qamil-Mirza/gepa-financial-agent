@@ -1,0 +1,32 @@
+{
+  "query": "Oracle Cloud Infrastructure remaining performance obligations RPO FY2026",
+  "normalized": "cloud fy2026 infrastructure obligations oracle performance remaining rpo",
+  "fetched_at": "2026-10-17T20:08:18Z",
+  "elapsed_s": 8.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Oracle\u2019s total remaining performance obligations (RPO)\u2014the company-wide contracted backlog, not an OCI-only disclosed metric\u2014ended FY2026 Q4 at **$638 billion**, up **363% year over year** and **$85 billion sequentially** from Q3. [[1]] \n\nDuring FY2026, reported total RPO rose from **$455 billion in Q1**, to **$523 billion in Q2**, **$553 billion in Q3**, and **$638 billion in Q4/FY-end**. [[2, 3, 4, 1]] \n\nOracle did not report a separate OCI RPO balance in these releases; it said OCI demand was driving the backlog and, at Q1, forecast FY2026 OCI revenue of **$18 billion**, up **77%**. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investor.oracle.com/investor-news/news-details/2026/Oracle-Announces-Record-Q4-and-FY-2026-Results-Driven-by-Cloud-Infrastructure--Cloud-Applications/default.aspx",
+          "title": "Oracle - Oracle Announces Record Q4 and FY 2026 Results Driven by Cloud Infrastructure & Cloud Applications"
+        },
+        {
+          "url": "https://investor.oracle.com/investor-news/news-details/2025/Oracle-Announces-Fiscal-Year-2026-First-Quarter-Financial-Results/default.aspx",
+          "title": "Oracle - Oracle Announces Fiscal Year 2026 First Quarter Financial Results"
+        },
+        {
+          "url": "https://investor.oracle.com/investor-news/news-details/2025/Oracle-Announces-Fiscal-Year-2026-Second-Quarter-Financial-Results/default.aspx",
+          "title": "Oracle - Oracle Announces Fiscal Year 2026 Second Quarter Financial Results"
+        },
+        {
+          "url": "https://investor.oracle.com/investor-news/news-details/2026/Oracle-Announces-Fiscal-Year-2026-Third-Quarter-Financial-Results/default.aspx",
+          "title": "Oracle - Oracle Announces Fiscal Year 2026 Third Quarter Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

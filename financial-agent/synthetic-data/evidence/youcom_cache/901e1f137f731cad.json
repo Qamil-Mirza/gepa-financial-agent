@@ -1,0 +1,44 @@
+{
+  "query": "CoreWeave stock price since IPO and lockup expiration",
+  "normalized": "coreweave expiration ipo lockup price since stock",
+  "fetched_at": "2026-10-17T20:07:48Z",
+  "elapsed_s": 47.2,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**CoreWeave (NASDAQ: CRWV) stock performance:** the March 2025 IPO was priced at **$40.00 per Class A share**, and trading began on **March 28, 2025**. [[1]]\n\n| Milestone | Close / IPO price | Change vs. $40 IPO |\n|---|---:|---:|\n| IPO price / first trading day \u2014 Mar. 28, 2025 | **$40.00** | \u2014 [[2, 3]]|\n| Record closing high \u2014 Jun. 20, 2025 | **$183.58** | **+359.0%** [[4]]|\n| Day before Q2 earnings \u2014 Aug. 12, 2025 | **$148.75** | **+271.9%** [[5]]|\n| Q2-results selloff \u2014 Aug. 13, 2025 | **$117.76** | **+194.4%** [[5]]|\n| Accelerated lock-up expiration date \u2014 Aug. 14, 2025 | **$99.51** | **+148.8%** [[5]]|\n| Next trading day \u2014 Aug. 15, 2025 | **$99.97** | **+149.9%** [[5]]|\n| Latest available close \u2014 Oct. 16, 2026 | **$61.39** | **+53.5%** [[6]]|\n\n**Lock-up interpretation:** the IPO prospectus contained a standard **180-day** lock-up provision, which created some references to a late-September 2025 expiry. [[2]] \n\nHowever, the economically important event was the **accelerated release for roughly 84% of shares**: it expired at the **close of trading on the second trading day after CoreWeave announced Q2 earnings**, which was **August 14, 2025**. [[7]] \n\nCRWV fell from **$148.75 on August 12** to **$99.51 on August 14**, a **33.1% decline** spanning the earnings announcement and anticipated lock-up release; it then closed essentially flat at **$99.97 on August 15**, the first session after those shares became sale-eligible. [[5]] \n\nAt the latest available **$61.39** close, CRWV remained **53.5% above its $40 IPO price**, but was **38.3% below** its August 14, 2025 lock-up-expiration close. [[6]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.coreweave.com/news/news-details/2025/CoreWeave-Announces-Pricing-of-Initial-Public-Offering/default.aspx",
+          "title": "CoreWeave - CoreWeave Announces Pricing of Initial Public Offering"
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1769628/000119312525067651/d899798d424b4.htm",
+          "title": "424B4"
+        },
+        {
+          "url": "https://tako.com/card/xFA8xzCvvQhsEMjTwge-/",
+          "title": "CoreWeave, Inc. Stock Overview"
+        },
+        {
+          "url": "https://www.macrotrends.net/stocks/charts/CRWV/coreweave/stock-price-history",
+          "title": "CoreWeave - 1 Year Stock Price History"
+        },
+        {
+          "url": "https://tako.com/card/lQh5O_Hw8FgiH9-SeSpO/",
+          "title": "CoreWeave, Inc. Stock Overview"
+        },
+        {
+          "url": "https://tako.com/card/qC_K0WWO3yAMaUsMDhaK/",
+          "title": "CoreWeave, Inc. Stock Overview"
+        },
+        {
+          "url": "https://sherwood.news/markets/why-coreweave-announcing-the-date-of-its-q2-earnings-actually-matters/",
+          "title": "Why CoreWeave announcing the date of its Q2 earnings actually matters - Sherwood News"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

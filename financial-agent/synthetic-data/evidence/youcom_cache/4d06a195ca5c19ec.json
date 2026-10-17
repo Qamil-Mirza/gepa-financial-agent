@@ -1,0 +1,24 @@
+{
+  "query": "Broadcom Q2 FY2026 dividend per share and share buyback amount",
+  "normalized": "amount broadcom buyback dividend fy2026 per q2 share",
+  "fetched_at": "2026-10-17T20:08:27Z",
+  "elapsed_s": 8.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Broadcom\u2019s Q2 FY2026 quarterly cash dividend was **$0.65 per share**; it was payable June 30, 2026, to shareholders of record on June 22, 2026. [[1]] \n\nThe company repurchased **$600 million** of common stock under its repurchase program during Q2 FY2026 (the quarter ended May 3, 2026). [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1730168/000173016826000051/avgo-05032026x8kxex99.htm",
+          "title": "Broadcom Inc."
+        },
+        {
+          "url": "https://www.prnewswire.com/news-releases/broadcom-inc-announces-second-quarter-fiscal-year-2026-financial-results-and-quarterly-dividend-302790698.html",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

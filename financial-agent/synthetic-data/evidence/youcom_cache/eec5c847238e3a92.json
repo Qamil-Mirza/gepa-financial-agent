@@ -1,0 +1,28 @@
+{
+  "query": "Oracle OCI AI revenue growth fiscal 2025 quarter May 2025",
+  "normalized": "2025 ai fiscal growth may oci oracle quarter revenue",
+  "fetched_at": "2026-10-17T20:09:33Z",
+  "elapsed_s": 12.6,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "For Oracle\u2019s fiscal Q4 2025\u2014the quarter ended May 31, 2025\u2014OCI consumption revenue grew **62% year over year**; Oracle did not separately disclose an \u201cAI revenue\u201d dollar amount or a standalone AI-revenue growth rate in its earnings release. [[1]] \n\nThe broader OCI/IaaS revenue measure was **$3.0 billion, up 52% year over year**, while combined cloud revenue (IaaS plus SaaS) was **$6.7 billion, up 27%**. [[2]] \n\nManagement attributed the OCI demand acceleration to AI-related workloads and said it expected OCI consumption growth to accelerate further in fiscal 2026. [[3]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://www.oracle.com/news/announcement/q4fy25-earnings-release-2025-06-11/",
+          "title": "Oracle Announces Fiscal 2025 Fourth Quarter and Fiscal Full Year Financial Results"
+        },
+        {
+          "url": "https://futurumgroup.com/insights/oracle-delivers-q4-fy-2025-results-with-27-cloud-growth-rpo-hits-138-billion/",
+          "title": "Oracle Delivers Q4 FY 2025 Results With 27% Cloud Growth, RPO Hits $138 Billion"
+        },
+        {
+          "url": "https://investor.oracle.com/investor-news/news-details/2025/Oracle-Announces-Fiscal-2025-Fourth-Quarter-and-Fiscal-Full-Year-Financial-Results/default.aspx",
+          "title": "Oracle - Oracle Announces Fiscal 2025 Fourth Quarter and Fiscal Full Year Financial Results"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

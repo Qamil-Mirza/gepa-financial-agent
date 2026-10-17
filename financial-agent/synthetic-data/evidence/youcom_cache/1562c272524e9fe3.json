@@ -1,0 +1,24 @@
+{
+  "query": "CoreWeave history as Ethereum cryptocurrency mining company",
+  "normalized": "as company coreweave cryptocurrency ethereum history mining",
+  "fetched_at": "2026-10-17T20:07:17Z",
+  "elapsed_s": 16.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "CoreWeave began in New Jersey in 2017 under the name **Atlantic Crypto**, founded by Michael Intrator, Brian Venturo, Brannin McBee, and Peter Salanki. [[1]] \n\nIts original business was cryptocurrency mining\u2014specifically, mining **Ethereum with graphics-processing units (GPUs)** rather than operating as a cloud-computing provider. [[1]] \n\nThe key strategic asset was therefore a large installed base of GPU hardware, acquired and operated for mining economics during the cryptocurrency boom. [[2]] \n\nFollowing the 2018 crypto-market crash, the company rebranded as **CoreWeave in 2019** and repurposed its GPU inventory toward providing cloud-computing infrastructure. [[1]] \n\nThat pivot is central to its subsequent AI-infrastructure story: the same specialized GPU operating experience and hardware base that had supported Ethereum mining became the foundation for GPU cloud services, initially beyond crypto and later for AI training and inference workloads. [[2]] \n\nIn short, CoreWeave was not originally an AI cloud company\u2014it was an Ethereum-focused GPU miner whose 2019 transition from Atlantic Crypto to CoreWeave transformed stranded or repurposable mining capacity into commercial GPU cloud infrastructure. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/CoreWeave",
+          "title": "CoreWeave"
+        },
+        {
+          "url": "https://pestel-analysis.com/blogs/brief-history/coreweave",
+          "title": "CoreWeave History: 2017 Start, 2019 Pivot, 2025 IPO"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

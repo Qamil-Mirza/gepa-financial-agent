@@ -1,0 +1,28 @@
+{
+  "query": "Micron consumer SSD and PC smartphone memory revenue",
+  "normalized": "consumer memory micron pc revenue smartphone ssd",
+  "fetched_at": "2026-10-17T20:04:48Z",
+  "elapsed_s": 22.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Micron does **not publicly disclose separate revenue** for consumer SSDs, PC memory, and smartphone memory; its closest reported bucket is the **Mobile and Client Business Unit (MCBU)**, which aggregates mobile and client products rather than providing an end-market/product revenue split. In fiscal Q4 2026, MCBU revenue was a record **$13.114 billion**, versus **$11.521 billion** in Q3 2026 and **$3.760 billion** in Q4 2025. [[1]] \n\nFor context, Micron reported total fiscal-2026 revenue of **$133.188 billion**, so Q4 MCBU represented approximately **24%** of company revenue; management said the quarter\u2019s MCBU increase was driven by higher pricing, partly offset by lower bit shipments. [[1]] [[2]]\n\n**What can be said by category:**\n- **PC memory and client SSDs:** These are included in MCBU, but Micron does not publish their individual revenue. Micron said PC and mobile demand was concentrated in premium devices, with AI-enabled PCs and smartphones requiring more DRAM and NAND content. [[2]]\n- **Smartphone memory:** Smartphone DRAM and NAND are likewise included in MCBU rather than separately disclosed. Micron reported it was shipping its 6-channel 1-gamma LPDDR5X for flagship mobile devices in fiscal Q4 2026. [[1]]\n- **Consumer SSDs / Crucial:** Micron announced on December 3, 2025 that it would exit the Crucial consumer business\u2014including consumer-branded products sold through retailers, e-tailers, and distributors\u2014and would continue channel shipments only through the end of fiscal Q2 2026. Consequently, consumer SSD revenue should no longer be viewed as a continuing standalone growth category after that transition. [[3]]\n- **SSD revenue disclosed separately:** The only SSD subcategory Micron quantified was **data-center SSD revenue**, which was nearly **$10 billion** in fiscal Q4 2026 and more than two-thirds of company NAND revenue; that figure is distinct from consumer and client SSDs. [[2]] \n\nAt the technology level, Micron generated **$100.7 billion of DRAM revenue** and **$31.8 billion of NAND revenue** in fiscal 2026, but these technology totals span data center, PC, smartphone, automotive, embedded, and other applications and therefore cannot be used to isolate PC or smartphone revenue. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.micron.com/news/press-release/2026/Micron-Technology-Inc--Reports-Record-Fiscal-Fourth-Quarter-and-Full-Year-2026-Results/",
+          "title": "Micron Technology, Inc. - Micron Technology, Inc. Reports Record Fiscal Fourth-Quarter and Full-Year 2026 Results"
+        },
+        {
+          "url": "https://investors.micron.com/files/doc_financials/2026/q4/Q4-26-Earnings-Deck.pdf",
+          "title": "Financial Results FQ4 2026"
+        },
+        {
+          "url": "https://investors.micron.com/news-releases/news-release-details/micron-announces-exit-crucial-consumer-business",
+          "title": "Micron Technology, Inc. - Micron Announces Exit from Crucial Consumer Business"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

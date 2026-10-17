@@ -1,0 +1,36 @@
+{
+  "query": "Intel stock price performance and analyst price targets",
+  "normalized": "analyst intel performance price stock targets",
+  "fetched_at": "2026-10-17T20:05:54Z",
+  "elapsed_s": 22.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Intel (NASDAQ: INTC) stock performance:** INTC closed at **$89.85 on October 16, 2026** (with after-hours trading at **$89.32**), following a **5.8%** decline in that session; its 52-week trading range was **$32.89\u2013$142.35**. [[1]] [[2]]\n\n- **Year-to-date 2026:** the stock rose from **$36.90 on December 31, 2025** to **$89.85 on October 16, 2026**, a **143.5% price gain**. [[1]]\n- **Trailing 12 months:** INTC increased from **$37.01 on October 17, 2025** to **$89.85 on October 16, 2026**, or **142.8%**; it reached an intraperiod high of **$140.94 on June 22, 2026** and a low of **$33.62 on November 20, 2025**. [[3]]\n- That puts the October 16 close about **36% below** its June 22 high, underscoring substantial volatility despite the outsized YTD gain. [[3]]\n\n**Analyst price targets:** The broad S&P Global-based consensus tracked by StockAnalysis is **Buy** among **49 analysts**, with a **$118.05** average 12-month target, **$115 median**, **$80 low**, and **$200 high**. [[4]]\n\n- Against the **$89.85** October 16 close, the **$118.05** average implies **31.4% upside**, while the $80 low target implies roughly **11.0% downside** and the $200 high target implies **122.6% upside**. [[4]]\n- A narrower, more-recent 30-analyst TipRanks sample produces a more cautious **Hold** consensus and a **$114.04** average target, ranging from **$80 to $155**; its average implies about **30.4% upside** from the referenced market price. [[5]]\n- Recent examples illustrate the dispersion: KeyBanc\u2019s John Vinh maintained a **Buy/$155** target on October 15, while Susquehanna reiterated **Hold** and lifted its target from **$80 to $115** on October 12; Mizuho maintained **Hold** while raising its target from **$92 to $114** in early October. [[4]]\n\n**Bottom line:** Intel\u2019s share price has more than doubled in 2026 but remains well below its June peak, while published analyst target aggregates still indicate approximately **27%\u201331% average upside**; the disagreement between Buy and Hold consensus labels, plus the broad **$80\u2013$200** target range, signals unusually high uncertainty around the outlook. [[1]] [[4]] [[5]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://tako.com/card/PF84BHMHXtDRmvY256Un/",
+          "title": "Intel Stock Overview"
+        },
+        {
+          "url": "https://finance.yahoo.com/quote/INTC/",
+          "title": "Intel Corporation (INTC) Stock Price, News, Quote & History - Yahoo ..."
+        },
+        {
+          "url": "https://tako.com/card/njNXVW3DrW7Aduno8qvl/",
+          "title": "Intel Stock Overview"
+        },
+        {
+          "url": "https://stockanalysis.com/stocks/intc/forecast/",
+          "title": "Intel (INTC) Stock Forecast & Analyst Price Targets"
+        },
+        {
+          "url": "https://www.tipranks.com/stocks/intc/forecast",
+          "title": "Intel (INTC) Stock Forecast, Price Targets and Analysts Predictions ..."
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

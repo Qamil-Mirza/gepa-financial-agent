@@ -1,0 +1,28 @@
+{
+  "query": "Broadcom AI semiconductor revenue Q3 fiscal 2026 custom AI accelerators XPUs",
+  "normalized": "2026 accelerators ai broadcom custom fiscal q3 revenue semiconductor xpus",
+  "fetched_at": "2026-10-17T20:08:18Z",
+  "elapsed_s": 12.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Broadcom reported **$16.7 billion of AI-semiconductor revenue in fiscal Q3 2026**, ended **August 2, 2026**, up **221% year over year** and **54% sequentially**. [[1]] \n\nManagement attributed the acceleration to very strong demand for **custom AI accelerators (XPUs)** and AI networking; total company revenue was **$29.6 billion**, so AI semiconductors represented roughly **56%** of quarterly revenue. [[1]] [[2]] \n\nThe XPU product cycle included high-volume delivery of Google\u2019s **Ironwood TPU v7** to Google and Anthropic, while Broadcom also identified custom XPU programs for OpenAI (\u201cJalape\u00f1o\u201d) and Meta (MTIA). [[3]] \n\nFor fiscal Q4 2026, Broadcom guided AI-semiconductor revenue to **$21.7 billion**, or **236% year-over-year growth**, implying continued sharp expansion in custom accelerators and networking. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial",
+          "title": "Broadcom Inc. Announces Third Quarter Fiscal Year 2026 Financial Results and Quarterly Dividend"
+        },
+        {
+          "url": "https://www.alpha-sense.com/earnings/avgo/",
+          "title": "Broadcom Inc Earnings - Analysis & Highlights for Q3 2026"
+        },
+        {
+          "url": "https://www.investing.com/news/transcripts/earnings-call-transcript-broadcom-tops-q3-2026-estimates-as-ai-sales-surge-93CH-4886849",
+          "title": "Earnings call transcript: Broadcom tops Q3 2026 estimates as AI sales surge By Investing.com"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

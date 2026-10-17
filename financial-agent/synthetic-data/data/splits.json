@@ -3,5 +3,11 @@
   "amd_datacenter": "train",
   "hyperscaler_capex": "train",
   "margin_comparison": "val",
-  "accelerator_competition": "test"
+  "accelerator_competition": "test",
+  "tsmc_ai": "train",
+  "micron_hbm": "train",
+  "oracle_oci": "train",
+  "intel_dcai": "val",
+  "broadcom_ai": "test",
+  "coreweave": "test"
 }

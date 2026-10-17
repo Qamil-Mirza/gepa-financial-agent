@@ -1,0 +1,44 @@
+{
+  "query": "TSMC ADR stock price valuation analyst targets",
+  "normalized": "adr analyst price stock targets tsmc valuation",
+  "fetched_at": "2026-10-17T20:03:34Z",
+  "elapsed_s": 27.5,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**TSMC ADR (NYSE: TSM) snapshot \u2014 16 October 2026:** the ADR was quoted at **$412.25 after the close** (the regular-session close was **$412.61**), following a **2.28%** daily decline; its trailing P/E was **25.44x** and price-to-sales ratio **13.20x**. [[1]]\n\n**Street targets:** the S&P Global-based consensus comprised **21 analysts**, rated **\u201cStrong Buy,\u201d** with a mean 12\u2011month target of **$584.39**, implying **41.6% upside** from the contemporaneous price; the published range was **$440 to $1,000**, with a **$557.50 median**. [[2]]\n\n**Recent named targets:** Needham raised its target to **$560** from **$530** on 15 October while retaining Buy; BofA\u2019s cited target was **$620**, Barclays\u2019 was **$665**, and TD Cowen\u2019s **$440 Hold** target represents the lower end of the disclosed range. [[3]] [[4]] [[3]]\n\n**Valuation:** S&P Global data put TSMC at **17.49x forward P/E** in Q3 2026, down from **18.85x** in Q2, versus a **25.44x trailing P/E**; separately, its enterprise-value-to-next-twelve-month revenue multiple was **7.84x** as of 16\u201317 October. [[5]] [[6]]\n\n**Fundamental support for the premium:** TSMC reported Q3 2026 ADR EPS of **$4.60** and US-dollar revenue of **$46.72 billion**, with revenue up **41.2% year over year** and gross margin at **66.4%**; advanced nodes of 7nm and below represented **79%** of wafer revenue. [[7]]\n\n**Near-term catalyst:** management guided Q4 2026 revenue to **$52.3\u2013$54.3 billion**, gross margin to **65%\u201367%**, and operating margin to **56.5%\u201358.5%**, framing the bull case around sustained leading-edge and 2nm demand. [[7]]\n\n**Analyst view:** the consensus upside is substantial, but the valuation already relies on continued earnings growth and execution; the principal watch items are whether Q4 revenue clears the guide, whether 2nm ramp dilution keeps gross margin within the 65%\u201367% range, and whether strong AI/advanced-node demand persists. [[7]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://tako.com/card/61YRAlo12vpyys6doBet/",
+          "title": "Taiwan Semiconductor Manufacturing Company Limited Stock Overview"
+        },
+        {
+          "url": "https://stockanalysis.com/stocks/tsm/forecast/",
+          "title": "Taiwan Semiconductor Manufacturing Company (TSM) Stock Forecast & Price Targets"
+        },
+        {
+          "url": "https://www.marketbeat.com/instant-alerts/analyst-taiwan-semiconductor-manufacturing-nyse-tsm-given-new-56000-price-target-at-needham-company-llc-2026-10-15/",
+          "title": "Taiwan Semiconductor Manufacturing (NYSE:TSM) Given New $560.00 Price Target at Needham & Company LLC"
+        },
+        {
+          "url": "https://www.tipranks.com/news/tsmc-q3-earnings-on-october-15-analysts-see-95-upside-in-tsm-stock",
+          "title": "TSMC Q3 Earnings on October 15: Analysts See 95% Upside in TSM Stock - TipRanks.com"
+        },
+        {
+          "url": "https://tako.com/card/_px-x1MNX3qutVne4UIl/",
+          "title": "Taiwan Semiconductor Manufacturing Company Limited Ratios Overview"
+        },
+        {
+          "url": "https://tako.com/card/AAG8XemchrcrH36GjikC/",
+          "title": "Taiwan Semiconductor Manufacturing Company Limited Valuation Overview"
+        },
+        {
+          "url": "https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/2026-10/526b65af7305df2dde6b9ece6812b1fdf1e49f9b/3Q26%20EarningsRelease.pdf",
+          "title": "October 15, 2026 TSMC Page 1 of 2"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "query": "Broadcom fiscal year end date and fiscal quarter dates",
+  "normalized": "broadcom date dates end fiscal quarter year",
+  "fetched_at": "2026-10-17T20:04:18Z",
+  "elapsed_s": 7.9,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "Broadcom operates on a 52- or 53-week fiscal year ending on the **Sunday closest to October 31**; it labels each fiscal year by the calendar year in which it ends. [[1]] \n\nFor **fiscal 2025** (a 52-week year), the fiscal year ended **November 2, 2025**, and the quarter-end dates were: [[1]] [[2]]\n\n| Fiscal quarter | End date |\n|---|---|\n| Q1 FY2025 | February 2, 2025 |\n| Q2 FY2025 | May 4, 2025 |\n| Q3 FY2025 | August 3, 2025 |\n| Q4 FY2025 / fiscal year-end | November 2, 2025 |\n\nQ1 and Q2 FY2025 ended February 2 and May 4, respectively, while Broadcom\u2019s guidance identified August 3, 2025 as the Q3 end date and its FY2025 results identify November 2, 2025 as the Q4/year-end date. [[3]] [[2]] \n\nBecause the company uses a 52/53-week calendar, the precise Sunday dates shift slightly from year to year rather than falling on fixed calendar dates. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.broadcom.com/static-files/5868c796-2455-4855-9f02-3410b11e99e1",
+          "title": "Form 10-K for Broadcom INC filed 12/18/2025"
+        },
+        {
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-fourth-quarter-and-fiscal-year-2025",
+          "title": "Broadcom Inc. Announces Fourth Quarter and Fiscal Year 2025 Financial Results and Quarterly Dividend"
+        },
+        {
+          "url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-second-quarter-fiscal-year-2025-financial",
+          "title": "Broadcom Inc. Announces Second Quarter Fiscal Year 2025 Financial Results and Quarterly Dividend"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "query": "Taiwan China geopolitical risk tariffs semiconductors",
+  "normalized": "china geopolitical risk semiconductors taiwan tariffs",
+  "fetched_at": "2026-10-17T20:03:32Z",
+  "elapsed_s": 27.8,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "**Bottom line:** Taiwan is a strategic semiconductor bottleneck, so a Taiwan-Strait crisis is principally a *physical supply/interruption risk*, while U.S.\u2013China trade policy is principally a *cost, market-access, and supply-chain-localization risk*. [[1, 2]]\n\n**Geopolitical risk.** The U.S. Defense Department\u2019s 2025 China report says the PLA is refining options to compel unification that include amphibious invasion, firepower strikes, and potentially a maritime blockade, and that exercises in 2024 tested elements including blocking access to key ports. [[1]] Taiwan\u2019s risk premium is therefore not limited to a low-probability invasion scenario: coercion, port disruption, air/sea access restrictions, cyber risk, and insurance/logistics disruption could interrupt semiconductor output or shipments before a full-scale conflict. [[1]]\n\n**Why semiconductors matter disproportionately.** TSMC\u2019s 2025 Form 20-F states that its headquarters and nine fabs are in Hsinchu, two are in central Taiwan, and seven are in southern Taiwan, demonstrating substantial geographic concentration in Taiwan despite overseas expansion. [[2]] TSMC managed more than 17 million 12-inch-equivalent wafers of annual capacity in 2025 and served 534 customers across 12,682 products, making a disruption relevant across a very broad technology supply chain rather than to a single end market. [[3]]\n\n**Tariff and trade-policy risk\u2014China.** USTR determined in December 2025 that China\u2019s semiconductor-industry policies were actionable under Section 301 and imposed an action effective December 23, 2025 on specified Chinese semiconductor products, initially at a 0% incremental tariff rate. [[4]] USTR\u2019s notice says that incremental rate is scheduled to rise on June 23, 2027, with the eventual rate to be announced at least 30 days beforehand; companies exposed to China-origin chips or covered components therefore face material policy uncertainty rather than a fixed known 2027 tariff. [[4]]\n\n**Tariff and trade-policy risk\u2014Taiwan.** Taiwan should not be treated as equivalent to China for U.S. tariff purposes: the January 2026 U.S.\u2013Taiwan trade-and-investment agreement states that the U.S. reciprocal tariff rate on Taiwanese goods will be no more than 15%. [[5]] The agreement also says future Section 232 semiconductor duties will favor Taiwanese producers investing in U.S. capacity, with duty-free import allowances tied to 2.5 times planned U.S. capacity during approved construction and 1.5 times new U.S. production after project completion. [[5]]\n\n**Corporate implication.** The policy direction rewards geographic diversification, but it does not quickly eliminate Taiwan-Strait exposure: TSMC Arizona\u2019s first fab began volume 4nm production in Q4 2024, the second fab was still installing systems for 3nm-and-more-advanced production, and a third fab began construction in 2025. [[3]] TSMC itself cautions that trade tensions can raise equipment costs or cause delays, export-license denials, additional export controls, and tariff or non-tariff barriers, which can impede timely capacity expansion. [[2]]\n\n**Investor framework.** The constructive base case is continued cross-Strait deterrence, expanding overseas capacity, and preferential treatment for Taiwan-linked U.S. investment; the adverse case is escalating coercion or blockade combined with tighter China controls, which would pressure volumes, lead times, inventories, capex, and customer qualification costs. [[1, 5, 3]] The key indicators to monitor are PLA activity around Taiwan and port-access conditions, Section 301\u2019s announced June 2027 China-chip tariff rate, Section 232 implementation for semiconductors, TSMC\u2019s Arizona ramp milestones, and any further restrictions affecting critical chipmaking equipment. [[1, 4, 5, 3, 2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://media.defense.gov/2025/Dec/23/2003849070/-1/-1/1/ANNUAL-REPORT-TO-CONGRESS-MILITARY-AND-SECURITY-DEVELOPMENTS-INVOLVING-THE-PEOPLES-REPUBLIC-OF-CHINA-2025.PDF",
+          "title": "2025 Annual Report to Congress: Military and Security ..."
+        },
+        {
+          "url": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+          "title": "(PRD) 2025_20F Report - Document template"
+        },
+        {
+          "url": "https://investor.tsmc.com/static/annualReports/2025/english/index.html",
+          "title": "TSMC 2025 Annual Report Website"
+        },
+        {
+          "url": "https://ustr.gov/sites/default/files/files/Issue_Areas/Enforcement/Section%20301/Semiconductor%20Section%20301%20FRN%20Final%20Action%2012-22-25%20for%20posting.pdf",
+          "title": "China's Acts, Policies, and Practices"
+        },
+        {
+          "url": "https://www.commerce.gov/news/fact-sheets/2026/01/fact-sheet-restoring-american-semiconductor-manufacturing-leadership",
+          "title": "Fact Sheet: Restoring American Semiconductor Manufacturing Leadership Through an Agreement on Trade & Investment with Taiwan"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

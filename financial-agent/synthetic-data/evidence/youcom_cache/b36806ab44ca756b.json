@@ -1,0 +1,24 @@
+{
+  "query": "CoreWeave revenue year over year growth latest quarter",
+  "normalized": "coreweave growth over quarter revenue year",
+  "fetched_at": "2026-10-17T20:07:01Z",
+  "elapsed_s": 7.1,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "CoreWeave\u2019s latest reported quarter is Q2 2026 (three months ended June 30, 2026): revenue was **$2.575 billion**, versus **$1.212 billion** in Q2 2025. [[1]] \nThat represents **112% year-over-year revenue growth**\u2014more than doubling revenue from the prior-year quarter. [[2]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Reports-Strong-Second-Quarter-2026-Results/default.aspx",
+          "title": "CoreWeave - CoreWeave Reports Strong Second Quarter 2026 Results"
+        },
+        {
+          "url": "https://www.cnbc.com/2026/08/11/coreweave-crwv-q2-earnings-report-2026.html",
+          "title": "CoreWeave (CRWV) Q2 earnings report 2026"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

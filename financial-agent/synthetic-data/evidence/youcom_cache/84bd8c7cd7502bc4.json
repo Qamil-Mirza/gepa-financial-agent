@@ -1,0 +1,20 @@
+{
+  "query": "CoreWeave origins cryptocurrency mining Bitcoin Ethereum 2017",
+  "normalized": "2017 bitcoin coreweave cryptocurrency ethereum mining origins",
+  "fetched_at": "2026-10-17T20:10:19Z",
+  "elapsed_s": 16.3,
+  "research_effort": "deep",
+  "response": {
+    "output": {
+      "content": "CoreWeave began in New Jersey in 2017 as **Atlantic Crypto**, a cryptocurrency-mining business founded by Michael Intrator, Brian Venturo, Brannin McBee, and Peter Salanki. [[1]] \n\nIts initial operation used GPU hardware to mine **Ethereum**, rather than Bitcoin; the GPU focus became strategically important because those assets could later be redeployed for cloud computing. [[1]] \n\nFollowing the 2018 cryptocurrency-market crash, the company renamed itself **CoreWeave** in 2019 and began using its GPU fleet to provide cloud-computing infrastructure\u2014eventually evolving into an AI-focused GPU cloud provider. [[1]]",
+      "content_type": "text",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/CoreWeave",
+          "title": "CoreWeave"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}
