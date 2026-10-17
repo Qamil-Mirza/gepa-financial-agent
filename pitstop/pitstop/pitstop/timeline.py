@@ -23,8 +23,9 @@ from pydantic import BaseModel, Field
 
 from .schemas import Status, utc_now
 
-TIMELINE_VERSION = "1.0"
+TIMELINE_VERSION = "1.1"
 Severity = Literal["critical", "warning", "info"]
+SourceRole = Literal["system", "supervisor", "validator", "agent"]
 MAX_DETAIL_CHARS = 600
 
 
@@ -46,6 +47,13 @@ class EvidenceRef(BaseModel):
     summary: str = ""
 
 
+class Source(BaseModel):
+    """Who emitted the entry. `agent_id` on the entry is who it is *about*."""
+    role: SourceRole
+    id: str
+    label: str
+
+
 class TimelineEntry(BaseModel):
     entry_id: str
     seq: int
@@ -53,8 +61,10 @@ class TimelineEntry(BaseModel):
     severity: Severity
     timestamp: str
     title: str
+    source: Source
     detail: str = ""
     agent_id: Optional[str] = None
+    agent_label: Optional[str] = None
     step: Optional[int] = None
     phase: Optional[str] = None
     status: Optional[Status] = None
@@ -83,6 +93,7 @@ class TimelineBuilder:
         self._log_path = log_path
         self._listeners: list[Callable[[TimelineEntry], None]] = []
         self._agents: dict[str, _AgentTrack] = {}
+        self._labels: dict[str, str] = {}
         self.entries: list[TimelineEntry] = []
         self.run: dict[str, Any] = {}
         if log_path:
@@ -94,12 +105,26 @@ class TimelineBuilder:
     def _track(self, agent_id: str) -> _AgentTrack:
         return self._agents.setdefault(agent_id, _AgentTrack())
 
-    def _emit(self, kind: TimelineKind, severity: Severity, title: str, *, timestamp: Optional[str] = None,
-              **kw: Any) -> TimelineEntry:
+    def label(self, agent_id: str) -> str:
+        return self._labels.get(agent_id) or agent_label(agent_id)
+
+    def _source(self, role: SourceRole, agent_id: Optional[str] = None) -> Source:
+        if role == "agent" and agent_id:
+            return Source(role=role, id=agent_id, label=self.label(agent_id))
+        if role == "supervisor":
+            return Source(role=role, id=self.run.get("supervisor", {}).get("model") or "supervisor", label="Supervisor")
+        if role == "validator":
+            return Source(role=role, id="validator", label="Validator")
+        return Source(role="system", id="orchestrator", label="Orchestrator")
+
+    def _emit(self, kind: TimelineKind, severity: Severity, title: str, *, source: SourceRole,
+              timestamp: Optional[str] = None, **kw: Any) -> TimelineEntry:
         agent_id = kw.get("agent_id")
         if agent_id:
             tr = self._track(agent_id)
             kw["quiet_streak"], tr.quiet = tr.quiet, 0
+            kw["agent_label"] = self.label(agent_id)
+        kw["source"] = self._source(source, agent_id)
         seq = len(self.entries)
         entry = TimelineEntry(entry_id=f"t{seq:04d}", seq=seq, kind=kind, severity=severity,
                               timestamp=timestamp or utc_now(), title=title, **kw)
@@ -116,12 +141,14 @@ class TimelineBuilder:
                     halt_on_drift: bool = False, timestamp: Optional[str] = None) -> TimelineEntry:
         self.run = {"run_id": run_id, "task_id": scenario.get("task_id"),
                     "objective": scenario.get("swarm_objective"),
-                    "agents": [{"agent_id": a["agent_id"], "directive": a["directive"]}
-                               for a in scenario.get("agents", [])],
+                    "agents": [{"agent_id": a["agent_id"], "label": a.get("label") or agent_label(a["agent_id"]),
+                                "color_index": i, "directive": a["directive"]}
+                               for i, a in enumerate(scenario.get("agents", []))],
                     "supervisor": supervisor or {}, "halt_on_drift": halt_on_drift}
         for a in self.run["agents"]:
             self._track(a["agent_id"])
-        return self._emit(TimelineKind.RUN_STARTED, "info", f"Run {run_id} started",
+            self._labels[a["agent_id"]] = a["label"]
+        return self._emit(TimelineKind.RUN_STARTED, "info", f"Run {run_id} started", source="system",
                           detail=self.run["objective"] or "", timestamp=timestamp,
                           data={"agents": [a["agent_id"] for a in self.run["agents"]],
                                 "halt_on_drift": halt_on_drift})
@@ -149,7 +176,7 @@ class TimelineBuilder:
             if res.get("downgraded"):
                 what.append("downgraded DRIFTING to UNCERTAIN (no valid evidence left)")
             out.append(self._emit(TimelineKind.SUPERVISOR_CORRECTION, "info",
-                                  f"Validator corrected the supervisor on {agent_id}",
+                                  f"Validator corrected the supervisor on {self.label(agent_id)}", source="validator",
                                   detail="; ".join(what) + ".",
                                   data={"issues": res.get("issues", []),
                                         "dropped_evidence_ids": res.get("dropped_evidence_ids", []),
@@ -161,7 +188,7 @@ class TimelineBuilder:
                        Status.UNCERTAIN: "unclear"}[status]
             sev: Severity = "warning" if status == Status.DRIFTING else "info"
             out.append(self._emit(TimelineKind.DRIFT_RESPONSE, sev,
-                                  f"{agent_id} {outcome} after drift flag",
+                                  f"{self.label(agent_id)} {outcome} after drift flag", source="supervisor",
                                   detail=_clip(d.get("explanation", "")), responds_to=tr.open_flag,
                                   evidence=_evidence(d, inp), data={"outcome": outcome},
                                   **base))
@@ -171,7 +198,8 @@ class TimelineBuilder:
             tr.flags += 1
             proposal = inp.get("proposed_next_action") or {}
             entry = self._emit(TimelineKind.DRIFT_FLAGGED, "critical",
-                               f"Drift flagged on {agent_id}: {d.get('drift_type', 'other')}",
+                               f"Drift flagged on {self.label(agent_id)}: {d.get('drift_type', 'other')}",
+                               source="supervisor",
                                detail=_clip(d.get("explanation", "")), evidence=_evidence(d, inp),
                                data={"blocked_query": proposal.get("query"),
                                      "proposed_rationale": proposal.get("rationale"),
@@ -183,9 +211,10 @@ class TimelineBuilder:
             tr.suspected += 1
             already = record.get("alert_note") == "already flagged"
             out.append(self._emit(TimelineKind.DRIFT_SUSPECTED, "warning",
-                                  f"{agent_id} judged DRIFTING" + (" (already flagged)" if already else
+                                  f"{self.label(agent_id)} judged DRIFTING" + (" (already flagged)" if already else
                                                                    " (below alert threshold)"),
                                   detail=_clip(d.get("explanation", "")), evidence=_evidence(d, inp),
+                                  source="supervisor",
                                   data={"alert_level": record.get("alert_level"),
                                         "alert_note": record.get("alert_note")},
                                   **{**base, "refs": {**refs, "event_ids": d.get("evidence_event_ids", [])}}))
@@ -193,7 +222,7 @@ class TimelineBuilder:
                 e.kind == TimelineKind.DRIFT_RESPONSE for e in out):
             prev = (tr.last_status or Status.ON_TRACK).value
             out.append(self._emit(TimelineKind.STATUS_CHANGED, "info",
-                                  f"{agent_id}: {prev} → {status.value}",
+                                  f"{self.label(agent_id)}: {prev} → {status.value}", source="supervisor",
                                   detail=_clip(d.get("explanation", "")), evidence=_evidence(d, inp),
                                   data={"from": prev, "to": status.value}, **base))
         elif not out:
@@ -207,7 +236,8 @@ class TimelineBuilder:
         tr = self._track(agent_id)
         tr.halted = True
         flag, tr.open_flag = tr.open_flag, None
-        return self._emit(TimelineKind.DRIFT_RESPONSE, "critical", f"{agent_id} halted before executing its next query",
+        return self._emit(TimelineKind.DRIFT_RESPONSE, "critical",
+                          f"{self.label(agent_id)} halted before executing its next query", source="system",
                           agent_id=agent_id, step=step, responds_to=flag, timestamp=timestamp,
                           detail=f"Blocked query: {blocked_query!r}" if blocked_query else "",
                           data={"outcome": "halted", "blocked_query": blocked_query})
@@ -216,7 +246,7 @@ class TimelineBuilder:
                        timestamp: Optional[str] = None) -> TimelineEntry:
         tr = self._track(agent_id)
         sev: Severity = "warning" if tr.flags else "info"
-        return self._emit(TimelineKind.AGENT_FINISHED, sev, f"{agent_id} finished",
+        return self._emit(TimelineKind.AGENT_FINISHED, sev, f"{self.label(agent_id)} finished", source="agent",
                           agent_id=agent_id, step=step, detail=_clip(report or ""), timestamp=timestamp,
                           status=tr.last_status, data={"flags": tr.flags, "suspected": tr.suspected})
 
@@ -224,7 +254,7 @@ class TimelineBuilder:
                      timestamp: Optional[str] = None, out_path: Optional[Path] = None) -> dict:
         flagged = [a for a, t in self._agents.items() if t.flags]
         self._emit(TimelineKind.RUN_FINISHED, "warning" if flagged else "info",
-                   f"Run finished: {len(flagged)} agent(s) flagged for drift",
+                   f"Run finished: {len(flagged)} agent(s) flagged for drift", source="system",
                    timestamp=timestamp, data={"flagged_agents": flagged})
         doc = self.document(interventions=interventions, ground_truth=ground_truth)
         if out_path:
@@ -237,6 +267,7 @@ class TimelineBuilder:
         agents = {}
         for agent_id, t in self._agents.items():
             agents[agent_id] = {
+                "label": self.label(agent_id),
                 "final_status": t.last_status.value if t.last_status else None,
                 "flags": t.flags, "suspected": t.suspected, "halted": t.halted,
                 "intervention": (interventions or {}).get(agent_id),
@@ -248,6 +279,12 @@ class TimelineBuilder:
             counts[e.kind.value] = counts.get(e.kind.value, 0) + 1
         return {"timeline_version": TIMELINE_VERSION, "run": self.run, "agents": agents,
                 "counts": counts, "entries": [e.model_dump(mode="json") for e in self.entries]}
+
+
+def agent_label(agent_id: str) -> str:
+    """agent_nvda_dc -> 'NVDA DC', agent_supply -> 'Supply'."""
+    words = [w for w in agent_id.removeprefix("agent_").replace("-", "_").split("_") if w] or [agent_id]
+    return " ".join(w.upper() if len(w) <= 4 else w.capitalize() for w in words)
 
 
 def _clip(text: str) -> str:

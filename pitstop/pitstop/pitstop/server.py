@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Iterator, Optional
 from urllib.parse import parse_qs, urlparse
 
-from .timeline import build_from_run_dir
+from .timeline import TIMELINE_VERSION, build_from_run_dir
 
 _RUN_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 POLL_S = 0.25
@@ -51,11 +51,17 @@ class RunStore:
         return d if d.is_dir() else None
 
     def _ensure_timeline(self, d: Path) -> None:
-        # Older runs predate the timeline; rebuild once, but never while a run may still be writing.
-        if not (d / "timeline.json").exists() and (d / "meta.json").exists():
+        # Older runs predate the timeline (or its current version); rebuild once,
+        # but never while a run may still be writing.
+        if (d / "meta.json").exists() and self._stale(d):
             with self._rebuild_lock:
-                if not (d / "timeline.json").exists():
+                if self._stale(d):
                     build_from_run_dir(d)
+
+    @staticmethod
+    def _stale(d: Path) -> bool:
+        p = d / "timeline.json"
+        return not p.exists() or json.loads(p.read_text()).get("timeline_version") != TIMELINE_VERSION
 
     def list_runs(self) -> list[dict]:
         if not self.runs_dir.exists():
@@ -68,6 +74,7 @@ class RunStore:
             entries = tl.get("entries", [])
             out.append({
                 "run_id": d.name, "task_id": tl.get("run", {}).get("task_id"),
+                "agents": tl.get("run", {}).get("agents", []),
                 "in_progress": tl.get("in_progress", True),
                 "started_at": entries[0]["timestamp"] if entries else None,
                 "finished_at": entries[-1]["timestamp"] if entries and not tl.get("in_progress") else None,

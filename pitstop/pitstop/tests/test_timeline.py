@@ -10,7 +10,7 @@ from pitstop.orchestrator import Swarm
 from pitstop.research.youcom import FinanceResearchClient
 from pitstop.schemas import Scenario
 from pitstop.supervisor.supervisor import Supervisor
-from pitstop.timeline import TimelineBuilder, TimelineKind, build_from_run_dir
+from pitstop.timeline import TimelineBuilder, TimelineKind, agent_label, build_from_run_dir
 
 from test_pipeline_offline import SCENARIO, supervisor_handler, worker_handler
 
@@ -100,6 +100,11 @@ async def test_swarm_writes_timeline_and_offline_rebuild_matches(tmp_path, FakeL
     halt = next(e for e in bad if e["kind"] == "drift_response")
     assert halt["responds_to"] == flag["entry_id"] and halt["data"]["outcome"] == "halted"
 
+    assert flag["source"]["role"] == "supervisor" and flag["source"]["id"] == "fake-model"
+    assert flag["agent_label"] == "BAD" and halt["source"]["role"] == "system"
+    assert [(a["agent_id"], a["label"], a["color_index"]) for a in doc["run"]["agents"]] == \
+        [("good", "GOOD", 0), ("bad", "BAD", 1)]
+
     good = [e for e in entries if e["agent_id"] == "good"]
     assert [e["kind"] for e in good] == ["agent_finished"] and good[0]["quiet_streak"] >= 3
     assert doc["agents"]["bad"]["halted"] and doc["agents"]["bad"]["intervention"]["step"] == 1
@@ -107,3 +112,19 @@ async def test_swarm_writes_timeline_and_offline_rebuild_matches(tmp_path, FakeL
     rebuilt = build_from_run_dir(run.run_dir, write=False)
     strip = lambda es: [(e["kind"], e["agent_id"], e["step"], e["responds_to"], e["quiet_streak"]) for e in es]
     assert strip(rebuilt["entries"]) == strip(entries)
+
+
+def test_sources_and_labels():
+    assert agent_label("agent_nvda_dc") == "NVDA DC" and agent_label("agent_supply") == "Supply"
+    tb = TimelineBuilder()
+    start = tb.run_started("r", {"task_id": "t", "swarm_objective": "o",
+                                 "agents": [{"agent_id": "a", "label": "Alpha desk", "directive": "d"}]},
+                           supervisor={"model": "nemotron"})
+    assert start.source.role == "system" and start.agent_id is None
+    corr, flag = tb.on_decision(_record("DRIFTING", note="INTERVENTION POINT", level="alert",
+                                        dropped=["a-e999"]), 0)
+    assert corr.source.role == "validator"
+    assert flag.source.model_dump() == {"role": "supervisor", "id": "nemotron", "label": "Supervisor"}
+    assert flag.agent_label == "Alpha desk" and flag.title == "Drift flagged on Alpha desk: goal_deviation"
+    fin = tb.agent_finished("a", 1)
+    assert fin.source.model_dump() == {"role": "agent", "id": "a", "label": "Alpha desk"}

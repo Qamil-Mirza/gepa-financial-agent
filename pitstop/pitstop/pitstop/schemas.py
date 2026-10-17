@@ -155,6 +155,7 @@ class DriftInjection(BaseModel):
 
 class AgentSpec(BaseModel):
     agent_id: str
+    label: Optional[str] = None  # display name for the UI; derived from agent_id when unset
     directive: str
     constraints: list[str] = Field(default_factory=list)
     success_criteria: list[str] = Field(default_factory=list)

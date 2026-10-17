@@ -67,6 +67,7 @@ async def test_json_endpoints_and_drilldown(finished_run, serve):
         runs = c.get("/api/runs").json()
         assert [r["run_id"] for r in runs] == [finished_run.run_id]
         assert runs[0]["flagged_agents"] == ["bad"] and not runs[0]["in_progress"]
+        assert [a["label"] for a in runs[0]["agents"]] == ["GOOD", "BAD"]
 
         tl = c.get(f"/api/runs/{finished_run.run_id}/timeline").json()
         flag = next(e for e in tl["entries"] if e["kind"] == "drift_flagged")
@@ -84,6 +85,14 @@ async def test_json_endpoints_and_drilldown(finished_run, serve):
         assert [e["seq"] for e in streamed] == [e["seq"] for e in tl["entries"]]
         resumed = _sse(c, f"/api/runs/{finished_run.run_id}/timeline/stream", headers={"Last-Event-ID": "2"})
         assert resumed[0]["seq"] == 3 and resumed[-1]["kind"] == "run_finished"
+
+
+async def test_outdated_timeline_version_is_rebuilt(finished_run, serve):
+    p = finished_run.run_dir / "timeline.json"
+    p.write_text(json.dumps({**json.loads(p.read_text()), "timeline_version": "1.0"}))
+    base = serve(finished_run.run_dir.parent)
+    tl = httpx.get(f"{base}/api/runs/{finished_run.run_id}/timeline", timeout=5).json()
+    assert tl["timeline_version"] != "1.0" and all("source" in e for e in tl["entries"])
 
 
 async def test_old_run_without_timeline_is_rebuilt(finished_run, serve):

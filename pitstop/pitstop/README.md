@@ -25,6 +25,10 @@ line, safe to tail) and `timeline.json` (run info, per-agent summaries with a co
 history, and all entries). Only notable things become entries: `drift_flagged` (critical),
 `drift_response` (halted / recovered / persisted, linked to its flag by `responds_to`),
 `drift_suspected`, `status_changed`, `supervisor_correction`, plus run and agent lifecycle.
+Each entry's `source` says who emitted it (`role`: `system` / `supervisor` / `validator` / `agent`,
+plus `id` and display `label`), while `agent_id` / `agent_label` say which agent it is about. The run's
+`agents` list gives each agent a display `label` (set `label` in the scenario, or it is derived from
+the id: `agent_nvda_dc` → "NVDA DC") and a stable `color_index` for the UI.
 Routine ON_TRACK verdicts are folded into the next entry's `quiet_streak`. Each entry's `refs`
 points back into `decisions.jsonl` / `events.jsonl` for full detail. Rebuild it for any old run with
 `python -m pitstop.cli timeline --run-dir runs/<run_id> [--highlights]`.
