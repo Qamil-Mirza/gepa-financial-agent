@@ -1,9 +1,12 @@
-# PitStop: drift-detecting supervisor for a financial research swarm (V1, pre-GEPA)
+# PitStop: drift-detecting supervisor for a financial research swarm
 
 Three research agents work on one objective using the You.com Finance Research API.
 A Nemotron supervisor on Crusoe Managed Inference reviews each agent at every step and
-flags drift with evidence from the agent's observable trajectory. GEPA comes next; this
-package is built so GEPA only has to swap the text in `prompts/supervisor_v0.txt`.
+flags drift with evidence from the agent's observable trajectory. It can correct a
+drifting agent, and a report agent writes the team's final report. GEPA only swaps the prompt
+text: `prompts/supervisor_v0.txt` is the hand-written baseline, and
+`prompts/gepa/pitstop_nano_800.txt` is the GEPA-optimized Nano prompt
+(`scripts/optimize_pitstop.py` at the repo root).
 
 ## Quick start
 
@@ -13,8 +16,14 @@ cp .env.example .env          # add CRUSOE_API_KEY and YDC_API_KEY
 python -m pitstop.cli check   # verifies a real Crusoe inference call for both models
 python -m pitstop.cli check --youcom   # optional: one paid You.com call (~$0.11)
 python -m pitstop.cli run --halt-on-drift
+python -m pitstop.cli run --correct-on-drift               # block a drifting query and steer the agent back
+python -m pitstop.cli run --shadow-prompt prompts/gepa/pitstop_nano_800.txt   # a 2nd supervisor judges the same inputs
+python -m pitstop.cli demo --port 8779                     # GEPA demo page (see "GEPA demo UI" below)
 python -m pytest              # offline tests: scripted LLM + mocked You.com, no spend
 ```
+
+From the repo root's uv environment, prefix commands with
+`uv run --project ../.. --with httpx --with rich`.
 
 A run writes `runs/<run_id>/` containing `events.jsonl` (every trajectory event),
 `decisions.jsonl` (every supervisor input + validated verdict) and `meta.json`
@@ -67,7 +76,11 @@ python -m pitstop.cli compare --run-dir runs/<run_id> --prompt-b prompts/supervi
 | `pitstop/supervisor/supervisor.py` | Supervisor: renders the input, calls Nemotron, validates the JSON verdict in code. |
 | `pitstop/supervisor/signals.py` | Deterministic stats given to the supervisor as context (near-duplicate queries, uncited findings, stalled progress). |
 | `pitstop/supervisor/policy.py` | Turns per-step verdicts into a single intervention point. |
-| `pitstop/orchestrator.py` | Runs agents concurrently, puts the supervisor in the loop, streams output, writes logs. |
+| `pitstop/orchestrator.py` | Runs agents concurrently, puts the supervisor in the loop, streams output, writes logs. Optional correction (`correct_on_drift`), team report (`synthesizer`) and shadow supervisor (`decisions_shadow.jsonl`, judging identical inputs). |
+| `pitstop/supervisor/correction.py` | The correction message a drifting agent receives (deterministic, built from its directive and the verdict). |
+| `pitstop/agents/synthesizer.py` | Team report agent: writes only from findings the supervisor did not implicate; citations and figures are checked in code. |
+| `pitstop/timeline.py` | Curated run timeline for UIs (drift flags, responses, corrections); `build_from_run_dir` rebuilds it for any supervisor's log. |
+| `pitstop/demo/` | GEPA demo page and server: data views, paired live runs (`pair.py`), snapshot exporter, offline fixture. |
 
 ## How the caveats are handled
 
@@ -118,7 +131,7 @@ URLs and the ids of the citation events they rely on.
 - Model ids and the base URL follow Crusoe's public docs; confirm against the
   hackathon skill file.
 
-## Hooks for GEPA (next milestone)
+## Hooks for GEPA
 
 - `parse_and_validate(raw_text, inp)` is a pure function the evaluator can reuse.
 - `Supervisor.from_text(llm, candidate_prompt)` scores a candidate prompt without writing files.
@@ -146,3 +159,23 @@ python -m evals.run_hard_cases --prompt prompts/<gepa_candidate>.txt --splits te
   confidence >= 0.75). Rate-limit failures are retried and, if still failing, excluded
   and reported as `infra_errors_excluded`, never scored.
 - Trajectories are synthetic; figures are illustrative, not verified financial data.
+
+## GEPA demo UI
+
+`python -m pitstop.demo.server --port 8779` serves a five-screen, click-through demo page
+(`pitstop/demo/static/demo.html`): start → watch → team reports → prompt evolution → scoreboard.
+
+- **Paired runs.** Live mode (`?mode=live`) starts a pair (`pitstop/demo/pair.py`): two swarms of
+  `scenarios/nvda_amd.json` run concurrently. One is supervised by Nano with `supervisor_v0`, the
+  other by Nano with the GEPA prompt. Both run with `correct_on_drift` and a team report. The pair is
+  written to `runs/pair-<id>/` (`pair.json` plus one run dir per side). Both sides share one You.com
+  client, which de-duplicates identical in-flight requests. One live pair runs at a time, and the
+  page re-attaches after a reload.
+- **Demo mode** replays `demo/snapshot.json`: a real recorded pair, the GEPA run and the test
+  scores. Rebuild it with `python -m pitstop.demo.export --swarm-run runs/pair-<id>`. Use
+  `--fixture` / `--fixture-pair` for offline page work; the page labels fixture data on screen.
+- **Scoring on the watch screen.** "Caught" is the first alarm (DRIFTING at confidence ≥ 0.75) at or
+  after the injected drift step. Earlier alarms, and alarms on agents with no injected drift, are
+  "extra alarms". A failed model call or a non-JSON reply shows as "no verdict", never as UNCERTAIN.
+- **API:** `GET /api/snapshot`, `POST /api/live/start {"objective": ...}`, `GET /api/live/<pair_id>`,
+  `GET /api/health`.
