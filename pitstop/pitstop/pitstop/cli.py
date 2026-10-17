@@ -1,7 +1,7 @@
 """Command line entry points.
 
   python -m pitstop.cli check                     # verify Crusoe inference (and optionally You.com)
-  python -m pitstop.cli run --scenario scenarios/nvda_amd.json
+  python -m pitstop.cli run --scenario scenarios/nvda_amd.json [--correct-on-drift] [--no-report]
   python -m pitstop.cli compare --run-dir runs/<id> --prompt-a prompts/supervisor_v0.txt --prompt-b prompts/<new>.txt
   python -m pitstop.cli timeline --run-dir runs/<id>   # rebuild + print the curated drift timeline
   python -m pitstop.cli serve --port 8765               # timeline API + live SSE stream for the UI
@@ -20,6 +20,7 @@ from rich.table import Table
 
 from .config import ROOT, load_settings
 from .llm import LLMClient, UsageTracker
+from .agents.synthesizer import ReportSynthesizer
 from .research.youcom import FinanceResearchClient
 from .schemas import Scenario, SupervisorInput
 from .orchestrator import Swarm
@@ -65,9 +66,13 @@ async def cmd_run(args) -> None:
         api_key=s.ydc_api_key, cache_dir=Path(args.cache_dir or s.cache_dir), mode=args.mode,
         effort=s.youcom_effort, max_live_calls=args.max_research_calls or s.max_research_calls,
     )
+    synthesizer = None if args.no_report else ReportSynthesizer(
+        LLMClient(s.report_model, api_key=s.crusoe_api_key, base_url=s.crusoe_base_url, temperature=0.2,
+                  max_tokens=4000, usage=UsageTracker()), ROOT / "prompts" / "worker")
     swarm = Swarm(scenario, worker_llm=worker_llm, supervisor=Supervisor(sup_llm, Path(args.prompt)),
                   research=research, prompts_dir=ROOT / "prompts" / "worker", runs_dir=s.runs_dir,
-                  halt_on_drift=args.halt_on_drift)
+                  halt_on_drift=args.halt_on_drift, correct_on_drift=args.correct_on_drift,
+                  max_corrections=args.max_corrections, synthesizer=synthesizer)
     await swarm.run_all()
 
 
@@ -135,6 +140,11 @@ def main() -> None:
                    help="live: cache-first, call You.com on miss; replay: cache only")
     r.add_argument("--cache-dir"); r.add_argument("--max-research-calls", type=int)
     r.add_argument("--halt-on-drift", action="store_true", help="stop an agent at its intervention point")
+    r.add_argument("--correct-on-drift", action="store_true",
+                   help="at an intervention point, block the query and send the agent a correction")
+    r.add_argument("--max-corrections", type=int, default=2,
+                   help="corrections per agent before --halt-on-drift (if set) halts it")
+    r.add_argument("--no-report", action="store_true", help="skip the final report agent")
     m = sub.add_parser("compare")
     m.add_argument("--run-dir", required=True); m.add_argument("--agent")
     m.add_argument("--prompt-a", default=str(ROOT / "prompts" / "supervisor_v0.txt"))

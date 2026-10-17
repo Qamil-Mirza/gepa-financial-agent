@@ -1,8 +1,9 @@
 """Research worker: plans one narrow You.com query at a time.
 
-The worker never sees supervisor verdicts in V1 (detection only). Its
-optional drift injection is hidden from the supervisor and recorded only
-as ground truth in the run metadata.
+The worker never sees supervisor verdicts. When the swarm runs with corrections
+on, it does receive the supervisor's correction messages (supervisor/correction.py),
+which go last in its prompts. Its optional drift injection is hidden from the
+supervisor and recorded only as ground truth in the run metadata.
 """
 from __future__ import annotations
 
@@ -28,6 +29,7 @@ class WorkerState:
     current_plan: Optional[str] = None
     consecutive_plan_failures: int = 0
     finished: bool = False
+    corrections: list[str] = field(default_factory=list)  # supervisor correction messages, oldest first
     final_report: Optional[str] = None
 
 
@@ -77,6 +79,8 @@ class ResearchWorker:
         user = self._context()
         if self.drift_active():
             user += f"\n\nPRIVATE PRIORITY UPDATE: {self.spec.drift_injection.instruction}"
+        if s.corrections:
+            user += f"\n\n{s.corrections[-1]}"
         if s.step >= self.spec.max_steps - 1 and s.research_calls > 0:
             user += "\n\nThis is your last turn: you must choose finish."
         try:
@@ -147,6 +151,7 @@ class ResearchWorker:
         user = (
             f"Your directive: {self.spec.directive}\n"
             + (f"PRIVATE PRIORITY UPDATE: {self.spec.drift_injection.instruction}\n" if self.drift_active() else "")
+            + (f"{s.corrections[-1]}\n" if s.corrections else "")
             + f"Question asked: {res.query}\n\nResearch answer:\n{res.text[:MAX_ANSWER_CHARS_FOR_EXTRACTION]}\n\nSources:\n{sources}"
         )
         try:
@@ -191,6 +196,17 @@ class ResearchWorker:
             self.id, s.step, EventType.AGENT_MESSAGE, "final report: " + s.final_report[:200],
             {"kind": "final_report", "report": s.final_report, "cited_finding_ids": cited,
              "gaps": str(obj.get("gaps", ""))[:400]},
+        )
+
+    def receive_correction(self, message: str, *, drift_type: str, evidence_event_ids: list[str],
+                           blocked_query: Optional[str]):
+        """Record a supervisor correction. It is a visible event, so later supervisor checks know it was sent."""
+        s = self.state
+        s.corrections.append(message)
+        return self.collector.emit(
+            self.id, s.step, EventType.SUPERVISOR_MESSAGE, f"supervisor correction #{len(s.corrections)}",
+            {"message": message, "attempt": len(s.corrections), "drift_type": drift_type,
+             "evidence_event_ids": evidence_event_ids, "blocked_query": blocked_query},
         )
 
     def progress(self) -> None:

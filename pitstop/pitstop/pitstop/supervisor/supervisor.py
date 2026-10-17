@@ -63,6 +63,8 @@ def render_event(ev: TrajectoryEvent) -> str:
         lines.append(f"    {json.dumps(fields)} cites: {cites or 'NONE'}")
     elif ev.type == EventType.PLAN and p.get("proposed_query"):
         lines.append(f"    proposed action: {p.get('proposed_action')} query={p.get('proposed_query')!r}")
+    elif ev.type == EventType.SUPERVISOR_MESSAGE:
+        lines.append(f"    correction sent to the agent: {p.get('message', '')[:MAX_DIGEST_CHARS]!r}")
     elif ev.type == EventType.AGENT_MESSAGE and p.get("report"):
         # The summary is truncated; the final check must see the claims it is judging.
         lines.append(f"    full report: {p['report'][:MAX_REPORT_CHARS]!r}")
