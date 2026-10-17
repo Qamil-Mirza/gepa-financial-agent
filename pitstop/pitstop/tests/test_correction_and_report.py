@@ -54,10 +54,10 @@ def supervisor_handler(system, user):
 
 
 def report_handler(system, user):
-    ids = re.findall(r"\[([a-z]+-e\d{3})\]", user)
-    body = (f"## Executive summary\nData center revenue was $10B [{ids[0]}], up 73% [{ids[0]}] [ghost-e999].\n"
-            "## Gaps and caveats\nNone.")
-    return json.dumps({"title": "FIXTURE report", "report_markdown": body, "cited_finding_ids": ids[:1], "gaps": ""})
+    tags = re.findall(r"\[(F\d+)\]", user)
+    body = (f"## Executive summary\nData center revenue was $10B [{tags[0]}], up 73% [{tags[0]}, {tags[1]}, F99].\n"
+            "See [the filing] for detail.\n## Gaps and caveats\nNone.")
+    return json.dumps({"title": "FIXTURE report", "report_markdown": body, "gaps": ""})
 
 
 def _swarm(tmp_path, FakeLLMClass, fixture_response, *, obeys=True, **kw):
@@ -122,7 +122,9 @@ async def test_report_agent_excludes_flagged_findings_and_verifies_citations(tmp
                        and e["step"] >= 1]
     assert gaming_findings and all("supervisor flagged" in excluded[f] for f in gaming_findings)
     assert not {f["event_id"] for f in rep["included"]} & set(gaming_findings)
-    assert rep["invalid_citations"] == ["ghost-e999"] and rep["unverified_figures"] == ["73"]
+    assert rep["invalid_citations"] == ["F99"] and rep["unverified_figures"] == ["73"]
+    tags = {f["tag"]: f["event_id"] for f in rep["included"]}
+    assert rep["cited_finding_ids"] == [tags["F1"], tags["F2"]]  # grouped citations are mapped back to event ids
     md = (run.run_dir / "report.md").read_text()
     assert md.startswith("# FIXTURE report") and "## Sources" in md and "https://example.com/fixture-10k" in md
     assert "## Verification notes" in md and "73" in md.split("## Verification notes")[1]
@@ -133,7 +135,7 @@ async def test_report_agent_excludes_flagged_findings_and_verifies_citations(tmp
 
 @pytest.mark.asyncio
 async def test_report_agent_failure_is_recorded_not_raised(tmp_path, FakeLLMClass, fixture_response):
-    synth = ReportSynthesizer(FakeLLMClass(lambda s, u: "not json"), ROOT / "prompts" / "worker")
+    synth = ReportSynthesizer(FakeLLMClass(lambda s, u: "not json"), ROOT / "prompts" / "worker", backoff_s=0.0)
     run = await _swarm(tmp_path, FakeLLMClass, fixture_response, synthesizer=synth).run_all()
     assert run.report["error"] and (run.run_dir / "report.md").exists()
 
@@ -151,5 +153,20 @@ def test_build_correction_is_firm_and_grounded():
 
 def test_unverified_figures_ignores_citations_and_known_numbers():
     findings = [{"claim": "Revenue was $10.5B in FY2025, up 1,234%", "value": "$10.5B", "period": "FY2025"}]
-    md = "Revenue $10.5B [a-e001] grew 1,234% in 2025 to 47.2 [b-e002]."
+    md = "Revenue $10.5B [F1] grew 1,234% in 2025 to 47.2 [F2, e007] [agent_x-e019]."
     assert unverified_figures(md, findings) == ["47.2"]
+
+
+@pytest.mark.asyncio
+async def test_report_agent_retries_after_a_rate_limit(tmp_path, FakeLLMClass, fixture_response):
+    calls = []
+
+    def flaky(system, user):
+        calls.append(1)
+        if len(calls) == 1:
+            raise RuntimeError("429 Too many requests")
+        return report_handler(system, user)
+
+    synth = ReportSynthesizer(FakeLLMClass(flaky), ROOT / "prompts" / "worker", backoff_s=0.0)
+    run = await _swarm(tmp_path, FakeLLMClass, fixture_response, synthesizer=synth).run_all()
+    assert run.report["error"] is None and len(calls) == 2 and run.report["cited_finding_ids"]

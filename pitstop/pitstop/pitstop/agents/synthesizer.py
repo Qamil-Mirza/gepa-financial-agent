@@ -2,11 +2,14 @@
 
 It writes only from findings the supervisor did not implicate. A finding is excluded when the supervisor cited it,
 or the plan/query/response it came from, as evidence in a DRIFTING verdict that raised an alert, or when it has no
-citation. The model writes the prose; code validates its finding citations, builds the Sources section from the
-findings' own URLs (so sources cannot be invented), and lists any figure in the report that no finding contains.
+citation. The model writes the prose and cites findings by short tags (F1, F2, ...), which code maps back to event
+ids: models shorten long ids (agent_x-e007 -> e007), and short ids collide across agents. Code validates the tags,
+builds the Sources section from the findings' own URLs (so sources cannot be invented), and lists any figure in the
+report that no finding contains.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from pathlib import Path
@@ -15,8 +18,20 @@ from typing import Any, Optional
 from ..llm import LLMClient
 from ..schemas import EventType, TrajectoryEvent
 
-_CITE = re.compile(r"\[([A-Za-z0-9_\-]+-e\d{3})\]")
+_GROUP = re.compile(r"\[([^\[\]]{1,200})\]")
+_TAG = re.compile(r"F\d+")
+_EVENT_ID = re.compile(r"[A-Za-z0-9_\-]+-e\d{3}|e\d{3}")
 _NUM = re.compile(r"\d[\d,]*(?:\.\d+)?")
+
+
+def citation_groups(markdown: str) -> list[tuple[str, list[str]]]:
+    """Bracket groups that are citations: every comma/semicolon-separated token is a tag or an event id."""
+    out = []
+    for m in _GROUP.finditer(markdown):
+        toks = [t.strip() for t in re.split(r"[,;]", m.group(1)) if t.strip()]
+        if toks and all(_TAG.fullmatch(t) or _EVENT_ID.fullmatch(t) for t in toks):
+            out.append((m.group(0), toks))
+    return out
 
 
 def _ancestors(ev: TrajectoryEvent, by_id: dict[str, TrajectoryEvent]) -> set[str]:
@@ -60,15 +75,18 @@ def unverified_figures(markdown: str, findings: list[dict]) -> list[str]:
     """Numbers in the report that appear in no included finding (claim, value or period)."""
     corpus = " ".join(f"{f.get('claim', '')} {f.get('value') or ''} {f.get('period') or ''}" for f in findings)
     known = {n.replace(",", "") for n in _NUM.findall(corpus)}
-    body = _CITE.sub("", markdown)
+    body = markdown
+    for group, _ in citation_groups(markdown):
+        body = body.replace(group, "")
     return sorted({n for n in _NUM.findall(body) if len(n.replace(",", "").replace(".", "")) > 1
                    and n.replace(",", "") not in known})
 
 
 class ReportSynthesizer:
-    def __init__(self, llm: LLMClient, prompts_dir: Path):
+    def __init__(self, llm: LLMClient, prompts_dir: Path, *, attempts: int = 5, backoff_s: float = 5.0):
         self.llm = llm
         self.prompt = (Path(prompts_dir) / "synthesizer.txt").read_text()
+        self.attempts, self.backoff_s = attempts, backoff_s
 
     async def synthesize(self, *, objective: str, agents: list[dict], events: list[TrajectoryEvent],
                          decisions: list[dict], interventions: dict[str, dict]) -> dict[str, Any]:
@@ -78,27 +96,37 @@ class ReportSynthesizer:
             return {"title": "No report", "markdown": "", "error": "no usable findings", "included": [],
                     "excluded": excluded, "cited_finding_ids": [], "invalid_citations": [],
                     "unverified_figures": [], "model": self.llm.model}
+        for i, f in enumerate(included, 1):
+            f["tag"] = f"F{i}"
         listing = []
         for a in agents:
             fs = [f for f in included if f["agent_id"] == a["agent_id"]]
             status = " (was corrected by the supervisor)" if interventions.get(a["agent_id"]) else ""
             listing.append(f"### Agent {a['agent_id']}{status}\nDirective: {a['directive']}\n" + (
-                "\n".join(f"[{f['event_id']}] {f['claim']} (period: {f.get('period') or 'n/a'})" for f in fs)
+                "\n".join(f"[{f['tag']}] {f['claim']} (period: {f.get('period') or 'n/a'})" for f in fs)
                 or "(no usable findings)"))
         user = f"Team objective: {objective}\n\nFindings by agent:\n\n" + "\n\n".join(listing)
-        try:
-            obj, _ = await self.llm.complete_json(self.prompt, user)
-        except Exception as e:  # the swarm's research is still logged; the failure is recorded, not raised
-            return {"title": "Report failed", "markdown": "", "error": f"{type(e).__name__}: {e}"[:300],
-                    "included": included, "excluded": excluded, "cited_finding_ids": [], "invalid_citations": [],
-                    "unverified_figures": [], "model": self.llm.model}
+        for attempt in range(self.attempts):  # provider rate limits are common at the end of a run
+            try:
+                obj, _ = await self.llm.complete_json(self.prompt, user)
+                break
+            except Exception as e:  # the swarm's research is still logged; the failure is recorded, not raised
+                if attempt == self.attempts - 1:
+                    return {"title": "Report failed", "markdown": "", "error": f"{type(e).__name__}: {e}"[:300],
+                            "included": included, "excluded": excluded, "cited_finding_ids": [],
+                            "invalid_citations": [], "unverified_figures": [], "model": self.llm.model}
+                await asyncio.sleep(min(60.0, self.backoff_s * 2 ** attempt))
         body = str(obj.get("report_markdown", "")).strip()
-        valid = {f["event_id"]: f for f in included}
-        cited = list(dict.fromkeys(_CITE.findall(body)))
-        invalid = [c for c in cited if c not in valid]
+        by_tag = {f["tag"]: f for f in included}
+        by_id = {f["event_id"]: f for f in included}
+        cited, invalid = [], []
+        for _, toks in citation_groups(body):
+            for t in toks:
+                f = by_tag.get(t) or by_id.get(t)
+                (cited if f else invalid).append(f["event_id"] if f else t)
         return {"title": str(obj.get("title") or "Financial research report")[:200], "markdown": body,
-                "gaps": str(obj.get("gaps", ""))[:1000], "cited_finding_ids": [c for c in cited if c in valid],
-                "invalid_citations": invalid, "unverified_figures": unverified_figures(body, included),
+                "gaps": str(obj.get("gaps", ""))[:1000], "cited_finding_ids": list(dict.fromkeys(cited)),
+                "invalid_citations": list(dict.fromkeys(invalid)), "unverified_figures": unverified_figures(body, included),
                 "included": included, "excluded": excluded, "model": self.llm.model}
 
     @staticmethod
@@ -122,7 +150,8 @@ class ReportSynthesizer:
             for fid in report["cited_finding_ids"]:
                 f = by_id[fid]
                 urls = ", ".join(f.get("source_urls") or []) or "(source URL not recorded)"
-                out.append(f"- [{fid}] {f.get('claim', '')} — {urls} (retrieved {f.get('retrieved_at') or 'n/a'})")
+                out.append(f"- [{f.get('tag', fid)}] {f.get('claim', '')} — {urls} (finding {fid}, retrieved "
+                           f"{f.get('retrieved_at') or 'n/a'})")
         return "\n".join(out) + "\n"
 
     def write(self, report: dict[str, Any], objective: str, run_dir: Path) -> Optional[Path]:
