@@ -38,6 +38,7 @@ from .schemas import (
 )
 from .supervisor.policy import AlertPolicy
 from .supervisor.supervisor import Supervisor
+from .timeline import TimelineBuilder
 
 STATUS_STYLE = {Status.ON_TRACK: "green", Status.DRIFTING: "bold red", Status.UNCERTAIN: "yellow"}
 EVENT_STYLE = {
@@ -80,6 +81,8 @@ class Swarm:
         self.run.run_dir = Path(runs_dir) / self.run.run_id
         self.run.run_dir.mkdir(parents=True, exist_ok=True)
         self.collector = TrajectoryCollector(self.run.run_dir / "events.jsonl")
+        # curated, UI-facing view: drift flags, responses and verdict changes only
+        self.timeline = TimelineBuilder(self.run.run_dir / "timeline.jsonl")
         if verbose_events:
             self.collector.subscribe(self._print_event)
         self.board: list[SwarmMessage] = []
@@ -148,6 +151,7 @@ class Swarm:
         self.run.decisions.append(record)
         with (self.run.run_dir / "decisions.jsonl").open("a") as f:
             f.write(json.dumps(record) + "\n")
+        self.timeline.on_decision(record, len(self.run.decisions) - 1)
         self._print_decision(worker.id, phase, vd, level, note)
         if note == "INTERVENTION POINT":
             self.run.interventions[worker.id] = {
@@ -167,6 +171,7 @@ class Swarm:
             _, note = await self._supervise(w, proposal, "pre_action")
             if note == "INTERVENTION POINT" and self.halt_on_drift:
                 self.console.print(f"[bold red]  ■ {w.id} halted at step {step} before executing {escape(repr(proposal.query))}[/]")
+                self.timeline.agent_halted(w.id, step, proposal.query)
                 return
             if proposal.action == "finish":
                 break
@@ -176,9 +181,14 @@ class Swarm:
         if w.state.final_report:
             self.board.append(SwarmMessage(sender=w.id, timestamp=utc_now(), text=w.state.final_report[:400]))
         await self._supervise(w, None, "final")
+        self.timeline.agent_finished(w.id, w.state.step, w.state.final_report)
 
     async def run_all(self) -> SwarmRun:
         self._print_header()
+        self.timeline.run_started(
+            self.run.run_id, self.scenario.model_dump(mode="json"), halt_on_drift=self.halt_on_drift,
+            supervisor={"model": self.supervisor.llm.model, "prompt_version": self.supervisor.prompt_version},
+        )
         await asyncio.gather(*(self._run_worker(w) for w in self.workers))
         self._write_meta()
         self._print_summary()
@@ -218,6 +228,8 @@ class Swarm:
             "finished_at": utc_now(),
         }
         (self.run.run_dir / "meta.json").write_text(json.dumps(meta, indent=2))
+        self.timeline.run_finished(interventions=self.run.interventions, ground_truth=meta["ground_truth"],
+                                   timestamp=meta["finished_at"], out_path=self.run.run_dir / "timeline.json")
 
     def _print_summary(self) -> None:
         c = self.console

@@ -20,6 +20,15 @@ A run writes `runs/<run_id>/` containing `events.jsonl` (every trajectory event)
 `decisions.jsonl` (every supervisor input + validated verdict) and `meta.json`
 (ground truth, interventions, token usage, You.com spend).
 
+It also writes a curated **timeline** for the UI: `timeline.jsonl` (appended live, one entry per
+line, safe to tail) and `timeline.json` (run info, per-agent summaries with a compact verdict
+history, and all entries). Only notable things become entries: `drift_flagged` (critical),
+`drift_response` (halted / recovered / persisted, linked to its flag by `responds_to`),
+`drift_suspected`, `status_changed`, `supervisor_correction`, plus run and agent lifecycle.
+Routine ON_TRACK verdicts are folded into the next entry's `quiet_streak`. Each entry's `refs`
+points back into `decisions.jsonl` / `events.jsonl` for full detail. Rebuild it for any old run with
+`python -m pitstop.cli timeline --run-dir runs/<run_id> [--highlights]`.
+
 To compare two supervisor prompts on the exact same recorded inputs, with no new research calls:
 
 ```bash

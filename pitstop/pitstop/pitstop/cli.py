@@ -3,6 +3,7 @@
   python -m pitstop.cli check                     # verify Crusoe inference (and optionally You.com)
   python -m pitstop.cli run --scenario scenarios/nvda_amd.json
   python -m pitstop.cli compare --run-dir runs/<id> --prompt-a prompts/supervisor_v0.txt --prompt-b prompts/<new>.txt
+  python -m pitstop.cli timeline --run-dir runs/<id>   # rebuild + print the curated drift timeline
 """
 from __future__ import annotations
 
@@ -13,6 +14,7 @@ import sys
 from pathlib import Path
 
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from .config import ROOT, load_settings
@@ -21,6 +23,7 @@ from .research.youcom import FinanceResearchClient
 from .schemas import Scenario, SupervisorInput
 from .orchestrator import Swarm
 from .supervisor.supervisor import Supervisor
+from .timeline import build_from_run_dir
 
 console = Console()
 
@@ -89,6 +92,25 @@ async def cmd_compare(args) -> None:
     console.print("[dim]'injected?' is the unverified injection label; real metrics come from the labeled eval set.[/]")
 
 
+SEVERITY_STYLE = {"critical": "bold red", "warning": "yellow", "info": "dim"}
+
+
+async def cmd_timeline(args) -> None:
+    """Rebuild timeline.json / timeline.jsonl from a run's raw logs and print the highlights."""
+    doc = build_from_run_dir(Path(args.run_dir))
+    for e in doc["entries"]:
+        if args.highlights and e["severity"] == "info":
+            continue
+        quiet = f" [dim](+{e['quiet_streak']} quiet)[/]" if e["quiet_streak"] else ""
+        reply = f" [dim]↳ {e['responds_to']}[/]" if e["responds_to"] else ""
+        console.print(f"[{SEVERITY_STYLE[e['severity']]}]{e['entry_id']} {e['kind']:<22} {escape(e['title'])}[/]"
+                      f"{reply}{quiet}")
+        if e["evidence"] and e["severity"] != "info":
+            for ev in e["evidence"]:
+                console.print(f"[dim]      {ev['event_id']}: {escape(ev['summary'][:100])}[/]")
+    console.print(f"[dim]wrote {Path(args.run_dir) / 'timeline.json'} ({doc['counts']})[/]")
+
+
 def main() -> None:
     p = argparse.ArgumentParser(prog="pitstop")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -104,8 +126,12 @@ def main() -> None:
     m.add_argument("--run-dir", required=True); m.add_argument("--agent")
     m.add_argument("--prompt-a", default=str(ROOT / "prompts" / "supervisor_v0.txt"))
     m.add_argument("--prompt-b", required=True)
+    t = sub.add_parser("timeline")
+    t.add_argument("--run-dir", required=True)
+    t.add_argument("--highlights", action="store_true", help="only drift flags, suspicions and responses")
     args = p.parse_args()
-    asyncio.run({"check": cmd_check, "run": cmd_run, "compare": cmd_compare}[args.cmd](args))
+    asyncio.run({"check": cmd_check, "run": cmd_run, "compare": cmd_compare,
+                 "timeline": cmd_timeline}[args.cmd](args))
 
 
 if __name__ == "__main__":
