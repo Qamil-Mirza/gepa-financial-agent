@@ -36,6 +36,8 @@ class TimelineKind(str, Enum):
     DRIFT_RESPONSE = "drift_response"          # what happened after a flag: halted / recovered / persisted
     STATUS_CHANGED = "status_changed"          # verdict changed, e.g. ON_TRACK -> UNCERTAIN
     SUPERVISOR_CORRECTION = "supervisor_correction"  # validator dropped evidence or downgraded a verdict
+    AGENT_CORRECTED = "agent_corrected"        # supervisor blocked a drifting query and told the agent to return
+    REPORT_WRITTEN = "report_written"          # the report agent wrote the team's final report
     AGENT_FINISHED = "agent_finished"
     RUN_FINISHED = "run_finished"
 
@@ -242,6 +244,22 @@ class TimelineBuilder:
                           detail=f"Blocked query: {blocked_query!r}" if blocked_query else "",
                           data={"outcome": "halted", "blocked_query": blocked_query})
 
+    def agent_corrected(self, agent_id: str, step: int, message: str, attempt: int,
+                        blocked_query: Optional[str] = None, timestamp: Optional[str] = None) -> TimelineEntry:
+        """The open flag stays open: the agent's next verdict is its response (recovered / persisted)."""
+        tr = self._track(agent_id)
+        return self._emit(TimelineKind.AGENT_CORRECTED, "warning",
+                          f"Supervisor corrected {self.label(agent_id)} (#{attempt})", source="supervisor",
+                          agent_id=agent_id, step=step, responds_to=tr.open_flag, timestamp=timestamp,
+                          detail=_clip(message), data={"attempt": attempt, "blocked_query": blocked_query})
+
+    def report_written(self, report: dict, timestamp: Optional[str] = None) -> TimelineEntry:
+        problems = bool(report.get("error") or report.get("invalid_citations") or report.get("unverified_figures"))
+        return self._emit(TimelineKind.REPORT_WRITTEN, "warning" if problems else "info",
+                          f"Report written: {report.get('title')}", source="agent", timestamp=timestamp,
+                          detail=_clip(report.get("error") or f"{len(report.get('cited_finding_ids', []))} findings cited"),
+                          data=report)
+
     def agent_finished(self, agent_id: str, step: int, report: Optional[str] = None,
                        timestamp: Optional[str] = None) -> TimelineEntry:
         tr = self._track(agent_id)
@@ -318,14 +336,30 @@ def build_from_run_dir(run_dir: Path, *, write: bool = True) -> dict:
                    supervisor={"model": sup.get("model"), "prompt_version": sup.get("prompt_version")},
                    halt_on_drift=bool(meta.get("halt_on_drift")),
                    timestamp=records[0]["input"].get("timestamp") if records else None)
+    events_path = run_dir / "events.jsonl"
+    corrections = {}  # (agent_id, step) -> supervisor_message events, in order
+    for line in (events_path.read_text().splitlines() if events_path.exists() else []):
+        ev = json.loads(line) if line.strip() else {}
+        if ev.get("type") == "supervisor_message":
+            corrections.setdefault((ev["agent_id"], ev["step"]), []).append(ev)
     for i, r in enumerate(records):
         tb.on_decision(r, i)
         ts = r["input"].get("timestamp")
-        if r.get("alert_note") == "INTERVENTION POINT" and meta.get("halt_on_drift"):
+        iv = (meta.get("interventions") or {}).get(r["agent_id"]) or {}
+        pending = corrections.get((r["agent_id"], r["step"])) or []
+        if r.get("alert_note") == "INTERVENTION POINT" and pending:
+            ev = pending.pop(0)
+            tb.agent_corrected(r["agent_id"], r["step"], ev["payload"].get("message", ""),
+                               ev["payload"].get("attempt", 1), ev["payload"].get("blocked_query"),
+                               timestamp=ev.get("timestamp"))
+        elif r.get("alert_note") == "INTERVENTION POINT" and meta.get("halt_on_drift") and (
+                "halted_step" not in iv or iv["halted_step"] == r["step"]):
             tb.agent_halted(r["agent_id"], r["step"], (r["input"].get("proposed_next_action") or {}).get("query"),
                             timestamp=ts)
         elif r["phase"] == "final":
             tb.agent_finished(r["agent_id"], r["step"], timestamp=ts)
+    if meta.get("report"):
+        tb.report_written(meta["report"], timestamp=meta.get("finished_at"))
     return tb.run_finished(interventions=meta.get("interventions"), ground_truth=meta.get("ground_truth"),
                            timestamp=meta.get("finished_at"),
                            out_path=run_dir / "timeline.json" if write else None)

@@ -5,8 +5,8 @@ against the **GEPA-optimized prompt**. Use it only for that final comparison, ne
 GEPA optimization or candidate selection.
 
 Same format as the main dataset: one `DatasetExample` per line in `data/test.jsonl`. See
-[../synthetic-data/DATASET_FORMAT.md](../synthetic-data/DATASET_FORMAT.md). Same pipeline: it
-imports `synth/` from `../synthetic-data` (real `nvidia/Nemotron-3.5-Lightning-30B-A3B` workers on
+[../../synthetic-data/DATASET_FORMAT.md](../../synthetic-data/DATASET_FORMAT.md). Same pipeline: it
+imports `synth/` from the repo-root `synthetic-data/` (real `nvidia/Nemotron-3.5-Lightning-30B-A3B` workers on
 Crusoe, real You.com Finance Research evidence, the same deterministic verifier and labels).
 
 ## Why it's held out
@@ -32,7 +32,7 @@ at every cutoff.
 
 ```bash
 cd financial-agent/test-synthetic-data
-PY=../synthetic-data/.venv/bin/python   # reuses synthetic-data/.env for API keys
+PY=../../synthetic-data/.venv/bin/python   # reuses synthetic-data/.env for API keys
 $PY build_hard_set.py prefetch   # ~45 live You.com calls (~$5), once
 $PY build_hard_set.py generate   # 75 rollouts; --max-youcom-calls caps extra live calls (default 50)
 $PY build_hard_set.py export     # re-verify -> data/test.jsonl

@@ -27,6 +27,7 @@ class EventType(str, Enum):
     AGENT_MESSAGE = "agent_message"  # messages / final report
     ERROR = "error"
     PROGRESS = "progress"
+    SUPERVISOR_MESSAGE = "supervisor_message"  # a correction the supervisor sent this agent (visible to it)
 
 
 class TrajectoryEvent(BaseModel):
