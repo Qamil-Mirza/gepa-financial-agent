@@ -12,6 +12,8 @@ Early-detection design:
      firm correction (supervisor/correction.py), then re-plans the same step under supervision.
   6. Optional synthesis: after all agents finish, a report agent writes the team's financial report
      from the findings the supervisor did not implicate (agents/synthesizer.py).
+  7. An optional shadow supervisor judges the SAME inputs in parallel (decisions_shadow.jsonl)
+     so two prompts can be compared on identical agent behavior. It never affects the run.
 """
 from __future__ import annotations
 
@@ -44,7 +46,7 @@ from .schemas import (
 from .supervisor.correction import build_correction
 from .supervisor.policy import AlertPolicy
 from .supervisor.supervisor import Supervisor
-from .timeline import TimelineBuilder
+from .timeline import TimelineBuilder, build_from_run_dir
 
 STATUS_STYLE = {Status.ON_TRACK: "green", Status.DRIFTING: "bold red", Status.UNCERTAIN: "yellow"}
 EVENT_STYLE = {
@@ -80,9 +82,14 @@ class Swarm:
         correct_on_drift: bool = False,
         max_corrections: int = 2,
         synthesizer: Optional[ReportSynthesizer] = None,
+        shadow_supervisor: Optional[Supervisor] = None,
     ):
         self.scenario = scenario
         self.supervisor = supervisor
+        # judges every input the primary judges; own policy, own log, never halts.
+        # Its timeline (timeline_shadow.json) is rebuilt from that log when the run ends.
+        self.shadow_supervisor = shadow_supervisor
+        self.shadow_policy = AlertPolicy()
         self.research = research
         self.halt_on_drift = halt_on_drift
         self.correct_on_drift = correct_on_drift
@@ -151,17 +158,28 @@ class Swarm:
             observation_cutoff_seq=cutoff,
         )
 
-    async def _supervise(self, worker: ResearchWorker, proposal: Optional[ProposedAction], phase: str) -> tuple[str, str]:
-        inp = self.build_input(worker, proposal)
-        vd = await self.supervisor.evaluate(inp)
-        level, note = self.policy.update(worker.id, worker.state.step, vd)
-        record = {
+    @staticmethod
+    def _record(worker: ResearchWorker, phase: str, inp: SupervisorInput, vd: ValidatedDecision,
+                level: str, note: str) -> dict:
+        return {
             "agent_id": worker.id, "step": worker.state.step, "phase": phase,
             "alert_level": level, "alert_note": note,
             # ground-truth helper for later scoring; NEVER shown to the supervisor
             "drift_injection_active": worker.drift_active(),
             "input": inp.model_dump(mode="json"), "result": vd.model_dump(mode="json"),
         }
+
+    async def _supervise(self, worker: ResearchWorker, proposal: Optional[ProposedAction], phase: str) -> tuple[str, str]:
+        inp = self.build_input(worker, proposal)
+        if self.shadow_supervisor:
+            vd, shadow_vd = await asyncio.gather(self.supervisor.evaluate(inp), self.shadow_supervisor.evaluate(inp))
+            s_level, s_note = self.shadow_policy.update(worker.id, worker.state.step, shadow_vd)
+            with (self.run.run_dir / "decisions_shadow.jsonl").open("a") as f:
+                f.write(json.dumps(self._record(worker, phase, inp, shadow_vd, s_level, s_note)) + "\n")
+        else:
+            vd = await self.supervisor.evaluate(inp)
+        level, note = self.policy.update(worker.id, worker.state.step, vd)
+        record = self._record(worker, phase, inp, vd, level, note)
         self.run.decisions.append(record)
         with (self.run.run_dir / "decisions.jsonl").open("a") as f:
             f.write(json.dumps(record) + "\n")
@@ -254,6 +272,9 @@ class Swarm:
             c.print(f"[bold]{a.agent_id}[/]: {a.directive}")
         c.print(f"supervisor prompt: {self.supervisor.prompt_version} | model: {self.supervisor.llm.model} | "
                 f"You.com mode: {self.research.mode} | halt_on_drift: {self.halt_on_drift}")
+        if self.shadow_supervisor:
+            c.print(f"shadow supervisor prompt: {self.shadow_supervisor.prompt_version} | "
+                    f"model: {self.shadow_supervisor.llm.model} (logged to decisions_shadow.jsonl only)")
         c.rule()
 
     def _ground_truth(self) -> dict:
@@ -279,9 +300,16 @@ class Swarm:
             "correct_on_drift": self.correct_on_drift, "report": self.run.report,
             "finished_at": utc_now(),
         }
+        if self.shadow_supervisor:
+            sh = self.shadow_supervisor
+            meta["shadow_supervisor"] = {"model": sh.llm.model, "prompt_version": sh.prompt_version,
+                                         "usage": sh.llm.usage.as_dict()}
         (self.run.run_dir / "meta.json").write_text(json.dumps(meta, indent=2))
         self.timeline.run_finished(interventions=self.run.interventions, ground_truth=meta["ground_truth"],
                                    timestamp=meta["finished_at"], out_path=self.run.run_dir / "timeline.json")
+        if self.shadow_supervisor:
+            build_from_run_dir(self.run.run_dir, decisions_name="decisions_shadow.jsonl",
+                               out_stem="timeline_shadow", supervisor_key="shadow_supervisor")
 
     def _print_summary(self) -> None:
         c = self.console

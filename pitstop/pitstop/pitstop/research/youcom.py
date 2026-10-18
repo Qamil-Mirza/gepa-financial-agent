@@ -9,11 +9,13 @@ Key facts from the docs (https://you.com/docs/guides/finance-research):
     output.content_type, output.sources[{url, title, ...excerpts}].
 
 Every response is cached on disk keyed by (endpoint, query, effort, schema),
-so GEPA evaluations and demos replay without spending money.
+so GEPA evaluations and demos replay without spending money. Identical requests
+made while one is still in flight share that one paid call (`inflight_hits`).
 """
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import hashlib
 import json
 import re
@@ -117,9 +119,11 @@ class FinanceResearchClient:
         self.max_live_calls = max_live_calls
         self.live_calls = 0
         self.cache_hits = 0
+        self.inflight_hits = 0  # requests served by an identical call already in flight (no second payment)
         self.est_cost_usd = 0.0
         self._http = http_client
         self._lock = asyncio.Lock()
+        self._inflight: dict[str, asyncio.Task] = {}
 
     def cache_key(self, query: str, output_schema: Optional[dict] = None) -> str:
         blob = json.dumps(
@@ -158,11 +162,26 @@ class FinanceResearchClient:
         if path.exists():
             self.cache_hits += 1
             return self._build(query, key, json.loads(path.read_text()), True, 0.0)
+        if (task := self._inflight.get(key)) is not None:  # same request already being paid for: share it
+            self.inflight_hits += 1
+            t0 = time.perf_counter()
+            res = await asyncio.shield(task)  # errors reach every waiter; a cancelled waiter leaves the call running
+            return dataclasses.replace(res, from_cache=True, latency_s=time.perf_counter() - t0)
         if self.mode == "replay":
             raise CacheMiss(f"no cached response for query (key {key}); run in live mode to record it")
         if not self.api_key:
             raise YouComError("YDC_API_KEY is not set")
+        task = asyncio.ensure_future(self._live_call(query, key, path, output_schema))
+        self._inflight[key] = task
+        return await asyncio.shield(task)
 
+    async def _live_call(self, query: str, key: str, path: Path, output_schema: Optional[dict]) -> ResearchResult:
+        try:
+            return await self._post(query, key, path, output_schema)
+        finally:  # before the task completes, so a later request finds the cache file, not a finished task
+            self._inflight.pop(key, None)
+
+    async def _post(self, query: str, key: str, path: Path, output_schema: Optional[dict]) -> ResearchResult:
         async with self._lock:  # reserve budget atomically across concurrent agents
             if self.live_calls >= self.max_live_calls:
                 raise ResearchBudgetExceeded(f"live You.com call budget ({self.max_live_calls}) exhausted")
@@ -201,6 +220,7 @@ class FinanceResearchClient:
             "effort": self.effort,
             "live_calls": self.live_calls,
             "cache_hits": self.cache_hits,
+            "inflight_hits": self.inflight_hits,
             "est_cost_usd": round(self.est_cost_usd, 2),
             "max_live_calls": self.max_live_calls,
         }
