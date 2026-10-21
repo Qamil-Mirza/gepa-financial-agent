@@ -79,3 +79,39 @@ def test_store_failure_returns_default_v0(tmp_path, monkeypatch):
     monkeypatch.setattr(prompt_mod, "get_runtime", boom)
     p = prompt("p", "A")
     assert (p.version, p.text, p.source) == (0, "A", "default")
+
+
+def test_revert_to_earlier_default_reactivates_it(tmp_path):
+    _init(tmp_path)
+    prompt("p", "A")
+    assert prompt("p", "B").version == 2
+    p = prompt("p", "A")
+    assert (p.version, p.text) == (1, "A")
+    assert len(_rows("p")) == 2
+    assert [r["active"] for r in _rows("p")] == [1, 0]
+
+
+def test_gepa_active_then_code_reverts_activates_stored_version(tmp_path):
+    _init(tmp_path)
+    prompt("p", "A")
+    prompt("p", "B")  # v2 dev_edit
+    _gepa_v3 = "gepa three"
+    import hashlib
+    with get_runtime().store.transaction(immediate=True) as c:
+        c.execute("INSERT INTO prompts(name, version, text, sha, source, created_at, active)"
+                  " VALUES ('p',3,?,?,'gepa',0,0)", (_gepa_v3, hashlib.sha256(_gepa_v3.encode()).hexdigest()))
+    set_active_version("p", 3)
+    assert prompt("p", "B").version == 3  # unchanged: gepa stays
+    assert prompt("p", "A").version == 1  # code changed to a stored text
+    assert [r["active"] for r in _rows("p")] == [1, 0, 0]
+
+
+def test_set_active_version_rollback_and_unknown(tmp_path):
+    _init(tmp_path)
+    prompt("p", "A")
+    _gepa_v2("p")
+    set_active_version("p", 1)
+    assert [r["active"] for r in _rows("p")] == [1, 0]
+    import pytest
+    with pytest.raises(ValueError):
+        set_active_version("p", 9)

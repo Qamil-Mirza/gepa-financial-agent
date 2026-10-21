@@ -35,8 +35,20 @@ def _resolve(name: str, default: str) -> ManagedPrompt:
         if not rows:
             c.execute("INSERT INTO prompts(name, version, text, sha, source, created_at, active)"
                       " VALUES (?,?,?,?,?,?,1)", (name, 1, default, sha, "default", time.time()))
+            c.execute("INSERT OR REPLACE INTO meta(key, value) VALUES (?,?)", (f"prompt_default_sha:{name}", sha))
             return ManagedPrompt(name, default, 1, "default", sha)
-        if not any(r["sha"] == sha for r in rows):
+        key = f"prompt_default_sha:{name}"
+        seen = c.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
+        changed = (seen[0] != sha) if seen is not None else not any(r["sha"] == sha for r in rows)
+        c.execute("INSERT INTO meta(key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                  (key, sha))
+        if changed:
+            match = [r for r in rows if r["sha"] == sha]
+            if match:
+                version = max(r["version"] for r in match)
+                c.execute("UPDATE prompts SET active=(version=?) WHERE name=?", (version, name))
+                r = next(r for r in match if r["version"] == version)
+                return ManagedPrompt(name, r["text"], version, r["source"], sha)
             version = max(r["version"] for r in rows) + 1
             c.execute("UPDATE prompts SET active=0 WHERE name=?", (name,))
             c.execute("INSERT INTO prompts(name, version, text, sha, source, created_at, active)"
