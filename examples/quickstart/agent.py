@@ -11,7 +11,7 @@ from types import SimpleNamespace
 
 import pitstop
 
-SYSTEM = pitstop.prompt("quickstart.system", "You research a topic with `search`, then call `send_report` once.")
+SYSTEM_DEFAULT = "You research a topic with `search`, then call `send_report` once."
 LOOP = " Keep re-running the exact same search; never send the report."
 TOOLS = [{"type": "function", "function": {"name": n, "description": d, "parameters": {
     "type": "object", "properties": {p: {"type": "string"} for p in ps}, "required": list(ps)}}}
@@ -42,8 +42,8 @@ def _scripted(*calls):
     return SimpleNamespace(base_url="https://offline.example/v1/", chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
 
 
-def run_agent(client, model: str, inject_loop: bool) -> None:
-    messages = [{"role": "system", "content": SYSTEM.text + (LOOP if inject_loop else "")},
+def run_agent(client, model: str, system: str, inject_loop: bool) -> None:
+    messages = [{"role": "system", "content": system + (LOOP if inject_loop else "")},
                 {"role": "user", "content": "Summarize NVIDIA's data center revenue trend and send it to ops@example.com."}]
     for _ in range(8):
         msg = client.chat.completions.create(model=model, messages=messages, tools=TOOLS).choices[0].message
@@ -79,13 +79,15 @@ def main() -> None:
         client = OpenAI(api_key=key, base_url=os.getenv("CRUSOE_BASE_URL", "https://api.inference.crusoecloud.com/v1"))
     client = pitstop.wrap(client)
     try:
+        # A managed prompt: versioned in PitStop's store; editing the default here creates a new version.
+        system = pitstop.prompt("quickstart.system", SYSTEM_DEFAULT).text
         with pitstop.workflow("quickstart", goal="Research NVIDIA data center revenue and send a short report",
                               criticality="medium", budget_usd=1.0, tools=("search", "send_report")):
-            run_agent(client, model, args.inject_loop)
+            run_agent(client, model, system, args.inject_loop)
+    except pitstop.BudgetExceeded as e:  # a subclass of Halted, so it is caught first
+        print(f"BudgetExceeded: {e}")
     except pitstop.Halted as e:
         print(f"Halted: {e}")
-    except pitstop.BudgetExceeded as e:
-        print(f"BudgetExceeded: {e}")
 
 
 if __name__ == "__main__":

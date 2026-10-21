@@ -28,3 +28,22 @@ def test_quickstart_online_without_key_exits_clearly(tmp_path):
                          capture_output=True, text=True)  # cwd has no .env, so no real key can be loaded
     assert out.returncode != 0
     assert "CRUSOE_API_KEY" in (out.stdout + out.stderr)
+
+
+def test_quickstart_help_creates_no_db(tmp_path):
+    env = {k: v for k, v in os.environ.items() if k not in ("CRUSOE_API_KEY", "YDC_API_KEY")}
+    env["PITSTOP_HOME"] = str(tmp_path / "home")
+    out = subprocess.run([sys.executable, str(REPO / "examples/quickstart/agent.py"), "--help"],
+                         cwd=tmp_path, env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert not (tmp_path / "home" / "pitstop.db").exists()
+
+
+def test_quickstart_reports_budget_exceeded_specifically(tmp_path):
+    env = {k: v for k, v in os.environ.items() if k not in ("CRUSOE_API_KEY", "YDC_API_KEY")}
+    env["PITSTOP_HOME"] = str(tmp_path)
+    (tmp_path / "config.toml").write_text('[budgets.all]\nlimit_usd = 0.0000001\nperiod = "total"\n')
+    out = subprocess.run([sys.executable, str(REPO / "examples/quickstart/agent.py"), "--offline"],
+                         cwd=tmp_path, env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert "BudgetExceeded: PitStop budget exceeded" in out.stdout
