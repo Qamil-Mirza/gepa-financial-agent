@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+- Drop-in SDK: `pitstop.wrap`, `workflow`, `agent`, `tool` (block/steer/halt guard), `prompt` (versioned, developer edits win), `Halted` and `BudgetExceeded`.
+- Hard dollar budget ledger with atomic reserve/settle, and per-workflow `budget_usd`; PitStop's own model calls go through it (`docs/config.example.toml`).
+- `pitstop status`, `pitstop drifts` and `pitstop budget` commands, and a keyless quickstart example (`examples/quickstart`).
 - Open-source repo basics: Apache-2.0 license, Contributor Covenant code of conduct, security policy, issue and pull-request templates, changelog and a CI workflow.
 - Ruff linting (pyflakes rules) and offline-by-default test suite.
 

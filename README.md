@@ -14,7 +14,7 @@ Keep your agents on the racing line: drift detection and GEPA-powered prompt cor
 
 Agents drift in two ways. They go **off-task**: chasing a stale directive, looping, or reporting a figure their evidence does not support. Or they **degrade**: still on the right task, but quality, tool calls or cost quietly get worse after a model, provider or prompt change. Some drift needs action within seconds (an off-task call to a tool with side effects), some can wait for a weekly fix. Existing observability tools stop at the alert; PitStop is meant to also steer the agent back in the moment and rewrite the prompt that caused the drift.
 
-> **Status: pre-release.** Today the repo contains the PitStop research-swarm runtime, its drift supervisor, the GEPA calibration tooling and benchmarks. The drop-in SDK, local dashboard and agent-prompt correction are on the [Roadmap](#roadmap).
+> **Status: pre-release.** Today the repo contains the drop-in Python SDK (drift detection, steering and hard dollar budgets), the CLI to inspect it, the PitStop research-swarm runtime with its drift supervisor, the GEPA calibration tooling and benchmarks. The local dashboard and agent-prompt correction are on the [Roadmap](#roadmap).
 
 ## Quickstart (run the example)
 
@@ -47,6 +47,41 @@ Runs are written to `~/.pitstop/runs/<run_id>/`. Set `PITSTOP_HOME` to move the 
 | `uv run pitstop serve` | JSON + server-sent-events API over your runs' timelines, on port 8765 |
 | `uv run pitstop compare --run-dir <run dir> --prompt-b <prompt.txt>` | Re-judge a recorded run's exact supervisor inputs with two prompts, side by side; no new research calls (requires keys) |
 | `uv run pitstop run --shadow-prompt <prompt.txt>` | Run a second supervisor prompt on the same inputs, logged but never acting (requires keys) |
+
+## Add PitStop to your agent
+
+The SDK works with any OpenAI-compatible client. Wrap the client, mark the workflow, and guard your tools:
+
+```python
+import pitstop
+
+client = pitstop.wrap(OpenAI(base_url=..., api_key=...))      # metered, drift-checked
+SYSTEM = pitstop.prompt("support.system", "You are a support agent...")   # versioned; your edits win
+
+@pitstop.tool                       # read-only: loops are steered, then halted
+def search(query): ...
+
+@pitstop.tool(side_effects=True)    # off-task calls to this are blocked
+def send_report(to, body): ...
+
+with pitstop.workflow("support", goal="Answer the ticket", criticality="medium",
+                      budget_usd=1.0, tools=("search", "send_report")):
+    run_agent(client)               # raises pitstop.Halted or pitstop.BudgetExceeded when it must stop
+```
+
+Try it without keys: `uv run python examples/quickstart/agent.py --offline --inject-loop` (see [examples/quickstart](examples/quickstart/README.md)). Then inspect the local state:
+
+```text
+$ uv run pitstop drifts
+ id  level  workflow    drift_type         action  evidence
+ 1   P1     quickstart  unproductive_loop  steer   3
+$ uv run pitstop status      # per-workflow runs, open drifts by level, spend and last status
+$ uv run pitstop budget      # configured budgets: spent, limit, remaining
+```
+
+## Set a hard budget
+
+Copy [docs/config.example.toml](docs/config.example.toml) to `~/.pitstop/config.toml`. Each `[budgets.<name>]` entry sets a dollar limit for a provider `base_url` and period. Every model call reserves its worst-case cost first, and once the limit would be crossed the call raises `BudgetExceeded` before it reaches the provider. PitStop's own calls (supervisor, judge, GEPA) count against the same budget. A per-workflow cap is the `budget_usd` argument of `pitstop.workflow`.
 
 ## How it works today
 
@@ -145,6 +180,7 @@ flowchart TD
 
 ```
 src/pitstop/          the installable package and the `pitstop` CLI
+  sdk/, detect/, budget/  the drop-in SDK, drift detection and urgency, the budget ledger
   agents/             research worker agents and the report synthesizer
   supervisor/         drift supervisor: signals, LLM verdict + evidence validation, AlertPolicy, corrections
   correct/            the GEPA engine (pitstop.correct.gepa) and its model clients
@@ -152,6 +188,7 @@ src/pitstop/          the installable package and the `pitstop` CLI
   demo/               the GEPA comparison demo server, its static page and the bundled snapshot
   ui/                 a prototype local run viewer (python -m pitstop.ui.server)
   assets/             packaged prompts (baseline, GEPA, worker) and scenarios
+examples/quickstart/  a keyless demo agent that shows steer-then-halt
 benchmarks/
   hard_pairs/         the labeled hard-pairs eval (18 categories, drift + healthy twins) and its runner
   calibration/        GEPA calibration of the detector prompt and the recursive loop with its gate
@@ -197,7 +234,7 @@ Results go to `~/.pitstop/runs/eval-<prompt>-<timestamp>/`. The baseline result 
 From the [design spec](docs/superpowers/specs/2026-10-20-pitstop-runtime-design.md), §10. There is no fixed deadline.
 
 1. **Cleanup and restructure. Done.** One installable package, the example agent still runs, tests pass in one command.
-2. **SDK and detection. Planned.** `wrap`, `workflow`, `tool`, `prompt`, a budget ledger, an OpenTelemetry span processor, detection layers L0–L2 and L5, P0 alerts and two framework adapters. The example swarm is wired in with a few lines and catches injected drift; `pitstop status` and `pitstop drifts` show P-labeled drifts.
+2. **SDK and detection.** M2a is done: `wrap`, `workflow`, `agent`, `tool`, `prompt`, the hard-stop budget ledger, L0 detection with P0-P3 urgency, steer/block/halt actions, and the `pitstop status`, `pitstop drifts` and `pitstop budget` commands. M2b is next: an OpenTelemetry span processor, detection layers L1-L2 and L5, P0 alerts and two framework adapters.
 3. **Dashboard. Planned.** Pit wall, run graph, what changed, runs and settings on real data, plus the L3 run judge and L4 endpoint canaries. The first end-to-end demo.
 4. **Correction. Planned.** Managed prompts, replay, the GEPA loop with its gate, manual and auto modes, canary and rollback.
 5. **Later. Not designed yet.** Remote collection over HTTP, more framework adapters, editing settings from the UI, a LiteLLM gateway plugin.
