@@ -20,8 +20,11 @@ SNAPSHOT = PACKAGE_DIR / "demo" / "snapshot.json"
 
 
 def pitstop_home() -> Path:
-    """User-writable state (runs, research cache). Override with PITSTOP_HOME."""
-    return Path(os.getenv("PITSTOP_HOME", "~/.pitstop")).expanduser()
+    """User-writable state (runs, research cache, pitstop.db). Override with PITSTOP_HOME.
+
+    An empty PITSTOP_HOME (e.g. `PITSTOP_HOME=` in a .env) means the default, never the cwd; a relative one is
+    resolved to an absolute path once, so later chdirs cannot move the state."""
+    return Path(os.getenv("PITSTOP_HOME") or "~/.pitstop").expanduser().resolve()
 
 
 @dataclass(frozen=True)
@@ -48,6 +51,6 @@ def load_settings() -> Settings:
         ydc_api_key=os.getenv("YDC_API_KEY"),
         youcom_effort=os.getenv("PITSTOP_YOUCOM_EFFORT", "deep"),
         max_research_calls=int(os.getenv("PITSTOP_MAX_RESEARCH_CALLS", "12")),
-        cache_dir=Path(os.getenv("PITSTOP_CACHE_DIR", str(pitstop_home() / "cache" / "youcom"))),
-        runs_dir=Path(os.getenv("PITSTOP_RUNS_DIR", str(pitstop_home() / "runs"))),
+        cache_dir=Path(os.getenv("PITSTOP_CACHE_DIR") or pitstop_home() / "cache" / "youcom").expanduser(),
+        runs_dir=Path(os.getenv("PITSTOP_RUNS_DIR") or pitstop_home() / "runs").expanduser(),
     )
