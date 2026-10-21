@@ -26,10 +26,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-# gepa_financial_agent stays packaged only until the old stack is folded in / removed (M1 Tasks 3-5).
-packages = ["src/pitstop", "gepa_financial_agent"]
+packages = ["src/pitstop"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+addopts = "--disable-socket --allow-unix-socket --allow-hosts=127.0.0.1,localhost"
 pythonpath = [".", "benchmarks/synth"]

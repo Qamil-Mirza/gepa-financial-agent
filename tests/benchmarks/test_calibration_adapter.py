@@ -90,5 +90,5 @@ def test_run_optimization_end_to_end_on_pitstop_with_mocks(tmp_path):
 
 def test_adapter_needs_no_sys_path_hack():
     import sys, benchmarks.calibration.adapter as a
-    assert not any(p.endswith("pitstop/pitstop") for p in sys.path)
+    assert not hasattr(a, "PITSTOP_ROOT") and not hasattr(a, "_pitstop")
     assert a.SEED_PROMPT.is_file() and len(a.load_hard_cases("test")) > 0
