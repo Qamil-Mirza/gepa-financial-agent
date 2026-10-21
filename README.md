@@ -69,6 +69,10 @@ with pitstop.workflow("support", goal="Answer the ticket", criticality="medium",
     run_agent(client)               # raises pitstop.Halted or pitstop.BudgetExceeded when it must stop
 ```
 
+State lives in `~/.pitstop` (or `$PITSTOP_HOME`). If you pass a custom home instead, call `pitstop.init(home=...)` first, before any other PitStop call: the first wrapped call, tool, prompt or workflow otherwise initializes the default home. Catch `pitstop.BudgetExceeded` before `pitstop.Halted`, since it is a subclass.
+
+Steering is counted per run, not per agent: parallel agents in one workflow (for example several `pitstop.agent(...)` scopes under `asyncio.gather`) share the run's budget of 2 steers, and the next steer after that halts the whole run.
+
 Try it without keys: `uv run python examples/quickstart/agent.py --offline --inject-loop` (see [examples/quickstart](examples/quickstart/README.md)). Then inspect the local state:
 
 ```text
@@ -81,7 +85,7 @@ $ uv run pitstop budget      # configured budgets: spent, limit, remaining
 
 ## Set a hard budget
 
-Copy [docs/config.example.toml](docs/config.example.toml) to `~/.pitstop/config.toml`. Each `[budgets.<name>]` entry sets a dollar limit for a provider `base_url` and period. Every model call reserves its worst-case cost first, and once the limit would be crossed the call raises `BudgetExceeded` before it reaches the provider. PitStop's own calls (supervisor, judge, GEPA) count against the same budget. A per-workflow cap is the `budget_usd` argument of `pitstop.workflow`.
+Copy [docs/config.example.toml](docs/config.example.toml) to `~/.pitstop/config.toml`. Each `[budgets.<name>]` entry sets a dollar limit for a provider `base_url` and period. Every model call reserves its worst-case cost first, and once the limit would be crossed the call raises `BudgetExceeded` before it reaches the provider. PitStop's own calls (supervisor, judge, GEPA) count against the same budget. A per-workflow cap is the `budget_usd` argument of `pitstop.workflow`. An invalid `config.toml` (a bad period, limit or timezone) never silently removes a budget: `pitstop.init()` raises a `ValueError`, every metered call, `pitstop.prompt` and `pitstop.workflow` (and any guarded tool inside a workflow) raises `pitstop.Halted("pitstop config invalid: ...")` before reaching the provider, and `pitstop status`/`drifts`/`budget` print the error and exit 2.
 
 ## How it works today
 
