@@ -491,3 +491,35 @@ tests/sdk/test_*.py, tests/store/, tests/budget/, tests/detect/
   - **CHANGELOG.** Add an `[Unreleased]` entry.
 - [ ] **Step 4: Run every check.** Run: `uv run ruff check && uv run pytest -q`. Expected: all pass. Run `uv run python examples/quickstart/agent.py --offline --inject-loop` by hand. Expected: it prints two steers and then `Halted: steer limit exceeded`.
 - [ ] **Step 5: Commit.** `git commit -m "feat(cli): status, drifts and budget commands; quickstart example and docs"`
+
+---
+
+## Carried to milestone 2b (recorded at the end of execution)
+
+These came out of the task and whole-branch reviews. The M2b plan must cover them.
+
+- **Config validation gaps.** A config with any of these problems still runs unmetered (fail-open):
+  - a non-string `budgets.*.base_url`;
+  - negative or NaN price overrides;
+  - an unreadable `config.toml` (the OSError is not wrapped in `ConfigInvalid`).
+
+  Validate all three in `userconfig.py`. Do this first.
+- **`wrap` metering holes:**
+  - `with_raw_response` / `with_streaming_response`;
+  - `client.responses.create`;
+  - legacy `completions`;
+  - `chat.completions.parse()` and `.stream()`.
+- **GEPA.** `raise_on_exception=False` swallows `Halted`. Add an abort path so a halted optimization does not report "optimized" results.
+- **`stream_options` injection** may get a 400 from some OpenAI-compatible backends. Retry once without it.
+- **Crashed processes leave `reserved` ledger rows** that count forever toward `total` budgets. Add an explicit `pitstop budget reconcile` command, not auto-expiry.
+- **Drift evidence lists are unbounded,** with an O(n²) rewrite. Cap them and add an occurrences count, plus run_id and ts per entry.
+- **`pitstop run` with an invalid config** ends in a Halted traceback. Give it a clean exit 2 like status/drifts/budget.
+- **Minor, from the reviews:**
+  - store: schema version is not checked on open, and nested `transaction()` is unsupported;
+  - `workflow()` on generator functions;
+  - `isinstance(openai.Stream)` is False for wrapped streams;
+  - `runs` and the ledger normalize `base_url` differently;
+  - `llm_history` and `tool_history` are unbounded;
+  - `steers += 1` is not atomic across threads;
+  - a P0 pending halt is not recorded as a `halt` event;
+  - drifts `first_seen == last_seen`.
