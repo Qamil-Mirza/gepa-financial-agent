@@ -51,3 +51,10 @@ def test_relative_links_resolve(doc):
         if not (REPO / doc).parent.joinpath(path).exists():
             missing.append(target)
     assert missing == []
+
+
+def test_check_crusoe_script_meters_its_client():
+    """The live smoke script spends real money, so its client must go through the hard budget."""
+    text = (REPO / "benchmarks/synth/scripts/check_crusoe.py").read_text()
+    assert re.search(r"pitstop\.wrap\(\s*OpenAI\(", text)
+    assert not re.search(r"(?<!wrap\()\bOpenAI\(", text)

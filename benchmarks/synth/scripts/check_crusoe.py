@@ -9,9 +9,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from openai import OpenAI
 
+import pitstop
 from synth import config
 
-client = OpenAI(base_url=config.CRUSOE_BASE_URL, api_key=config.crusoe_key())
+# Metered: the chat call below counts against (and is stopped by) the PitStop budgets in config.toml.
+client = pitstop.wrap(OpenAI(base_url=config.CRUSOE_BASE_URL, api_key=config.crusoe_key()))
 ids = {m.id: m for m in client.models.list().data}
 if config.WORKER_MODEL not in ids:
     sys.exit(f"{config.WORKER_MODEL} not found. Available: {sorted(ids)}")
