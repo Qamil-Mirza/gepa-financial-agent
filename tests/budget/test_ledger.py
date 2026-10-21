@@ -174,7 +174,7 @@ def test_concurrent_reservations_never_exceed_limit(tmp_path):
     exceeded = []
     granted = []
     errors = []
-    start = threading.Barrier(8)
+    start = threading.Barrier(8, timeout=10)
     lock = threading.Lock()
 
     def worker(i: int) -> None:

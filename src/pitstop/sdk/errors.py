@@ -10,6 +10,9 @@ class Halted(Exception):
         self.reason = reason
         self.drift_id = drift_id
 
+    def __reduce__(self):
+        return (Halted, (self.reason, self.drift_id))
+
 
 class BudgetExceeded(Halted):
     def __init__(self, scope: str, limit_usd: float, spent_usd: float):
@@ -17,3 +20,6 @@ class BudgetExceeded(Halted):
         self.limit_usd = limit_usd
         self.spent_usd = spent_usd
         super().__init__(f"PitStop budget exceeded: {scope} spent ${spent_usd:.2f} of ${limit_usd:.2f}")
+
+    def __reduce__(self):
+        return (BudgetExceeded, (self.scope, self.limit_usd, self.spent_usd))
