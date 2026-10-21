@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PitStop · health board directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+  --hue: 250;
+  --bg:        oklch(98.2% 0.004 var(--hue));
+  --surface:   oklch(100% 0.002 var(--hue));
+  --sunken:    oklch(95.6% 0.006 var(--hue));
+  --line:      oklch(90% 0.008 var(--hue));
+  --line-soft: oklch(93.5% 0.006 var(--hue));
+  --ink:       oklch(22% 0.02 var(--hue));
+  --ink-2:     oklch(42% 0.018 var(--hue));
+  --ink-3:     oklch(58% 0.014 var(--hue));
+  --p0: oklch(55% 0.19 18);   --p0-bg: oklch(95% 0.03 18);
+  --p1: oklch(60% 0.16 48);   --p1-bg: oklch(95.5% 0.035 60);
+  --p2: oklch(66% 0.13 85);   --p2-bg: oklch(96% 0.04 90);
+  --p3: oklch(55% 0.03 var(--hue)); --p3-bg: oklch(95% 0.008 var(--hue));
+  --ok: oklch(58% 0.11 155);
+  --accent: oklch(50% 0.13 var(--hue));
+  --sel: oklch(60% 0.14 var(--hue));
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        oklch(17.5% 0.012 var(--hue));
+    --surface:   oklch(21% 0.014 var(--hue));
+    --sunken:    oklch(15.5% 0.011 var(--hue));
+    --line:      oklch(30% 0.014 var(--hue));
+    --line-soft: oklch(25.5% 0.012 var(--hue));
+    --ink:       oklch(93% 0.008 var(--hue));
+    --ink-2:     oklch(76% 0.012 var(--hue));
+    --ink-3:     oklch(62% 0.012 var(--hue));
+    --p0: oklch(70% 0.16 20);   --p0-bg: oklch(30% 0.07 20);
+    --p1: oklch(74% 0.13 55);   --p1-bg: oklch(31% 0.06 55);
+    --p2: oklch(82% 0.12 90);   --p2-bg: oklch(32% 0.05 90);
+    --p3: oklch(70% 0.02 var(--hue)); --p3-bg: oklch(28% 0.012 var(--hue));
+    --ok: oklch(74% 0.11 155);
+    --accent: oklch(76% 0.1 var(--hue));
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: "Instrument Sans", system-ui, sans-serif;
+  font-size: 15px; line-height: 1.5; font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+.page { max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; }
+.q { font-family: "Newsreader", serif; font-weight: 500; font-size: 30px; line-height: 1.15; margin: 0 0 6px; letter-spacing: -0.01em; }
+.qsub { color: var(--ink-2); margin: 0 0 36px; max-width: 70ch; }
+
+.choice { border: 1px solid var(--line); border-radius: 14px; background: var(--sunken); padding: 18px; margin-bottom: 40px; cursor: pointer; transition: border-color .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1); }
+.choice:hover { border-color: var(--ink-3); }
+.choice.selected { border-color: var(--sel); box-shadow: 0 0 0 3px color-mix(in oklch, var(--sel) 25%, transparent); }
+.choice-head { display: flex; gap: 14px; align-items: baseline; margin: 2px 4px 16px; }
+.choice-head .letter { font-weight: 700; color: var(--accent); }
+.choice-head h2 { font-size: 17px; margin: 0; font-weight: 600; }
+.choice-head p { margin: 0; color: var(--ink-2); font-size: 14px; }
+
+.app { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.topbar { display: flex; align-items: center; gap: 18px; padding: 12px 20px; border-bottom: 1px solid var(--line-soft); font-size: 14px; }
+.brand { font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+.brand svg { width: 14px; height: 14px; }
+.nav a { color: var(--ink-3); text-decoration: none; margin-right: 14px; }
+.nav a.on { color: var(--ink); font-weight: 600; }
+.spacer { flex: 1; }
+.meta { color: var(--ink-3); font-size: 13px; }
+
+.pl { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 1px 7px 1px 6px; border-radius: 999px; white-space: nowrap; }
+.pl::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pl.p0 { color: var(--p0); background: var(--p0-bg); }
+.pl.p1 { color: var(--p1); background: var(--p1-bg); }
+.pl.p2 { color: var(--p2); background: var(--p2-bg); }
+.pl.p3 { color: var(--p3); background: var(--p3-bg); }
+.crit { font-size: 12px; color: var(--ink-3); }
+.crit b { color: var(--ink-2); font-weight: 600; }
+
+.meter { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; font-size: 13px; }
+.meter .track { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--line-soft); overflow: hidden; }
+.meter .fill { height: 100%; border-radius: 2px; background: var(--ink-3); }
+.meter .fill.hot { background: var(--p1); }
+.meter .amt b { font-weight: 600; }
+.meter .cap { color: var(--ink-3); }
+
+/* ---------- Direction A: Ledger ---------- */
+.a-body { padding: 28px 28px 32px; }
+.a-summary { display: flex; align-items: baseline; gap: 24px; margin-bottom: 26px; }
+.a-summary h3 { font-family: "Newsreader", serif; font-weight: 500; font-size: 26px; margin: 0; letter-spacing: -0.01em; }
+.a-summary .meta b { color: var(--ink); }
+.a-section { font-size: 12px; font-weight: 600; color: var(--ink-3); letter-spacing: .04em; text-transform: uppercase; margin: 0 0 8px; }
+.ledger { border-top: 1px solid var(--line); }
+.row { display: grid; grid-template-columns: minmax(220px, 1.3fr) 2fr 190px; gap: 24px; padding: 18px 4px; border-bottom: 1px solid var(--line-soft); }
+.row .name { font-weight: 600; font-size: 15px; }
+.row .goal { color: var(--ink-3); font-size: 13px; margin-top: 2px; }
+.row .crit { margin-top: 8px; display: block; }
+.status { font-size: 14px; }
+.status .what { font-weight: 500; }
+.status .why, .status .doing { color: var(--ink-2); font-size: 13px; margin-top: 4px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chip { font-size: 12px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--line); color: var(--ink-2); background: var(--surface); }
+.chip.act { color: var(--accent); border-color: color-mix(in oklch, var(--accent) 45%, var(--line)); font-weight: 600; }
+.status .stack { display: grid; gap: 14px; }
+.healthy-row { display: flex; align-items: center; gap: 14px; padding: 14px 4px; color: var(--ink-2); font-size: 14px; border-bottom: 1px solid var(--line-soft); }
+.dot-ok { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+.healthy-row .names { color: var(--ink-3); }
+
+/* ---------- Direction B: Pit wall ---------- */
+.b-body { display: grid; grid-template-columns: 1fr 300px; min-height: 520px; }
+.b-main { padding: 24px 24px 28px; }
+.b-rail { border-left: 1px solid var(--line-soft); background: var(--surface); padding: 22px 20px; }
+.b-rail h4 { font-size: 12px; font-weight: 600; color: var(--ink-3); letter-spacing: .04em; text-transform: uppercase; margin: 0 0 14px; }
+.feed { list-style: none; margin: 0; padding: 0; }
+.feed li { padding: 12px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px; }
+.feed li:first-child { padding-top: 0; }
+.feed .t { color: var(--ink-3); font-size: 12px; }
+.feed .w { color: var(--ink-2); }
+.feed .h { font-weight: 500; color: var(--ink); margin: 4px 0 2px; font-size: 14px; }
+.tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+.tile.big { grid-column: span 3; }
+.tile.small { grid-column: span 2; padding: 14px 16px; }
+.tile .flag { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.tile .flag svg { width: 15px; height: 15px; }
+.tile .name { font-weight: 600; font-size: 16px; }
+.tile .crit { display: block; margin: 2px 0 14px; }
+.tile .line { font-size: 14px; color: var(--ink-2); margin-bottom: 6px; }
+.tile .line b { color: var(--ink); font-weight: 500; }
+.tile .meter { margin-top: 16px; }
+.tile.small .name { font-size: 14px; }
+.tile.small .crit { margin-bottom: 10px; }
+.b-heading { display: flex; align-items: baseline; gap: 16px; margin-bottom: 18px; }
+.b-heading h3 { font-family: "Newsreader", serif; font-weight: 500; font-size: 24px; margin: 0; }
+
+@media (max-width: 860px) {
+  .row { grid-template-columns: 1fr; gap: 10px; }
+  .b-body { grid-template-columns: 1fr; }
+  .b-rail { border-left: 0; border-top: 1px solid var(--line-soft); }
+  .tile.big, .tile.small { grid-column: span 6; }
+}
+@media (prefers-reduced-motion: reduce) { .choice { transition: none; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1 class="q">Two ways to draw the health board</h1>
+  <p class="qsub">Same four workflows, same data. Both follow your system's light/dark setting. Click the one closer to right, and tell me in the terminal what you'd steal from the other.</p>
+
+  <!-- ================= A ================= -->
+  <section class="choice" data-choice="ledger" onclick="toggleSelect(this)">
+    <div class="choice-head"><span class="letter">A</span><h2>Ledger</h2><p>A calm list, not cards. Workflows that need you come first and are written as plain sentences; healthy ones fold into a single line.</p></div>
+    <div class="app">
+      <div class="topbar">
+        <span class="brand"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.8 2.2h8.4l-2 3 2 3H3.8z" fill="currentColor"/></svg>PitStop</span>
+        <nav class="nav"><a class="on">Workflows</a><a>Drifts</a><a>Fixes</a><a>Endpoints</a></nav>
+        <span class="spacer"></span><span class="meta">acme-prod · updated 4s ago</span>
+      </div>
+      <div class="a-body">
+        <div class="a-summary">
+          <h3>2 workflows need you</h3>
+          <span class="meta"><b>$10.65</b> spent today of $20 budgeted · 2 healthy</span>
+        </div>
+
+        <p class="a-section">Needs attention</p>
+        <div class="ledger">
+          <div class="row">
+            <div><div class="name">client-outreach</div><div class="goal">Draft follow-ups for inbound leads</div><span class="crit">Criticality <b>high</b> · sends email</span></div>
+            <div class="status">
+              <div class="stack">
+                <div>
+                  <span class="pl p0">P0 · Off-task action</span>
+                  <div class="what" style="margin-top:6px">Tried to email an address outside the lead list. Run halted.</div>
+                  <div class="doing">2 min ago <span class="chip">send_email blocked</span><span class="chip act">Review run →</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="meter"><span class="amt"><b>$1.20</b> <span class="cap">of $5</span></span><span class="cap">24%</span><div class="track"><div class="fill" style="width:24%"></div></div></div>
+          </div>
+
+          <div class="row">
+            <div><div class="name">earnings-research</div><div class="goal">Compare quarterly margins across peers, cite sources</div><span class="crit">Criticality <b>high</b></span></div>
+            <div class="status">
+              <div class="stack">
+                <div>
+                  <span class="pl p1">P1 · Tool calls breaking</span>
+                  <div class="what" style="margin-top:6px">Tool-call parse failures rose from 2% to 19%.</div>
+                  <div class="why">Started with <span class="chip">nemotron-super v2 → v3</span> at 14:05</div>
+                  <div class="doing">Fell back to v2 automatically <span class="chip act">See what changed →</span></div>
+                </div>
+                <div>
+                  <span class="pl p2">P2 · Quality slipping</span>
+                  <div class="what" style="margin-top:6px">Report quality down from 0.86 to 0.71 over 3 days.</div>
+                  <div class="doing">Prompt fix ready, beats current on 40 held-out runs <span class="chip act">Review fix →</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="meter"><span class="amt"><b>$8.40</b> <span class="cap">of $10</span></span><span class="cap">84%</span><div class="track"><div class="fill hot" style="width:84%"></div></div></div>
+          </div>
+        </div>
+
+        <p class="a-section" style="margin-top:30px">Healthy</p>
+        <div class="healthy-row"><span class="dot-ok"></span>2 workflows on track <span class="names">support-triage, doc-summarizer</span><span class="spacer"></span><span class="pl p3">1 P3 trend</span><span class="meta">Show</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= B ================= -->
+  <section class="choice" data-choice="pitwall" onclick="toggleSelect(this)">
+    <div class="choice-head"><span class="letter">B</span><h2>Pit wall</h2><p>Tiles sized by trouble: workflows with open drifts get big tiles, healthy ones shrink. A live feed on the right, like an incident queue.</p></div>
+    <div class="app">
+      <div class="topbar">
+        <span class="brand"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.8 2.2h8.4l-2 3 2 3H3.8z" fill="currentColor"/></svg>PitStop</span>
+        <nav class="nav"><a class="on">Workflows</a><a>Drifts</a><a>Fixes</a><a>Endpoints</a></nav>
+        <span class="spacer"></span><span class="meta">acme-prod · updated 4s ago</span>
+      </div>
+      <div class="b-body">
+        <div class="b-main">
+          <div class="b-heading"><h3>Workflows</h3><span class="meta">$10.65 of $20 today</span></div>
+          <div class="tiles">
+            <div class="tile big">
+              <div class="flag" style="color:var(--p0)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.8 2.2h8.4l-2 3 2 3H3.8z" fill="currentColor"/></svg>Red flag · halted</div>
+              <div class="name">client-outreach</div><span class="crit">Criticality <b>high</b> · sends email</span>
+              <div class="line"><span class="pl p0">P0</span> <b>Out-of-scope email blocked</b></div>
+              <div class="meter"><span class="amt"><b>$1.20</b> <span class="cap">of $5</span></span><span class="cap">24%</span><div class="track"><div class="fill" style="width:24%"></div></div></div>
+            </div>
+            <div class="tile big">
+              <div class="flag" style="color:var(--p1)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.8 2.2h8.4l-2 3 2 3H3.8z" fill="currentColor"/></svg>Yellow flag · degraded</div>
+              <div class="name">earnings-research</div><span class="crit">Criticality <b>high</b></span>
+              <div class="line"><span class="pl p1">P1</span> <b>Tool-call failures 2% → 19%</b></div>
+              <div class="line"><span class="pl p2">P2</span> <b>Quality 0.86 → 0.71</b> · fix ready</div>
+              <div class="meter"><span class="amt"><b>$8.40</b> <span class="cap">of $10</span></span><span class="cap">84%</span><div class="track"><div class="fill hot" style="width:84%"></div></div></div>
+            </div>
+            <div class="tile small">
+              <div class="flag" style="color:var(--ok)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.8 2.2h8.4l-2 3 2 3H3.8z" fill="currentColor"/></svg>Green</div>
+              <div class="name">support-triage</div><span class="crit">Criticality <b>low</b></span>
+              <div class="meter"><span class="amt"><b>$0.90</b> <span class="cap">of $3</span></span><span class="cap">30%</span><div class="track"><div class="fill" style="width:30%"></div></div></div>
+            </div>
+            <div class="tile small">
+              <div class="flag" style="color:var(--ok)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.8 2.2h8.4l-2 3 2 3H3.8z" fill="currentColor"/></svg>Green</div>
+              <div class="name">doc-summarizer</div><span class="crit">Criticality <b>low</b></span>
+              <div class="meter"><span class="amt"><b>$0.15</b> <span class="cap">of $2</span></span><span class="cap">8%</span><div class="track"><div class="fill" style="width:8%"></div></div></div>
+            </div>
+          </div>
+        </div>
+        <aside class="b-rail">
+          <h4>Live feed</h4>
+          <ul class="feed">
+            <li><span class="t">2 min ago</span> · <span class="w">client-outreach</span><div class="h">Run halted: send_email to external address</div><span class="pl p0">P0</span></li>
+            <li><span class="t">14:05</span> · <span class="w">earnings-research</span><div class="h">Model changed nemotron-super v2 → v3</div><span class="meta">endpoint canary</span></li>
+            <li><span class="t">14:11</span> · <span class="w">earnings-research</span><div class="h">Fell back to v2 after tool-call failures</div><span class="pl p1">P1</span></li>
+            <li><span class="t">09:30</span> · <span class="w">earnings-research</span><div class="h">Prompt fix ready for review</div><span class="pl p2">P2</span></li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

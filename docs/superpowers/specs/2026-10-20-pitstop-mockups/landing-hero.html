@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PitStop — keep your agents on the racing line</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+  --hue: 250;
+  --bg:        oklch(98.2% 0.004 var(--hue));
+  --surface:   oklch(100% 0.002 var(--hue));
+  --line:      oklch(89% 0.008 var(--hue));
+  --ink:       oklch(22% 0.02 var(--hue));
+  --ink-2:     oklch(42% 0.018 var(--hue));
+  --ink-3:     oklch(58% 0.014 var(--hue));
+  --asphalt:   oklch(93.5% 0.007 var(--hue));
+  --kerb:      oklch(84% 0.01 var(--hue));
+  --racing:    oklch(50% 0.13 var(--hue));
+  --drift:     oklch(64% 0.15 55);
+  --drift-bg:  oklch(95.5% 0.035 60);
+  --ok:        oklch(58% 0.11 155);
+  --code-bg:   oklch(22% 0.02 var(--hue));
+  --code-ink:  oklch(94% 0.008 var(--hue));
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        oklch(16.5% 0.012 var(--hue));
+    --surface:   oklch(20.5% 0.014 var(--hue));
+    --line:      oklch(29% 0.014 var(--hue));
+    --ink:       oklch(94% 0.008 var(--hue));
+    --ink-2:     oklch(77% 0.012 var(--hue));
+    --ink-3:     oklch(62% 0.012 var(--hue));
+    --asphalt:   oklch(22% 0.013 var(--hue));
+    --kerb:      oklch(33% 0.014 var(--hue));
+    --racing:    oklch(76% 0.1 var(--hue));
+    --drift:     oklch(76% 0.13 60);
+    --drift-bg:  oklch(31% 0.06 55);
+    --ok:        oklch(74% 0.11 155);
+    --code-bg:   oklch(24% 0.015 var(--hue));
+    --code-ink:  oklch(93% 0.008 var(--hue));
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: "Instrument Sans", system-ui, sans-serif;
+  font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+  overflow-x: hidden;
+}
+a { color: inherit; }
+
+/* ---------- nav ---------- */
+.nav { display: flex; align-items: center; gap: 28px; max-width: 1240px; margin: 0 auto; padding: 22px clamp(16px, 4vw, 40px); font-size: 14px; }
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; text-decoration: none; }
+.brand svg { width: 16px; height: 16px; color: var(--racing); }
+.nav .links { display: flex; gap: 22px; color: var(--ink-2); }
+.nav .links a { text-decoration: none; }
+.nav .links a:hover { color: var(--ink); }
+.nav .spacer { flex: 1; }
+.gh { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px; font-weight: 600; font-size: 13px; }
+.gh:hover { border-color: var(--ink-3); }
+.gh svg { width: 15px; height: 15px; }
+
+/* ---------- hero ---------- */
+.hero {
+  max-width: 1240px; margin: 0 auto;
+  padding: clamp(24px, 6vh, 72px) clamp(16px, 4vw, 40px) clamp(48px, 10vh, 120px);
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(24px, 4vw, 56px); align-items: center;
+}
+.eyebrow { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2); margin-bottom: 22px; }
+.eyebrow .pill { font-weight: 600; color: var(--racing); border: 1px solid color-mix(in oklch, var(--racing) 35%, var(--line)); padding: 2px 9px; border-radius: 999px; }
+h1 {
+  font-family: "Newsreader", serif; font-weight: 400;
+  font-size: clamp(42px, 5.6vw, 76px); line-height: 1.0; letter-spacing: -0.025em;
+  margin: 0 0 24px;
+}
+h1 em { font-style: italic; color: var(--racing); }
+.lede { font-size: clamp(17px, 1.35vw, 19px); color: var(--ink-2); max-width: 34ch; margin: 0 0 34px; }
+.lede b { color: var(--ink); font-weight: 600; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.install {
+  display: inline-flex; align-items: center; gap: 14px;
+  background: var(--code-bg); color: var(--code-ink);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 15px;
+  padding: 13px 14px 13px 18px; border-radius: 10px; border: 0; cursor: pointer;
+}
+.install .dollar { opacity: .5; }
+.install .copy { font-family: "Instrument Sans", sans-serif; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: color-mix(in oklch, var(--code-ink) 14%, transparent); transition: background .2s; }
+.install:hover .copy { background: color-mix(in oklch, var(--code-ink) 22%, transparent); }
+.ghost { text-decoration: none; font-weight: 600; font-size: 15px; padding: 12px 6px; color: var(--ink); }
+.ghost span { display: inline-block; transition: transform .3s cubic-bezier(.22,1,.36,1); }
+.ghost:hover span { transform: translateX(4px); }
+.fineprint { margin-top: 22px; font-size: 13px; color: var(--ink-3); }
+
+/* ---------- circuit ---------- */
+.circuit-wrap { position: relative; margin-right: calc(-1 * clamp(16px, 4vw, 40px)); }
+.circuit { position: relative; width: 100%; aspect-ratio: 820 / 560; }
+.circuit svg, .circuit canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.track-base { fill: none; stroke: var(--asphalt); stroke-width: 46; stroke-linejoin: round; stroke-linecap: round; }
+.track-edge { fill: none; stroke: var(--kerb); stroke-width: 40; stroke-linejoin: round; }
+.track-fill { fill: none; stroke: var(--asphalt); stroke-width: 37; stroke-linejoin: round; }
+.racing-line { fill: none; stroke: var(--racing); stroke-width: 1.5; stroke-dasharray: 2 7; stroke-linecap: round; opacity: .8; }
+.sector text { fill: var(--ink-3); font: 600 11px "Instrument Sans", sans-serif; letter-spacing: .08em; }
+.sector line { stroke: var(--ink-3); stroke-width: 1.25; opacity: .6; }
+.startline { stroke: var(--ink-2); stroke-width: 2.5; }
+
+/* HUD */
+.hud {
+  position: absolute; left: 0; top: -2%;
+  display: grid; grid-template-columns: auto auto; gap: 4px 18px; align-items: baseline;
+  font-size: 12px; color: var(--ink-3);
+  background: color-mix(in oklch, var(--surface) 82%, transparent);
+  border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  min-width: 220px;
+}
+.hud .v { color: var(--ink); font-weight: 600; font-size: 13px; text-align: right; }
+.hud .hud-status { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; color: var(--ink); margin-bottom: 6px; }
+.hud .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); transition: background .3s; }
+.hud[data-state="drift"] .dot { background: var(--drift); }
+.hud[data-state="fix"] .dot { background: var(--racing); }
+.hud .wf-v { font-weight: 500; color: var(--ink-2); }
+.bump { animation: bump .5s cubic-bezier(.22,1,.36,1); }
+@keyframes bump { from { transform: translateY(-4px); opacity: .2; } to { transform: none; opacity: 1; } }
+
+/* drift callout */
+.callout {
+  position: absolute; transform: translate(14px, -50%);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; width: 236px; font-size: 13px; line-height: 1.4;
+  box-shadow: 0 10px 30px -12px color-mix(in oklch, var(--ink) 30%, transparent);
+  opacity: 0; pointer-events: none;
+  transition: opacity .45s cubic-bezier(.22,1,.36,1), transform .45s cubic-bezier(.22,1,.36,1);
+}
+.callout.show { opacity: 1; transform: translate(20px, -50%); }
+.callout.left { transform: translate(calc(-100% - 14px), -50%); }
+.callout.left.show { transform: translate(calc(-100% - 20px), -50%); }
+.callout .tag { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--drift); background: var(--drift-bg); padding: 1px 8px 1px 7px; border-radius: 999px; }
+.callout .tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.callout .t { font-weight: 600; margin: 6px 0 2px; }
+.callout .s { color: var(--ink-2); font-size: 12.5px; }
+.callout .fixed { color: var(--ok); font-weight: 600; }
+
+.legend { display: flex; gap: 18px; font-size: 12px; color: var(--ink-3); margin: 10px 0 0 6%; }
+.legend i { display: inline-block; width: 16px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 6px; }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; }
+  .circuit-wrap { margin-right: 0; }
+  .nav .links { display: none; }
+  .hud { position: relative; left: 0; top: 0; margin-bottom: 10px; }
+  .callout { width: 200px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .callout, .hud .dot, .ghost span { transition: none; }
+  .bump { animation: none; }
+}
+</style>
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="#"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.8 2.2h8.4l-2 3 2 3H3.8z" fill="currentColor"/></svg>PitStop</a>
+  <nav class="links"><a href="#">Docs</a><a href="#">How it works</a><a href="#">Benchmarks</a></nav>
+  <span class="spacer"></span>
+  <a class="gh" href="#"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>Star on GitHub</a>
+</header>
+
+<main class="hero">
+  <section>
+    <div class="eyebrow"><span class="pill">Open source</span> Runs on your machine, with your keys</div>
+    <h1>Keep your agents on the <em>racing line.</em></h1>
+    <p class="lede">PitStop watches your agent workflows, catches when they <b>drift off-task</b> or <b>quietly get worse</b>, ranks it by how much it matters, and tunes the prompt back on course.</p>
+    <div class="ctas">
+      <button class="install" id="install" aria-label="Copy install command"><span><span class="dollar">$</span> pip install pitstop</span><span class="copy" id="copyLabel">Copy</span></button>
+      <a class="ghost" href="#">Read the docs <span>→</span></a>
+    </div>
+    <p class="fineprint">A few lines in your code. Works with any OpenAI-compatible client and your existing OpenTelemetry traces.</p>
+  </section>
+
+  <section class="circuit-wrap" aria-label="Animation: an agent laps a circuit, drifts off the racing line, gets flagged by PitStop and is steered back.">
+    <div class="circuit" id="circuit">
+      <svg viewBox="0 0 820 560" aria-hidden="true">
+        <path id="trackPath" class="track-edge" d="M150 430 C 80 430 60 350 110 300 L 270 150 C 330 92 420 92 460 150 C 490 194 540 214 600 176 L 650 144 C 730 96 790 170 760 240 L 700 400 C 670 470 610 486 550 466 L 380 420 C 320 404 250 430 150 430 Z"/>
+        <path class="track-fill" d="M150 430 C 80 430 60 350 110 300 L 270 150 C 330 92 420 92 460 150 C 490 194 540 214 600 176 L 650 144 C 730 96 790 170 760 240 L 700 400 C 670 470 610 486 550 466 L 380 420 C 320 404 250 430 150 430 Z"/>
+        <path class="racing-line" d="M150 430 C 80 430 60 350 110 300 L 270 150 C 330 92 420 92 460 150 C 490 194 540 214 600 176 L 650 144 C 730 96 790 170 760 240 L 700 400 C 670 470 610 486 550 466 L 380 420 C 320 404 250 430 150 430 Z"/>
+        <g class="sector" id="sectors"></g>
+      </svg>
+      <canvas id="cv"></canvas>
+      <div class="hud" id="hud" data-state="ok">
+        <div class="hud-status"><span class="dot"></span><span id="st">On track</span></div>
+        <span>Workflow</span><span class="v wf-v">earnings-research</span>
+        <span>Lap</span><span class="v" id="lap">1</span>
+        <span>Drifts caught</span><span class="v" id="caught">0</span>
+        <span>Spend today</span><span class="v"><span id="spend">$0.00</span> <span style="color:var(--ink-3);font-weight:500">/ $10</span></span>
+      </div>
+      <div class="callout" id="callout">
+        <span class="tag">P1 · Off-task</span>
+        <div class="t" id="calloutTitle">worker · NVDA left its goal</div>
+        <div class="s" id="calloutSub">Chasing a stale directive at step 14. Steering back…</div>
+      </div>
+    </div>
+    <div class="legend"><span><i style="border-color:var(--racing)"></i>Agent run</span><span><i style="border-color:var(--drift)"></i>Drift</span><span><i style="border-color:var(--ink-3);border-top-style:dashed"></i>Intended path</span></div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const VB_W = 820, VB_H = 560;
+  const path = document.getElementById('trackPath');
+  const total = path.getTotalLength();
+  const N = 1400;
+  const pts = new Array(N);
+  for (let i = 0; i < N; i++) {
+    const p = path.getPointAtLength((i / N) * total);
+    pts[i] = { x: p.x, y: p.y };
+  }
+  // normals (pointing outward-ish, consistent side)
+  for (let i = 0; i < N; i++) {
+    const a = pts[(i - 3 + N) % N], b = pts[(i + 3) % N];
+    const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+    pts[i].nx = dy / len; pts[i].ny = -dx / len;
+  }
+  const at = (u, off = 0) => {
+    const f = ((u % 1) + 1) % 1 * N, i = Math.floor(f), t = f - i;
+    const a = pts[i], b = pts[(i + 1) % N];
+    const x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t;
+    const nx = a.nx + (b.nx - a.nx) * t, ny = a.ny + (b.ny - a.ny) * t;
+    return { x: x + nx * off, y: y + ny * off };
+  };
+
+  // sector marks + start line
+  const sectors = document.getElementById('sectors');
+  const NS = 'http://www.w3.org/2000/svg';
+  [[0, 'START'], [0.34, 'S2'], [0.67, 'S3']].forEach(([u, label]) => {
+    const i = Math.floor(u * N) % N, p = pts[i];
+    const l = document.createElementNS(NS, 'line');
+    l.setAttribute('x1', p.x - p.nx * 23); l.setAttribute('y1', p.y - p.ny * 23);
+    l.setAttribute('x2', p.x + p.nx * 23); l.setAttribute('y2', p.y + p.ny * 23);
+    if (u === 0) l.setAttribute('class', 'startline');
+    sectors.appendChild(l);
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', p.x + p.nx * 34 - 14); t.setAttribute('y', p.y + p.ny * 34 + 4);
+    t.textContent = label; sectors.appendChild(t);
+  });
+
+  // canvas
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const circuit = document.getElementById('circuit');
+  let scale = 1;
+  const resize = () => {
+    const r = circuit.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+    scale = (r.width / VB_W) * dpr;
+  };
+  new ResizeObserver(resize).observe(circuit); resize();
+
+  let colors = {};
+  const readColors = () => {
+    const cs = getComputedStyle(document.documentElement);
+    ['--racing', '--drift', '--ink', '--ok', '--bg'].forEach(k => colors[k] = cs.getPropertyValue(k).trim());
+  };
+  readColors();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+
+  // choreography
+  const LAP = 5200;           // ms per lap
+  const LAPS = 3;             // drift happens on the last lap of each cycle
+  const D0 = 0.47, D1 = 0.575, D2 = 0.66; // drift starts, detected, back on line (lap fraction)
+  const MAX_OFF = -78;  // negative = into the infield
+  const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const offsetFor = (lapInCycle, u) => {
+    if (lapInCycle !== LAPS - 1) return 0;
+    if (u < D0 || u > D2) return 0;
+    if (u < D1) return MAX_OFF * ease((u - D0) / (D1 - D0));
+    return MAX_OFF * (1 - ease((u - D1) / (D2 - D1)));
+  };
+  const phaseFor = (lapInCycle, u) => {
+    if (lapInCycle !== LAPS - 1) return 'ok';
+    if (u >= D0 && u < D1) return 'drift';
+    if (u >= D1 && u < D2 + 0.06) return 'fix';
+    return 'ok';
+  };
+
+  const hud = document.getElementById('hud'), st = document.getElementById('st');
+  const lapEl = document.getElementById('lap'), caughtEl = document.getElementById('caught'), spendEl = document.getElementById('spend');
+  const callout = document.getElementById('callout'), calloutSub = document.getElementById('calloutSub');
+  const LABEL = { ok: 'On track', drift: 'Drifting', fix: 'Steering back' };
+  let caught = 0, lastPhase = 'ok', lastLap = -1, flag = null;
+  const bump = el => { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); };
+
+  const trail = [];
+  const TRAIL = 70;
+
+  function placeCallout(p) {
+    const r = circuit.getBoundingClientRect();
+    const x = p.x / VB_W * r.width, y = p.y / VB_H * r.height;
+    callout.style.left = x + 'px'; callout.style.top = y + 'px';
+    callout.classList.toggle('left', x > r.width * 0.55);
+  }
+
+  function drawFlag(p, alpha) {
+    ctx.save(); ctx.globalAlpha = alpha;
+    ctx.translate(p.x, p.y);
+    ctx.strokeStyle = colors['--ink']; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -26); ctx.stroke();
+    ctx.fillStyle = colors['--drift'];
+    ctx.beginPath(); ctx.moveTo(1, -26); ctx.lineTo(16, -26); ctx.lineTo(12, -21); ctx.lineTo(16, -16); ctx.lineTo(1, -16); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fillStyle = colors['--drift']; ctx.fill();
+    ctx.restore();
+  }
+
+  function frame(ms, still) {
+    const cycle = LAP * LAPS;
+    const tc = ms % cycle;
+    const lapInCycle = Math.floor(tc / LAP);
+    const u = (tc % LAP) / LAP;
+    const lapNo = Math.floor(ms / LAP) + 1;
+    const phase = still ? 'fix' : phaseFor(lapInCycle, u);
+    const off = offsetFor(lapInCycle, u);
+    const pos = at(u, off);
+
+    if (!still) {
+      trail.push({ ...pos, d: phase !== 'ok' && Math.abs(off) > 6 });
+      if (trail.length > TRAIL) trail.shift();
+    }
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+
+    // trail
+    ctx.lineCap = 'round';
+    for (let i = 1; i < trail.length; i++) {
+      const a = trail[i - 1], b = trail[i], k = i / trail.length;
+      ctx.globalAlpha = Math.pow(k, 1.6);
+      ctx.strokeStyle = (a.d || b.d) ? colors['--drift'] : colors['--racing'];
+      ctx.lineWidth = 1.5 + 4 * k;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // flag at detection point, fades during the next lap
+    if (phase === 'fix' && !flag) {
+      flag = at(D1, MAX_OFF);
+      if (!still) { caught++; caughtEl.textContent = caught; bump(caughtEl); }
+      placeCallout(flag); callout.classList.add('show');
+      calloutSub.textContent = 'Chasing a stale directive at step 14. Steering back…';
+    }
+    if (flag) {
+      let alpha = 1;
+      if (phase === 'ok' && lastPhase !== 'ok') {
+        calloutSub.innerHTML = '<span class="fixed">Back on line.</span> Prompt fix queued for review.';
+      }
+      if (lapInCycle === 0 && !still) {
+        alpha = Math.max(0, 1 - u * 3);
+        if (u > 0.12) callout.classList.remove('show');
+        if (alpha === 0) flag = null;
+      }
+      if (flag) drawFlag(flag, alpha);
+    }
+
+    // car
+    const ahead = at(u + 0.004, offsetFor(lapInCycle, u + 0.004));
+    const ang = Math.atan2(ahead.y - pos.y, ahead.x - pos.x);
+    ctx.save(); ctx.translate(pos.x, pos.y); ctx.rotate(ang);
+    ctx.fillStyle = phase === 'drift' ? colors['--drift'] : colors['--racing'];
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-10, -5.5, 20, 11, 3.5) : ctx.rect(-10, -5.5, 20, 11); ctx.fill();
+    ctx.fillStyle = colors['--bg'];
+    ctx.beginPath(); ctx.arc(3.5, 0, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // HUD
+    if (phase !== lastPhase) { hud.dataset.state = phase; st.textContent = LABEL[phase]; }
+    if (lapNo !== lastLap) { lapEl.textContent = still ? 3 : lapNo; lastLap = lapNo; }
+    const spend = still ? 1.37 : ((ms / 1000) * 0.031) % 10;
+    spendEl.textContent = '$' + spend.toFixed(2);
+    lastPhase = phase;
+  }
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  let raf = 0, start = 0, visible = true, running = false;
+
+  function renderStill() {
+    // build a trail through the drift and recovery, then freeze
+    trail.length = 0;
+    for (let k = 0; k < TRAIL; k++) {
+      const u = D0 - 0.02 + (k / TRAIL) * (D2 + 0.02 - (D0 - 0.02));
+      const off = offsetFor(LAPS - 1, u);
+      trail.push({ ...at(u, off), d: Math.abs(off) > 6 });
+    }
+    flag = null; lastPhase = 'ok';
+    frame(LAP * (LAPS - 1) + LAP * (D2 + 0.02), true);
+    caughtEl.textContent = '1';
+  }
+  function loop(t) {
+    if (!start) start = t;
+    frame(t - start, false);
+    raf = requestAnimationFrame(loop);
+  }
+  function play() { if (running || reduce.matches || !visible) return; running = true; start = 0; caught = 0; trail.length = 0; flag = null; callout.classList.remove('show'); raf = requestAnimationFrame(loop); }
+  function stop() { running = false; cancelAnimationFrame(raf); }
+
+  new IntersectionObserver(([e]) => { visible = e.isIntersecting; visible ? play() : stop(); }).observe(circuit);
+  reduce.addEventListener('change', () => { stop(); reduce.matches ? renderStill() : play(); });
+  window.addEventListener('resize', () => { if (reduce.matches) renderStill(); });
+  if (reduce.matches) renderStill(); else play();
+
+  // copy install
+  const btn = document.getElementById('install'), lbl = document.getElementById('copyLabel');
+  btn.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText('pip install pitstop'); lbl.textContent = 'Copied'; }
+    catch { lbl.textContent = 'Select & copy'; }
+    setTimeout(() => lbl.textContent = 'Copy', 1600);
+  });
+})();
+</script>
+</body>
+</html>
