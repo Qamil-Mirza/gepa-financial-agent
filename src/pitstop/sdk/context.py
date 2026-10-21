@@ -48,6 +48,7 @@ class RunContext:
     tool_history: dict = field(default_factory=dict)  # agent name (None = no agent) -> [ToolCallRecord]
     llm_history: list = field(default_factory=list)
     llm_calls: int = 0
+    prompt_versions: dict[str, int] = field(default_factory=dict)
 
     @property
     def agent(self) -> str | None:
