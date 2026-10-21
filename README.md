@@ -213,3 +213,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests and pull requests. The t
 ## Acknowledgements
 
 PitStop started at the Crusoe x Cerebral Valley Recursive Agents Hackathon (October 2026, San Francisco), built on Crusoe Managed Inference by Qamil Mirza, Gautam Bhooma and Arjun Mittal. Prompt optimization uses [GEPA](https://github.com/gepa-ai/gepa) (the `gepa` library). Research agents use the You.com Finance Research API.
+
+The post-hackathon redesign was built extensively with [Claude Code](https://claude.com/claude-code). That includes the research, the design spec, the restructure, the README and the tests.
