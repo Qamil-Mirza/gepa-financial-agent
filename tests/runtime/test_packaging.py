@@ -46,7 +46,8 @@ def test_wheel_contains_package_data(tmp_path):
     names = zipfile.ZipFile(next(tmp_path.glob("pitstop-*.whl"))).namelist()
     for required in ("pitstop/assets/prompts/supervisor_v0.txt", "pitstop/assets/prompts/worker/planner.txt",
                      "pitstop/assets/scenarios/nvda_amd.json", "pitstop/demo/snapshot.json",
-                     "pitstop/demo/static/demo.html", "pitstop/ui/static/index.html"):
+                     "pitstop/demo/static/demo.html", "pitstop/ui/static/index.html",
+                     "pitstop/store/schema.sql"):
         assert required in names
 
 
