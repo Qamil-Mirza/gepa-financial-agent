@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 _SCHEMA = Path(__file__).with_name("schema.sql")
 
 
@@ -19,6 +19,7 @@ class Store:
         conn = self.connect()
         conn.execute("PRAGMA journal_mode=WAL")
         conn.executescript(_SCHEMA.read_text())
+        self._migrate()
 
     def connect(self) -> sqlite3.Connection:
         conn = getattr(self._local, "conn", None)
@@ -46,6 +47,17 @@ class Store:
         except BaseException:
             _rollback_quietly(conn)
             raise
+
+    def _migrate(self) -> None:
+        """Upgrade an older DB in place (idempotent, safe across concurrent openers)."""
+        if self.schema_version() >= SCHEMA_VERSION:
+            return
+        with self.transaction(immediate=True) as c:
+            cols = {r["name"] for r in c.execute("PRAGMA table_info(runs)")}
+            if "budget_usd" not in cols:
+                c.execute("ALTER TABLE runs ADD COLUMN budget_usd REAL")
+            c.execute("UPDATE meta SET value=? WHERE key='schema_version' AND CAST(value AS INTEGER) < ?",
+                      (str(SCHEMA_VERSION), SCHEMA_VERSION))
 
     def schema_version(self) -> int:
         row = self.connect().execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()

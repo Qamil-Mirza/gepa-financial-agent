@@ -151,9 +151,9 @@ class _Workflow(_Scope):
         with get_runtime().store.transaction() as c:
             c.execute(
                 "INSERT INTO runs(id, workflow, goal, criticality, sensitivity, fix_mode, started_at, status,"
-                " pitstop_version) VALUES (?,?,?,?,?,?,?,?,?)",
+                " pitstop_version, budget_usd) VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (ctx.run_id, s.name, s.goal, s.criticality, s.sensitivity, s.effective_fix_mode,
-                 time.time(), "running", __version__),
+                 time.time(), "running", __version__, s.budget_usd),
             )
 
     def __exit__(self, et, ev, tb):

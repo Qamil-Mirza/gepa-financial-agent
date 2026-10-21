@@ -16,8 +16,8 @@ REPO = Path(__file__).resolve().parents[1]
 
 def _run(store, rid, wf, status="ok", crit="medium", started=None):
     with store.transaction(immediate=True) as c:
-        c.execute("INSERT INTO runs(id, workflow, criticality, started_at, status) VALUES (?,?,?,?,?)",
-                  (rid, wf, crit, started or time.time(), status))
+        c.execute("INSERT INTO runs(id, workflow, criticality, started_at, status, budget_usd) VALUES (?,?,?,?,?,?)",
+                  (rid, wf, crit, started or time.time(), status, 2.5))
 
 
 def test_workflow_rows_counts_open_drifts_by_level(tmp_path):
@@ -35,7 +35,7 @@ def test_workflow_rows_counts_open_drifts_by_level(tmp_path):
     assert r["last_status"] == "halted"
     assert r["criticality"] == "medium"
     assert r["spend_today_usd"] == 0.0
-    assert r["budget_usd"] is None
+    assert r["budget_usd"] == 2.5
 
 
 def test_budget_rows_show_remaining(tmp_path):
@@ -62,9 +62,10 @@ def test_drift_rows_sorted_by_level(tmp_path):
 
 
 def test_cli_status_empty_db_is_friendly(tmp_path):
-    env = {**os.environ, "PITSTOP_HOME": str(tmp_path)}
+    env = {k: v for k, v in os.environ.items() if k not in ("CRUSOE_API_KEY", "YDC_API_KEY")}
+    env["PITSTOP_HOME"] = str(tmp_path)
     for cmd in ("status", "drifts", "budget"):
-        out = subprocess.run([sys.executable, "-m", "pitstop.cli", cmd], cwd=REPO, env=env,
+        out = subprocess.run([sys.executable, "-m", "pitstop.cli", cmd], cwd=tmp_path, env=env,
                              capture_output=True, text=True)
         assert out.returncode == 0, out.stderr
         assert "No runs yet" in out.stdout

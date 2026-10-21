@@ -35,14 +35,15 @@ def test_dotenv_loaded_from_cwd(tmp_path):
     # run in a subprocess so module-level load_dotenv runs fresh
     (tmp_path / ".env").write_text("PITSTOP_WORKER_MODEL=from-dotenv\n")
     out = subprocess.run([sys.executable, "-c", "from pitstop.config import load_settings; print(load_settings().worker_model)"],
-                         cwd=tmp_path, capture_output=True, text=True, env={k: v for k, v in os.environ.items() if k != "PITSTOP_WORKER_MODEL"})
+                         cwd=tmp_path, capture_output=True, text=True, env={k: v for k, v in os.environ.items() if k not in ("PITSTOP_WORKER_MODEL", "CRUSOE_API_KEY", "YDC_API_KEY")})
     assert out.stdout.strip() == "from-dotenv"
 
 
 def test_wheel_contains_package_data(tmp_path):
     if shutil.which("uv") is None:
         pytest.skip("uv not on PATH; run the suite via `uv run pytest`")
-    subprocess.run(["uv", "build", "--wheel", "--out-dir", str(tmp_path)], check=True, cwd=REPO_ROOT)
+    subprocess.run(["uv", "build", "--wheel", "--out-dir", str(tmp_path)], check=True, cwd=REPO_ROOT,
+                   env={k: v for k, v in os.environ.items() if k not in ("CRUSOE_API_KEY", "YDC_API_KEY")})
     names = zipfile.ZipFile(next(tmp_path.glob("pitstop-*.whl"))).namelist()
     for required in ("pitstop/assets/prompts/supervisor_v0.txt", "pitstop/assets/prompts/worker/planner.txt",
                      "pitstop/assets/scenarios/nvda_amd.json", "pitstop/demo/snapshot.json",

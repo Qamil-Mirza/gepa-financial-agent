@@ -4,7 +4,7 @@ import sqlite3
 
 import pytest
 
-from pitstop.store import Store
+from pitstop.store import SCHEMA_VERSION, Store
 
 TABLES = {"meta", "runs", "events", "drifts", "ledger", "prompts"}
 
@@ -15,7 +15,7 @@ def test_store_creates_db_with_wal_and_schema(tmp_path):
     assert path.exists()
     conn = store.connect()
     assert conn.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
-    assert store.schema_version() == 1
+    assert store.schema_version() == SCHEMA_VERSION
     names = {r["name"] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     assert TABLES <= names
 
@@ -37,7 +37,7 @@ def test_store_is_reopenable_and_idempotent(tmp_path):
     with first.transaction() as conn:
         conn.execute("INSERT INTO meta(key, value) VALUES ('x', '1')")
     second = Store(path)
-    assert second.schema_version() == 1
+    assert second.schema_version() == SCHEMA_VERSION
     assert second.connect().execute("SELECT value FROM meta WHERE key='x'").fetchone()[0] == "1"
 
 
@@ -87,3 +87,24 @@ def test_failing_rollback_does_not_mask_original_error(tmp_path, monkeypatch):
             raise RuntimeError("boom")
     monkeypatch.undo()
     real.execute("ROLLBACK")  # the fake failure left the real transaction open; clean up
+
+
+def test_v1_db_is_migrated_in_place(tmp_path):
+    path = tmp_path / "pitstop.db"
+    conn = sqlite3.connect(path)
+    conn.executescript("""
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
+        CREATE TABLE runs (id TEXT PRIMARY KEY, workflow TEXT, goal TEXT, criticality TEXT, sensitivity TEXT,
+            fix_mode TEXT, started_at REAL, ended_at REAL, status TEXT, model TEXT, base_url TEXT,
+            prompt_versions TEXT, pitstop_version TEXT, adapter TEXT, price_known INTEGER DEFAULT 1);
+        INSERT INTO meta VALUES ('schema_version', '1');
+        INSERT INTO runs(id, workflow) VALUES ('old', 'wf');
+    """)
+    conn.commit()
+    conn.close()
+    for _ in range(2):  # idempotent
+        store = Store(path)
+        assert store.schema_version() == 2
+        cols = {r["name"] for r in store.connect().execute("PRAGMA table_info(runs)")}
+        assert "budget_usd" in cols
+    assert store.connect().execute("SELECT budget_usd FROM runs WHERE id='old'").fetchone()[0] is None

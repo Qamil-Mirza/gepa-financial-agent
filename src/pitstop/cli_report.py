@@ -20,7 +20,7 @@ def workflow_rows(store, now: float) -> list[dict]:
         "SELECT workflow FROM runs WHERE workflow IS NOT NULL GROUP BY workflow ORDER BY MAX(started_at) DESC")]
     rows = []
     for wf in names:
-        latest = conn.execute("SELECT criticality, status FROM runs WHERE workflow=? ORDER BY started_at DESC, rowid DESC"
+        latest = conn.execute("SELECT criticality, status, budget_usd FROM runs WHERE workflow=? ORDER BY started_at DESC, rowid DESC"
                               " LIMIT 1", (wf,)).fetchone()
         runs_today = conn.execute("SELECT COUNT(*) FROM runs WHERE workflow=? AND started_at>=?", (wf, start)).fetchone()[0]
         spend = conn.execute(
@@ -33,7 +33,7 @@ def workflow_rows(store, now: float) -> list[dict]:
         rows.append({"workflow": wf, "criticality": latest["criticality"], "runs_today": runs_today,
                      "open_p0": counts["P0"], "open_p1": counts["P1"], "open_p2": counts["P2"],
                      "open_p3": counts["P3"], "spend_today_usd": float(spend),
-                     "budget_usd": None,  # per-workflow budget_usd is not persisted with the run
+                     "budget_usd": latest["budget_usd"],
                      "last_status": latest["status"]})
     return rows
 
