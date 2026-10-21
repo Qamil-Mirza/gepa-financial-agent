@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -27,3 +28,24 @@ def test_suite_runs_without_keys():
     out = subprocess.run([sys.executable, "-m", "pytest", "-q", "tests/runtime", "tests/correct", "-p", "no:cacheprovider"],
                          cwd=REPO, env=env, capture_output=True, text=True)
     assert out.returncode == 0, out.stdout[-2000:]
+
+
+def test_no_stale_references_in_docs():
+    hits = subprocess.run(["git", "grep", "-nE", r"gepa_financial_agent|pitstop/pitstop|synthetic-data/|policies/versions",
+                           "--", "*.md", ":!docs/history/**", ":!docs/superpowers/**", ":!CHANGELOG.md"],
+                          cwd=REPO, capture_output=True, text=True).stdout
+    assert hits == ""
+
+
+@pytest.mark.parametrize("doc", ["README.md", "CONTRIBUTING.md"])
+def test_relative_links_resolve(doc):
+    text = (REPO / doc).read_text()
+    targets = re.findall(r"\]\(\s*<?([^)\s>]+)>?(?:\s+\"[^\"]*\")?\s*\)", text)
+    missing = []
+    for target in targets:
+        if re.match(r"^[a-z][a-z0-9+.-]*:", target, re.I) or target.startswith("#"):
+            continue
+        path = target.split("#", 1)[0]
+        if not (REPO / doc).parent.joinpath(path).exists():
+            missing.append(target)
+    assert missing == []
