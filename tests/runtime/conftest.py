@@ -1,12 +1,8 @@
 import json
-import sys
-from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-from pitstop.llm import LLMClient, LLMResult  # noqa: E402
+from pitstop.llm import LLMClient, LLMResult
 
 
 class FakeLLM(LLMClient):

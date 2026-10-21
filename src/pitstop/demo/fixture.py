@@ -20,7 +20,7 @@ import httpx
 from rich.console import Console
 
 from ..agents.synthesizer import ReportSynthesizer
-from ..config import ROOT
+from ..config import PROMPTS, SCENARIOS
 from ..llm import LLMClient, LLMResult
 from ..orchestrator import Swarm, SwarmRun
 from ..research.youcom import FinanceResearchClient
@@ -28,9 +28,8 @@ from ..schemas import Scenario
 from ..supervisor.supervisor import Supervisor, load_prompt
 from .pair import LIVE_MAX_CORRECTIONS, Pair
 
-SCENARIO = ROOT / "scenarios" / "nvda_amd.json"
-GEPA_PROMPT = ROOT / "prompts" / "gepa" / "pitstop_nano_800.txt"
-FALLBACK_GEPA_PROMPT = ROOT.parent.parent / "policies" / "versions" / "gepa_nano_150.txt"
+SCENARIO = SCENARIOS / "nvda_amd.json"
+GEPA_PROMPT = PROMPTS / "gepa" / "pitstop_nano_800.txt"
 
 QUERIES = {  # per agent, by step; the NVIDIA agent's drift injection starts at step 2
     "agent_nvda_dc": ["FIXTURE: NVIDIA data center revenue FY2025",
@@ -145,16 +144,16 @@ def fixture_scenario() -> Scenario:
 
 async def make_fixture_run(runs_dir: Path) -> SwarmRun:
     """Write one offline run (with decisions_shadow.jsonl) under runs_dir. No network, no spend."""
-    gepa = GEPA_PROMPT if GEPA_PROMPT.exists() else FALLBACK_GEPA_PROMPT
+    gepa = GEPA_PROMPT
     http = httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(200, json=YOUCOM_RESPONSE)))
     research = FinanceResearchClient(api_key="fixture", cache_dir=Path(runs_dir) / ".fixture-cache",
                                      http_client=http, max_live_calls=50)
     sup = lambda handler, path: Supervisor.from_text(ScriptedLLM(handler, "FIXTURE/scripted-llm"),
                                                      load_prompt(path)[0], version=f"FIXTURE:{path.stem}")
     swarm = Swarm(fixture_scenario(), worker_llm=ScriptedLLM(worker_handler, "FIXTURE/scripted-llm"),
-                  supervisor=sup(primary_handler, ROOT / "prompts" / "supervisor_v0.txt"),
+                  supervisor=sup(primary_handler, PROMPTS / "supervisor_v0.txt"),
                   shadow_supervisor=sup(shadow_handler, gepa), research=research,
-                  prompts_dir=ROOT / "prompts" / "worker", runs_dir=runs_dir, halt_on_drift=False,
+                  prompts_dir=PROMPTS / "worker", runs_dir=runs_dir, halt_on_drift=False,
                   console=Console(file=io.StringIO()), verbose_events=False)
     try:
         return await swarm.run_all()
@@ -174,20 +173,20 @@ def report_handler(system: str, user: str) -> str:
 async def make_fixture_pair(runs_dir: Path) -> Pair:
     """Write one offline pair under runs_dir: left = original prompt, right = "GEPA", both in charge of their
     own swarm (correcting drift) with a team report each. No network, no spend."""
-    gepa = GEPA_PROMPT if GEPA_PROMPT.exists() else FALLBACK_GEPA_PROMPT
+    gepa = GEPA_PROMPT
     http = httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(200, json=YOUCOM_RESPONSE)))
     research = FinanceResearchClient(api_key="fixture", cache_dir=Path(runs_dir) / ".fixture-cache",
                                      http_client=http, max_live_calls=50)
     llm = lambda handler: ScriptedLLM(handler, "FIXTURE/scripted-llm")
-    judges = {"left": (primary_handler, ROOT / "prompts" / "supervisor_v0.txt"), "right": (shadow_handler, gepa)}
+    judges = {"left": (primary_handler, PROMPTS / "supervisor_v0.txt"), "right": (shadow_handler, gepa)}
 
     def side(name: str, pair_dir: Path) -> Swarm:
         handler, path = judges[name]
         return Swarm(fixture_scenario(), worker_llm=llm(worker_handler),
                      supervisor=Supervisor.from_text(llm(handler), load_prompt(path)[0], version=f"FIXTURE:{path.stem}"),
-                     research=research, prompts_dir=ROOT / "prompts" / "worker", runs_dir=pair_dir,
+                     research=research, prompts_dir=PROMPTS / "worker", runs_dir=pair_dir,
                      halt_on_drift=False, correct_on_drift=True, max_corrections=LIVE_MAX_CORRECTIONS,
-                     synthesizer=ReportSynthesizer(llm(report_handler), ROOT / "prompts" / "worker", backoff_s=0.0),
+                     synthesizer=ReportSynthesizer(llm(report_handler), PROMPTS / "worker", backoff_s=0.0),
                      console=Console(file=io.StringIO()), verbose_events=False)
 
     pair = Pair.create(runs_dir, side)

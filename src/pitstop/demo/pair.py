@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
-from ..config import ROOT, Settings
+from ..config import PROMPTS, SCENARIOS, Settings
 from ..schemas import utc_now
 from .views import PAIR_FILE
 
@@ -32,11 +32,10 @@ if TYPE_CHECKING:
     from ..orchestrator import Swarm
     from ..schemas import Scenario
 
-SCENARIO = ROOT / "scenarios" / "nvda_amd.json"
+SCENARIO = SCENARIOS / "nvda_amd.json"
 NANO = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B"
-PROMPT_A = ROOT / "prompts" / "supervisor_v0.txt"
-PROMPT_B = ROOT / "prompts" / "gepa" / "pitstop_nano_800.txt"
-PROMPT_B_FALLBACK = ROOT.parent.parent / "policies" / "versions" / "gepa_nano_150.txt"
+PROMPT_A = PROMPTS / "supervisor_v0.txt"
+PROMPT_B = PROMPTS / "gepa" / "pitstop_nano_800.txt"
 LIVE_MAX_RETRIES = 6
 LIVE_MAX_CORRECTIONS = 2
 MAX_OBJECTIVE_CHARS = 600
@@ -108,7 +107,7 @@ def build_pair(objective: str, runs_dir: Path, settings: Settings,
             planner = LLMClient(settings.report_model, api_key=settings.crusoe_api_key,
                                 base_url=settings.crusoe_base_url, temperature=0.2, max_tokens=4000,
                                 timeout=PLAN_TIMEOUT_S, max_retries=2)
-            plan = lambda o: asyncio.run(plan_team(o, planner, ROOT / "prompts" / "worker"))
+            plan = lambda o: asyncio.run(plan_team(o, planner, PROMPTS / "worker"))
         scenario = plan(objective)
     # More retries than the CLI default: on stage a 429 should cost a few seconds, not a failed check.
     llm = lambda model, t, **kw: LLMClient(model, api_key=settings.crusoe_api_key, base_url=settings.crusoe_base_url,
@@ -116,16 +115,16 @@ def build_pair(objective: str, runs_dir: Path, settings: Settings,
     research = FinanceResearchClient(  # one call per step per swarm at most: never let the cap cut a side short
         api_key=settings.ydc_api_key, cache_dir=settings.cache_dir, mode="live", effort=settings.youcom_effort,
         max_live_calls=max(settings.max_research_calls, 2 * sum(a.max_steps for a in scenario.agents)))
-    prompts = {"left": PROMPT_A, "right": PROMPT_B if PROMPT_B.exists() else PROMPT_B_FALLBACK}
+    prompts = {"left": PROMPT_A, "right": PROMPT_B}
 
     def side(name: str, pair_dir: Path) -> Swarm:
         # Worker at temperature 0, so both sides start identically and a rehearsal warms the You.com cache.
         return Swarm(scenario, worker_llm=llm(settings.worker_model, 0.0),
                      supervisor=Supervisor(llm(NANO, 0.0), prompts[name]), research=research,
-                     prompts_dir=ROOT / "prompts" / "worker", runs_dir=pair_dir,
+                     prompts_dir=PROMPTS / "worker", runs_dir=pair_dir,
                      halt_on_drift=False, correct_on_drift=True, max_corrections=LIVE_MAX_CORRECTIONS,
                      synthesizer=ReportSynthesizer(llm(settings.report_model, 0.2, max_tokens=4000),
-                                                   ROOT / "prompts" / "worker"),
+                                                   PROMPTS / "worker"),
                      console=Console(quiet=True), verbose_events=False)
 
     return Pair.create(runs_dir, side)

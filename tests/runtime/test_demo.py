@@ -2,12 +2,13 @@
 import json
 import threading
 import time
+from pathlib import Path
 
 import httpx
 import pytest
 from rich.console import Console
 
-from pitstop.config import ROOT, Settings
+from pitstop.config import PROMPTS, Settings
 from pitstop.demo import views
 from pitstop.demo.export import build_snapshot, parse_arm
 from pitstop.demo.pair import Pair, build_pair
@@ -20,7 +21,8 @@ from pitstop.supervisor.supervisor import Supervisor
 
 from test_pipeline_offline import SCENARIO, supervisor_handler, worker_handler
 
-REAL_GEPA_RUN = ROOT.parent.parent / "runs" / "gepa" / "pitstop_nano_800"
+REAL_GEPA_RUN = Path(__file__).resolve().parents[2] / "runs" / "gepa" / "pitstop_nano_800"
+BASELINE_NANO = Path(__file__).resolve().parents[2] / "pitstop" / "pitstop" / "evals" / "results" / "baseline_v0_nano.json"
 
 
 def shadow_handler(system, user):
@@ -37,12 +39,12 @@ def _swarm(tmp_path, FakeLLMClass, fixture_response, *, shadow=True, halt=True, 
     http = httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(200, json=fixture_response)))
     research = research or FinanceResearchClient(api_key="k", cache_dir=tmp_path / "cache", http_client=http,
                                                  max_live_calls=10)
-    prompt = ROOT / "prompts" / "supervisor_v0.txt"
+    prompt = PROMPTS / "supervisor_v0.txt"
     return Swarm(
         Scenario.model_validate(scenario), worker_llm=FakeLLMClass(worker_handler),
         supervisor=Supervisor(FakeLLMClass(sup_handler), prompt),
         shadow_supervisor=Supervisor(FakeLLMClass(shadow_handler, model="fake-shadow"), prompt) if shadow else None,
-        research=research, prompts_dir=ROOT / "prompts" / "worker", runs_dir=runs_dir or tmp_path / "runs",
+        research=research, prompts_dir=PROMPTS / "worker", runs_dir=runs_dir or tmp_path / "runs",
         halt_on_drift=halt, console=Console(file=open(tmp_path / "out.txt", "a")),
     )
 
@@ -210,7 +212,7 @@ def test_scores_view_real_pending_and_newest_glob(tmp_path):
             "by_split": {"test": {"n": 4, "accuracy": acc, "drift_recall": 0.5, "fp": 1}}}}))
     (tmp_path / "eval-p-20260103-000000").mkdir()  # in progress: no summary.json yet
     v = views.build_scores_view([
-        ("nano", "Nano", "original prompt", "evals/results/baseline_v0_nano.json"),
+        ("nano", "Nano", "original prompt", str(BASELINE_NANO)),
         ("glob", "G", "g", str(tmp_path / "eval-p-*")),
         ("later", "L", "l", ["runs/nope/eval-x-*", str(tmp_path / "missing.json")]),
     ])

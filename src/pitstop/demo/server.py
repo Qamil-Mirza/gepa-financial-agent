@@ -25,13 +25,13 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 from urllib.parse import unquote, urlparse
 
-from ..config import ROOT, load_settings
+from ..config import SNAPSHOT, load_settings
 from ..timeline import agent_label
 from .pair import LiveError, Pair, build_pair
 from .views import PAIR_FILE, build_pair_view
 
 STATIC = Path(__file__).parent / "static"
-DEFAULT_SNAPSHOT = ROOT / "demo" / "snapshot.json"
+DEFAULT_SNAPSHOT = SNAPSHOT
 MAX_BODY_BYTES = 64 * 1024
 _RUN_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _SAFE_FILE = re.compile(r"^[A-Za-z0-9._-]+$")

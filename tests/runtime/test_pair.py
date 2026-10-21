@@ -8,7 +8,7 @@ import pytest
 from rich.console import Console
 
 from pitstop.agents.synthesizer import ReportSynthesizer
-from pitstop.config import ROOT
+from pitstop.config import PROMPTS
 from pitstop.demo import views
 from pitstop.demo.export import build_snapshot, main as export_main
 from pitstop.demo.pair import Pair
@@ -44,12 +44,12 @@ def _pair(tmp_path, FakeLLMClass, fixture_response, *, judges, reports=("left", 
     research = FinanceResearchClient(api_key="k", cache_dir=tmp_path / "cache", http_client=http, max_live_calls=40)
 
     def side(name, d):
-        synth = ReportSynthesizer(FakeLLMClass(report_handler), ROOT / "prompts" / "worker", backoff_s=0.0) \
+        synth = ReportSynthesizer(FakeLLMClass(report_handler), PROMPTS / "worker", backoff_s=0.0) \
             if name in reports else None
         return Swarm(Scenario.model_validate(SCENARIO), worker_llm=FakeLLMClass(make_worker(True)),
                      supervisor=Supervisor(FakeLLMClass(judges[name], model=f"fake-{name}"),
-                                           ROOT / "prompts" / "supervisor_v0.txt"),
-                     research=research, prompts_dir=ROOT / "prompts" / "worker", runs_dir=d, halt_on_drift=False,
+                                           PROMPTS / "supervisor_v0.txt"),
+                     research=research, prompts_dir=PROMPTS / "worker", runs_dir=d, halt_on_drift=False,
                      correct_on_drift=True, max_corrections=2, synthesizer=synth, console=Console(file=io.StringIO()))
 
     return Pair.create(tmp_path / "runs", side), calls
@@ -155,7 +155,7 @@ async def test_pair_view_mid_run(tmp_path, FakeLLMClass, fixture_response):
 async def test_team_report_failure_is_shown_with_its_error(tmp_path, FakeLLMClass, fixture_response):
     pair, _ = _pair(tmp_path, FakeLLMClass, fixture_response,
                     judges={"left": supervisor_handler, "right": supervisor_handler}, reports=("left",))
-    pair.left.synthesizer = ReportSynthesizer(FakeLLMClass(lambda s, u: "not json"), ROOT / "prompts" / "worker",
+    pair.left.synthesizer = ReportSynthesizer(FakeLLMClass(lambda s, u: "not json"), PROMPTS / "worker",
                                               attempts=1)
     await pair.run_all()
     tr = views.build_pair_view(pair.pair_dir)["team_report"]["a"]

@@ -7,7 +7,7 @@ from pitstop.schemas import EventType, Status, DriftType
 from pitstop.supervisor.policy import AlertPolicy
 from pitstop.supervisor.signals import compute_signals
 from pitstop.supervisor.supervisor import Supervisor, parse_and_validate, render_user_message
-from tests.test_schemas import make_input
+from test_schemas import make_input
 
 
 @pytest.fixture

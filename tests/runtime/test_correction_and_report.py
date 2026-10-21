@@ -7,7 +7,7 @@ import pytest
 from rich.console import Console
 
 from pitstop.agents.synthesizer import ReportSynthesizer, unverified_figures
-from pitstop.config import ROOT
+from pitstop.config import PROMPTS
 from pitstop.orchestrator import Swarm
 from pitstop.research.youcom import FinanceResearchClient
 from pitstop.schemas import AgentSpec, DriftType, ProposedAction, Scenario, Status, SupervisorDecision
@@ -64,8 +64,8 @@ def _swarm(tmp_path, FakeLLMClass, fixture_response, *, obeys=True, **kw):
     http = httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(200, json=fixture_response)))
     research = FinanceResearchClient(api_key="k", cache_dir=tmp_path / "cache", http_client=http, max_live_calls=20)
     return Swarm(Scenario.model_validate(SCENARIO), worker_llm=FakeLLMClass(make_worker(obeys)),
-                 supervisor=Supervisor(FakeLLMClass(supervisor_handler), ROOT / "prompts" / "supervisor_v0.txt"),
-                 research=research, prompts_dir=ROOT / "prompts" / "worker", runs_dir=tmp_path / "runs",
+                 supervisor=Supervisor(FakeLLMClass(supervisor_handler), PROMPTS / "supervisor_v0.txt"),
+                 research=research, prompts_dir=PROMPTS / "worker", runs_dir=tmp_path / "runs",
                  console=Console(file=open(tmp_path / "out.txt", "w")), **kw)
 
 
@@ -114,7 +114,7 @@ async def test_stubborn_agent_gets_max_corrections_then_halts(tmp_path, FakeLLMC
 @pytest.mark.asyncio
 async def test_report_agent_excludes_flagged_findings_and_verifies_citations(tmp_path, FakeLLMClass, fixture_response):
     # observational mode: the drifting query runs, so its findings exist and must be excluded from the report
-    synth = ReportSynthesizer(FakeLLMClass(report_handler), ROOT / "prompts" / "worker")
+    synth = ReportSynthesizer(FakeLLMClass(report_handler), PROMPTS / "worker")
     run = await _swarm(tmp_path, FakeLLMClass, fixture_response, synthesizer=synth).run_all()
     rep = json.loads((run.run_dir / "report.json").read_text())
     excluded = {f["event_id"]: f["reason"] for f in rep["excluded"]}
@@ -135,7 +135,7 @@ async def test_report_agent_excludes_flagged_findings_and_verifies_citations(tmp
 
 @pytest.mark.asyncio
 async def test_report_agent_failure_is_recorded_not_raised(tmp_path, FakeLLMClass, fixture_response):
-    synth = ReportSynthesizer(FakeLLMClass(lambda s, u: "not json"), ROOT / "prompts" / "worker", backoff_s=0.0)
+    synth = ReportSynthesizer(FakeLLMClass(lambda s, u: "not json"), PROMPTS / "worker", backoff_s=0.0)
     run = await _swarm(tmp_path, FakeLLMClass, fixture_response, synthesizer=synth).run_all()
     assert run.report["error"] and (run.run_dir / "report.md").exists()
 
@@ -167,7 +167,7 @@ async def test_uncited_report_is_rewritten_once(tmp_path, FakeLLMClass, fixture_
             return json.dumps({"title": "T", "report_markdown": "Revenue was $10B.", "gaps": ""})
         return report_handler(system, user)
 
-    synth = ReportSynthesizer(FakeLLMClass(lazy_then_cited), ROOT / "prompts" / "worker", backoff_s=0.0)
+    synth = ReportSynthesizer(FakeLLMClass(lazy_then_cited), PROMPTS / "worker", backoff_s=0.0)
     run = await _swarm(tmp_path, FakeLLMClass, fixture_response, synthesizer=synth).run_all()
     assert replies == [False, True] and run.report["cited_finding_ids"]
 
@@ -182,6 +182,6 @@ async def test_report_agent_retries_after_a_rate_limit(tmp_path, FakeLLMClass, f
             raise RuntimeError("429 Too many requests")
         return report_handler(system, user)
 
-    synth = ReportSynthesizer(FakeLLMClass(flaky), ROOT / "prompts" / "worker", backoff_s=0.0)
+    synth = ReportSynthesizer(FakeLLMClass(flaky), PROMPTS / "worker", backoff_s=0.0)
     run = await _swarm(tmp_path, FakeLLMClass, fixture_response, synthesizer=synth).run_all()
     assert run.report["error"] is None and len(calls) == 2 and run.report["cited_finding_ids"]

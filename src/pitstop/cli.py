@@ -1,12 +1,14 @@
-"""Command line entry points.
+"""Command line entry points (installed as the `pitstop` console script).
 
-  python -m pitstop.cli check                     # verify Crusoe inference (and optionally You.com)
-  python -m pitstop.cli run --scenario scenarios/nvda_amd.json [--correct-on-drift] [--no-report]
-  python -m pitstop.cli run --model <crusoe id> --shadow-prompt prompts/gepa/<name>.txt   # 2 supervisors, same inputs
-  python -m pitstop.cli compare --run-dir runs/<id> --prompt-a prompts/supervisor_v0.txt --prompt-b prompts/<new>.txt
-  python -m pitstop.cli timeline --run-dir runs/<id>   # rebuild + print the curated drift timeline
-  python -m pitstop.cli serve --port 8765               # timeline API + live SSE stream for the UI
-  python -m pitstop.cli demo --port 8770                # GEPA demo page (pitstop/demo/)
+  pitstop check                     # verify Crusoe inference (and optionally You.com)
+  pitstop run [--scenario PATH] [--correct-on-drift] [--no-report]   # default: the packaged nvda_amd scenario
+  pitstop run --model <crusoe id> --shadow-prompt <prompt.txt>     # 2 supervisors, same inputs
+  pitstop compare --run-dir <runs_dir>/<id> --prompt-b <prompt.txt>  # prompt A defaults to supervisor_v0
+  pitstop timeline --run-dir <runs_dir>/<id>   # rebuild + print the curated drift timeline
+  pitstop serve --port 8765               # timeline API + live SSE stream for the UI
+  pitstop demo --port 8770                # GEPA demo page (pitstop.demo)
+
+Runs and the You.com cache live under $PITSTOP_HOME (default ~/.pitstop); see pitstop.config.
 """
 from __future__ import annotations
 
@@ -20,7 +22,7 @@ from rich.console import Console
 from rich.markup import escape
 from rich.table import Table
 
-from .config import ROOT, load_settings
+from .config import PROMPTS, SCENARIOS, load_settings
 from .llm import LLMClient, UsageTracker
 from .agents.synthesizer import ReportSynthesizer
 from .research.youcom import FinanceResearchClient
@@ -73,9 +75,9 @@ async def cmd_run(args) -> None:
     )
     synthesizer = None if args.no_report else ReportSynthesizer(
         LLMClient(s.report_model, api_key=s.crusoe_api_key, base_url=s.crusoe_base_url, temperature=0.2,
-                  max_tokens=4000, usage=UsageTracker()), ROOT / "prompts" / "worker")
+                  max_tokens=4000, usage=UsageTracker()), PROMPTS / "worker")
     swarm = Swarm(scenario, worker_llm=worker_llm, supervisor=Supervisor(sup_llm, Path(args.prompt)),
-                  research=research, prompts_dir=ROOT / "prompts" / "worker", runs_dir=s.runs_dir,
+                  research=research, prompts_dir=PROMPTS / "worker", runs_dir=s.runs_dir,
                   halt_on_drift=args.halt_on_drift, correct_on_drift=args.correct_on_drift,
                   max_corrections=args.max_corrections, synthesizer=synthesizer, shadow_supervisor=shadow)
     await swarm.run_all()
@@ -149,8 +151,8 @@ def main() -> None:
     sub = p.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("check"); c.add_argument("--youcom", action="store_true", help="also make one paid You.com call")
     r = sub.add_parser("run")
-    r.add_argument("--scenario", default=str(ROOT / "scenarios" / "nvda_amd.json"))
-    r.add_argument("--prompt", default=str(ROOT / "prompts" / "supervisor_v0.txt"))
+    r.add_argument("--scenario", default=str(SCENARIOS / "nvda_amd.json"))
+    r.add_argument("--prompt", default=str(PROMPTS / "supervisor_v0.txt"))
     r.add_argument("--model", help="supervisor model (default: PITSTOP_SUPERVISOR_MODEL)")
     r.add_argument("--shadow-prompt", help="also judge every input with this prompt (same model); "
                                           "logged to decisions_shadow.jsonl, never halts")
@@ -165,7 +167,7 @@ def main() -> None:
     r.add_argument("--no-report", action="store_true", help="skip the final report agent")
     m = sub.add_parser("compare")
     m.add_argument("--run-dir", required=True); m.add_argument("--agent")
-    m.add_argument("--prompt-a", default=str(ROOT / "prompts" / "supervisor_v0.txt"))
+    m.add_argument("--prompt-a", default=str(PROMPTS / "supervisor_v0.txt"))
     m.add_argument("--prompt-b", required=True)
     t = sub.add_parser("timeline")
     t.add_argument("--run-dir", required=True)

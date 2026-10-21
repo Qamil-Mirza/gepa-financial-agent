@@ -6,13 +6,22 @@ from dataclasses import dataclass
 from pathlib import Path
 
 try:  # optional convenience
-    from dotenv import load_dotenv
+    from dotenv import find_dotenv, load_dotenv
 
-    load_dotenv()
+    load_dotenv(find_dotenv(usecwd=True))
 except ImportError:  # pragma: no cover
     pass
 
-ROOT = Path(__file__).resolve().parent.parent
+PACKAGE_DIR = Path(__file__).resolve().parent
+ASSETS = PACKAGE_DIR / "assets"
+PROMPTS = ASSETS / "prompts"
+SCENARIOS = ASSETS / "scenarios"
+SNAPSHOT = PACKAGE_DIR / "demo" / "snapshot.json"
+
+
+def pitstop_home() -> Path:
+    """User-writable state (runs, research cache). Override with PITSTOP_HOME."""
+    return Path(os.getenv("PITSTOP_HOME", "~/.pitstop")).expanduser()
 
 
 @dataclass(frozen=True)
@@ -39,6 +48,6 @@ def load_settings() -> Settings:
         ydc_api_key=os.getenv("YDC_API_KEY"),
         youcom_effort=os.getenv("PITSTOP_YOUCOM_EFFORT", "deep"),
         max_research_calls=int(os.getenv("PITSTOP_MAX_RESEARCH_CALLS", "12")),
-        cache_dir=Path(os.getenv("PITSTOP_CACHE_DIR", str(ROOT / "cache" / "youcom"))),
-        runs_dir=Path(os.getenv("PITSTOP_RUNS_DIR", str(ROOT / "runs"))),
+        cache_dir=Path(os.getenv("PITSTOP_CACHE_DIR", str(pitstop_home() / "cache" / "youcom"))),
+        runs_dir=Path(os.getenv("PITSTOP_RUNS_DIR", str(pitstop_home() / "runs"))),
     )

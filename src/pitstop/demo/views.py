@@ -19,11 +19,9 @@ import re
 from pathlib import Path
 from typing import Any, Optional, Sequence, Union
 
-from ..config import ROOT
 from ..timeline import TimelineBuilder, TimelineKind, agent_label
 from ..ui.server import read_jsonl_complete
 
-REPO = ROOT.parent.parent
 SUMMARY_CHARS = 200
 EXPLANATION_CHARS = 600
 REPORT_CHARS = 12_000
@@ -43,12 +41,14 @@ def _trunc(text: Optional[str], n: int) -> str:
     return text if len(text) <= n else text[:n - 1] + "…"
 
 
-def _rel(path: Path) -> str:
-    """Repo-relative when possible, so a committed snapshot carries no home-directory paths."""
+def _display_path(path: Path) -> str:
+    """Relative to the current directory when possible (so a snapshot exported from the repo root carries no
+    home-directory paths), the absolute path otherwise."""
+    p = Path(path).resolve()
     try:
-        return str(Path(path).resolve().relative_to(REPO))
+        return str(p.relative_to(Path.cwd()))
     except ValueError:
-        return str(path)
+        return str(p)
 
 
 # ---------------- screen 2: swarm ----------------
@@ -387,9 +387,9 @@ def build_gepa_view(gepa_run_dir: Path) -> dict:
 
 def _resolve_summary(path: Union[PathLike, Sequence[PathLike]]) -> Optional[tuple[Path, dict]]:
     """First match among `path` (or its fallbacks): an eval output dir, a glob of them (newest wins),
-    or a summary JSON file. Relative paths are relative to the PitStop root."""
+    or a summary JSON file. Relative paths are relative to the current directory."""
     for cand in [path] if isinstance(path, (str, Path)) else list(path):
-        p = Path(cand) if Path(cand).is_absolute() else ROOT / cand
+        p = Path(cand)
         hits = sorted(glob.glob(str(p)), reverse=True) if any(c in str(p) for c in "*?[") else [str(p)]
         for h in hits:
             f = Path(h) / "summary.json" if Path(h).is_dir() else Path(h)
@@ -416,5 +416,5 @@ def build_scores_view(arms: list[tuple[str, str, str, Union[PathLike, Sequence[P
         out.append({"key": key, "label": label, "sublabel": sublabel, "model": s.get("model", ""),
                     "prompt": s.get("prompt", ""), "accuracy": m.get("accuracy"),
                     "drift_recall": m.get("drift_recall"), "false_alarms": m.get("fp"), "n": m.get("n"),
-                    "trials": s.get("trials"), "split": split, "source": _rel(f)})
+                    "trials": s.get("trials"), "split": split, "source": _display_path(f)})
     return {"split": "test", "metric": "accuracy", "arms": out}

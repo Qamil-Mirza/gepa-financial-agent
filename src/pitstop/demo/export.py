@@ -4,10 +4,10 @@
   python -m pitstop.demo.export --fixture-pair                  # offline FIXTURE pair (live-mode layout)
   python -m pitstop.demo.export --swarm-run runs/<run_id>       # a real recording (cli run --shadow-prompt)
   python -m pitstop.demo.export --swarm-run runs/pair-<hex>     # a recorded live pair (dir with pair.json)
-      [--gepa-run ../../runs/gepa/pitstop_nano_800] [--arm key=label|sublabel|path[,fallback...]]... [--out PATH]
+      [--gepa-run runs/gepa/pitstop_nano_800] [--arm key=label|sublabel|path[,fallback...]]... [--out PATH]
 
 An arm's path is an evals/run_hard_cases.py output dir, a glob of them (newest wins) or a summary JSON;
-relative paths are relative to the PitStop root. Comma-separated paths are tried in order.
+relative paths are relative to the current directory. Comma-separated paths are tried in order.
 """
 from __future__ import annotations
 
@@ -19,12 +19,12 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-from ..config import ROOT
+from ..config import SNAPSHOT
 from ..schemas import utc_now
-from .views import PAIR_FILE, REPO, build_gepa_view, build_pair_view, build_scores_view, build_swarm_view
+from .views import PAIR_FILE, build_gepa_view, build_pair_view, build_scores_view, build_swarm_view
 
-DEFAULT_OUT = ROOT / "demo" / "snapshot.json"
-DEFAULT_GEPA_RUN = REPO / "runs" / "gepa" / "pitstop_nano_800"
+DEFAULT_OUT = SNAPSHOT
+DEFAULT_GEPA_RUN = Path("runs") / "gepa" / "pitstop_nano_800"  # relative to the current directory
 # No fallback to evals/results/baseline_v0_*.json: those were scored on an earlier, smaller test split, so a bar
 # built from them would not be comparable. An arm stays "pending" until its compare_* run exists.
 DEFAULT_ARMS = [

@@ -1,10 +1,10 @@
 """Live-mode teams for any objective (demo/team.py). Scripted LLMs; no network."""
 import json
 
-from pitstop.config import ROOT
+from pitstop.config import PROMPTS
 from pitstop.demo.team import CITE, DRIFT_AT_STEP, MAX_STEPS, ROUTINE, generic_team, plan_team
 
-PROMPTS = ROOT / "prompts" / "worker"
+WORKER_PROMPTS = PROMPTS / "worker"
 GOAL = "Compare Apple and Microsoft's cloud and services revenue growth since 2024."
 PLAN = {"agents": [
     {"agent_id": "agent_msft_cloud", "label": "MSFT Cloud", "directive": "Investigate Microsoft's Intelligent Cloud.",
@@ -31,7 +31,7 @@ def _check_shape(sc, goal):
 
 async def test_plan_team_uses_the_model_plan(FakeLLMClass):
     llm = FakeLLMClass(lambda s, u: json.dumps(PLAN))
-    sc = await plan_team(GOAL, llm, PROMPTS)
+    sc = await plan_team(GOAL, llm, WORKER_PROMPTS)
     _check_shape(sc, GOAL)
     assert GOAL in llm.calls[0][1] and "off_topic" in llm.calls[0][0]
     assert [a.agent_id for a in sc.agents] == ["agent_msft_cloud", "agent_apple_services", "agent_msft_cloud_2"]
@@ -49,7 +49,7 @@ async def test_plan_team_falls_back_on_bad_plans(FakeLLMClass):
 
     for handler in (lambda s, u: "not json", lambda s, u: json.dumps({"agents": PLAN["agents"][:2], "off_topic": "x"}),
                     lambda s, u: json.dumps({**PLAN, "off_topic": ""}), broken):
-        sc = await plan_team(GOAL, FakeLLMClass(handler), PROMPTS)
+        sc = await plan_team(GOAL, FakeLLMClass(handler), WORKER_PROMPTS)
         assert sc == generic_team(GOAL)
 
 

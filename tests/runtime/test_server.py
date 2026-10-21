@@ -8,7 +8,7 @@ import pytest
 from rich.console import Console
 
 from pitstop import server as server_mod
-from pitstop.config import ROOT
+from pitstop.config import PROMPTS
 from pitstop.orchestrator import Swarm
 from pitstop.research.youcom import FinanceResearchClient
 from pitstop.schemas import Scenario
@@ -25,8 +25,8 @@ async def finished_run(tmp_path, FakeLLMClass, fixture_response):
     research = FinanceResearchClient(api_key="k", cache_dir=tmp_path / "cache", http_client=http, max_live_calls=10)
     swarm = Swarm(
         Scenario.model_validate(SCENARIO), worker_llm=FakeLLMClass(worker_handler),
-        supervisor=Supervisor(FakeLLMClass(supervisor_handler), ROOT / "prompts" / "supervisor_v0.txt"),
-        research=research, prompts_dir=ROOT / "prompts" / "worker", runs_dir=tmp_path / "runs",
+        supervisor=Supervisor(FakeLLMClass(supervisor_handler), PROMPTS / "supervisor_v0.txt"),
+        research=research, prompts_dir=PROMPTS / "worker", runs_dir=tmp_path / "runs",
         halt_on_drift=True, console=Console(file=open(tmp_path / "out.txt", "w")),
     )
     return await swarm.run_all()
