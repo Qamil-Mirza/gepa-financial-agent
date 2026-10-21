@@ -1,5 +1,6 @@
-"""Workflow and agent scopes. The current run lives in a ContextVar, so it is isolated per thread and
-per asyncio task."""
+"""Workflow and agent scopes. The current run and the current agent each live in a ContextVar, so they are
+isolated per thread and per asyncio task: parallel sub-agents started with asyncio.gather inside one workflow
+share the RunContext but each sees its own agent name and goal."""
 from __future__ import annotations
 
 import functools
@@ -7,7 +8,7 @@ import inspect
 import logging
 import time
 import uuid
-from contextvars import ContextVar
+from contextvars import ContextVar, Token
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal, TypeVar
 
@@ -41,16 +42,28 @@ class WorkflowSpec:
 class RunContext:
     run_id: str
     spec: WorkflowSpec
-    agent: str | None = None
-    agent_goal: str | None = None
     steers: int = 0
     halt_reason: str | None = None
     halt_drift_id: int | None = None
     tool_history: list = field(default_factory=list)
     llm_history: list = field(default_factory=list)
+    llm_calls: int = 0
+
+    @property
+    def agent(self) -> str | None:
+        """The agent name set by the innermost `agent()` scope of the calling task, for this run."""
+        cur = _agent_var.get()
+        return cur[1] if cur is not None and cur[0] == self.run_id else None
+
+    @property
+    def agent_goal(self) -> str | None:
+        cur = _agent_var.get()
+        return cur[2] if cur is not None and cur[0] == self.run_id else None
 
 
 _current: ContextVar[RunContext | None] = ContextVar("pitstop_run", default=None)
+# (run_id, agent name, agent goal) of the innermost agent() scope in the calling task.
+_agent_var: ContextVar[tuple[str, str, str | None] | None] = ContextVar("pitstop_agent", default=None)
 
 
 def current_run() -> RunContext | None:
@@ -151,7 +164,7 @@ class _Agent(_Scope):
 
     def __init__(self, name: str, goal: str | None):
         self.name, self.goal = name, goal
-        self._stack: list[tuple[RunContext | None, str | None, str | None]] = []
+        self._stack: list[Token | None] = []
 
     def _fresh(self) -> _Agent:
         return _Agent(self.name, self.goal)
@@ -162,16 +175,15 @@ class _Agent(_Scope):
             if not _Agent._warned:
                 _Agent._warned = True
                 log.info("pitstop.agent used outside a workflow; ignored")
-            self._stack.append((None, None, None))
+            self._stack.append(None)
             return None
-        self._stack.append((ctx, ctx.agent, ctx.agent_goal))
-        ctx.agent, ctx.agent_goal = self.name, self.goal
+        self._stack.append(_agent_var.set((ctx.run_id, self.name, self.goal)))
         return ctx
 
     def __exit__(self, et, ev, tb):
-        ctx, prev, prev_goal = self._stack.pop()
-        if ctx is not None:
-            ctx.agent, ctx.agent_goal = prev, prev_goal
+        token = self._stack.pop()
+        if token is not None:
+            _agent_var.reset(token)
         return False
 
 

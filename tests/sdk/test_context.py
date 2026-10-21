@@ -157,3 +157,28 @@ def test_init_idempotent_per_home(tmp_path):
     a = pitstop.init(home=tmp_path)
     assert pitstop.init(home=tmp_path) is a
     assert get_runtime() is a
+
+
+def test_parallel_agents_in_one_workflow_are_isolated(tmp_path):
+    pitstop.init(home=tmp_path)
+
+    async def worker(name, goal, delay):
+        with agent(name, goal=goal):
+            ctx = current_run()
+            seen = [(ctx.agent, ctx.agent_goal)]
+            await asyncio.sleep(delay)
+            seen.append((ctx.agent, ctx.agent_goal))
+            await asyncio.sleep(0)
+            seen.append((ctx.agent, ctx.agent_goal))
+            return seen
+
+    async def main():
+        async with workflow("w"):
+            ctx = current_run()
+            a, b = await asyncio.gather(worker("a", "ga", 0.01), worker("b", "gb", 0.03))
+            return a, b, (ctx.agent, ctx.agent_goal)
+
+    a, b, after = asyncio.run(main())
+    assert a == [("a", "ga")] * 3
+    assert b == [("b", "gb")] * 3
+    assert after == (None, None)
