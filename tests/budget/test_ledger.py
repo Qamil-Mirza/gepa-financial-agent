@@ -208,3 +208,53 @@ def test_concurrent_reservations_never_exceed_limit(tmp_path):
     assert len(granted) == 50  # the limit is used exactly, never overshot
     assert len(exceeded) == 160 - 50
     assert len(exceeded) >= 1
+
+
+def test_normalize_base_url():
+    from pitstop.store.urls import normalize_base_url
+
+    assert normalize_base_url(None) is None
+    assert normalize_base_url("https://x.example/v1/") == "https://x.example/v1"
+    assert normalize_base_url("https://x.example/v1//") == "https://x.example/v1"
+    assert normalize_base_url("https://x.example/v1") == "https://x.example/v1"
+
+
+def test_runs_and_ledger_store_same_base_url(tmp_path):
+    import pitstop
+    from pitstop.sdk.context import workflow
+    from tests.sdk.fakes import FakeOpenAI, make_response
+
+    (tmp_path / "config.toml").write_text("")
+    rt = pitstop.init(home=tmp_path)
+    w = pitstop.wrap(FakeOpenAI([make_response("hi")], base_url="https://fake.example/v1/"))
+    with workflow("wf"):
+        w.chat.completions.create(model=MODEL, messages=[{"role": "user", "content": "hi"}])
+    conn = rt.store.connect()
+    [run_url] = [r[0] for r in conn.execute("SELECT base_url FROM runs")]
+    [ledger_url] = [r[0] for r in conn.execute("SELECT base_url FROM ledger")]
+    assert run_url == ledger_url == "https://fake.example/v1"
+
+
+def test_stale_reservations_listed_and_released(tmp_path):
+    clock = [1_000_000.0]
+    ledger = _ledger(tmp_path, BudgetSpec("crusoe", 10.0, "total", CRUSOE), now=lambda: clock[0])
+    old = _reserve(ledger, 1.0, workflow="wf", run_id="r-old")
+    settled_old = _reserve(ledger, 0.5)
+    ledger.settle(settled_old, prompt_tokens=500_000, completion_tokens=0)
+    clock[0] += 2 * 3600
+    fresh = _reserve(ledger, 0.25)
+    assert ledger.spent("global:crusoe") == pytest.approx(1.75)
+
+    stale = ledger.stale_reservations(3600)
+    assert stale == [{"id": old.id, "ts": 1_000_000.0, "run_id": "r-old", "workflow": "wf", "meter": "agent",
+                      "model": MODEL, "usd": pytest.approx(1.0)}]
+    assert ledger.stale_reservations(3 * 3600) == []  # nothing that old
+
+    assert ledger.release_stale(3600) == 1
+    assert _states(ledger) == ["released", "settled", "reserved"]
+    assert ledger.spent("global:crusoe") == pytest.approx(0.75)
+    assert ledger.stale_reservations(3600) == []
+    assert ledger.release_stale(3600) == 0
+    # the fresh reservation is untouched and still settles normally
+    ledger.settle(fresh, prompt_tokens=250_000, completion_tokens=0)
+    assert _states(ledger) == ["released", "settled", "settled"]

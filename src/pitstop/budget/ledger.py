@@ -4,7 +4,8 @@ Every model call first *reserves* its worst-case cost (estimated prompt tokens +
 The check against every applicable budget and the insert of the `reserved` row happen in one
 `BEGIN IMMEDIATE` transaction, so concurrent threads and processes sharing the DB file can never
 jointly reserve past a limit. After the call, `settle` replaces the estimate with the actual cost;
-on failure `release` frees it.
+on failure `release` frees it. A reservation left `reserved` by a process that died mid-call keeps counting
+until `release_stale` (`pitstop budget reconcile --release`) frees it.
 
 Scopes are derived at query time (the ledger table has no scope column):
   global:<budget>   rows whose base_url matches the BudgetSpec's (all rows if it has none), every meter
@@ -21,6 +22,7 @@ from zoneinfo import ZoneInfo
 
 from ..sdk.errors import BudgetExceeded
 from ..store import Store
+from ..store.urls import normalize_base_url
 from ..userconfig import BudgetSpec, UserConfig
 from .prices import Price, cost_usd, price_for
 
@@ -38,10 +40,6 @@ class Reservation:
     base_url: str | None
     price: Price
     price_known: bool
-
-
-def _norm(base_url: str | None) -> str | None:
-    return base_url.rstrip("/") if base_url is not None else None
 
 
 class Ledger:
@@ -64,10 +62,10 @@ class Ledger:
                 meter: str = "agent") -> Reservation:
         price, known = price_for(model, self.config.prices)
         usd = cost_usd(price, est_prompt_tokens, max_completion_tokens)
-        url = _norm(base_url)
+        url = normalize_base_url(base_url)
         checks: list[tuple[str, float]] = [
             (f"global:{b.name}", b.limit_usd) for b in self.config.budgets
-            if b.base_url is None or _norm(b.base_url) == url
+            if b.base_url is None or normalize_base_url(b.base_url) == url
         ]
         if workflow_budget_usd is not None and meter == "agent":
             # Workflow budgets only count agent-meter spend, so only agent calls are checked against them.
@@ -103,6 +101,21 @@ class Ledger:
         with self.store.transaction(immediate=True) as conn:
             conn.execute("UPDATE ledger SET state='released' WHERE id=? AND state='reserved'", (res.id,))
 
+    def stale_reservations(self, older_than_s: float) -> list[dict]:
+        """Rows still `reserved` after `older_than_s` seconds: their process died between reserve and
+        settle/release, so they hold budget that no call will ever settle."""
+        rows = self.store.connect().execute(
+            "SELECT id, ts, run_id, workflow, meter, model, usd FROM ledger WHERE state='reserved' AND ts < ?"
+            " ORDER BY id", (self._now() - older_than_s,)).fetchall()
+        return [dict(r) for r in rows]
+
+    def release_stale(self, older_than_s: float) -> int:
+        """Release every reservation older than `older_than_s` seconds. Returns how many were released."""
+        with self.store.transaction(immediate=True) as conn:
+            cur = conn.execute("UPDATE ledger SET state='released' WHERE state='reserved' AND ts < ?",
+                               (self._now() - older_than_s,))
+            return cur.rowcount
+
     def spent(self, scope: str) -> float:
         """Settled + reserved USD for `scope` in its current period window."""
         return self._spent(self.store.connect(), scope, self._now())
@@ -122,7 +135,7 @@ class Ledger:
             period = spec.period
             if spec.base_url is not None:
                 sql += " AND rtrim(base_url, '/') = ?"
-                params.append(_norm(spec.base_url))
+                params.append(normalize_base_url(spec.base_url))
         elif kind == "workflow":
             period = "day"
             sql += " AND workflow = ? AND meter = 'agent'"

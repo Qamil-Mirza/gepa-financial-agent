@@ -8,6 +8,7 @@
   pitstop serve --port 8765               # timeline API + live SSE stream for the UI
   pitstop demo --port 8770                # GEPA demo page (pitstop.demo)
   pitstop status | drifts [--workflow W] [--all] | budget   # SDK runs, drifts and budgets (local DB)
+  pitstop budget reconcile [--older-than-min 60] [--release]  # list / free reservations left by dead processes
 
 Runs and the You.com cache live under $PITSTOP_HOME (default ~/.pitstop); see pitstop.config.
 """
@@ -220,6 +221,9 @@ def cmd_drifts(args) -> None:
 
 
 def cmd_budget(args) -> None:
+    if getattr(args, "budget_cmd", None) == "reconcile":
+        cmd_budget_reconcile(args)
+        return
     rt = _runtime()
     if not _has_runs(rt):
         console.print(EMPTY_MSG)
@@ -228,6 +232,35 @@ def cmd_budget(args) -> None:
         console.print("No budgets configured. See docs/config.example.toml.")
         return
     console.print(_budget_table(rt))
+
+
+def cmd_budget_reconcile(args) -> None:
+    """Reservations still `reserved` long after their call should have settled (the process died mid-call)."""
+    rt = _runtime()
+    older_than_s = args.older_than_min * 60
+    rows = rt.ledger.stale_reservations(older_than_s)
+    if not rows:
+        console.print(f"No stale reservations older than {args.older_than_min:g} min.")
+        return
+    if args.release:
+        n = rt.ledger.release_stale(older_than_s)
+        console.print(f"Released {n} stale reservation(s) older than {args.older_than_min:g} min.")
+        return
+    t = Table(title=f"Stale reservations (older than {args.older_than_min:g} min)")
+    for col in ("id", "reserved at", "run", "workflow", "meter", "model", "usd"):
+        t.add_column(col)
+    for r in rows:
+        t.add_row(str(r["id"]), _fmt_ts(r["ts"]), str(r["run_id"]), str(r["workflow"]), str(r["meter"]),
+                  str(r["model"]), _usd(r["usd"]))
+    console.print(t)
+    console.print(f"{len(rows)} stale reservation(s); re-run with --release to free them.")
+
+
+def _minutes(v: str) -> float:
+    m = float(v)
+    if not m >= 0:  # also rejects nan
+        raise argparse.ArgumentTypeError(f"must be a non-negative number of minutes, got {v!r}")
+    return m
 
 
 def main() -> None:
@@ -265,7 +298,12 @@ def main() -> None:
     sub.add_parser("status")
     g = sub.add_parser("drifts")
     g.add_argument("--workflow"); g.add_argument("--all", action="store_true", help="include resolved drifts")
-    sub.add_parser("budget")
+    b = sub.add_parser("budget")
+    bsub = b.add_subparsers(dest="budget_cmd")  # optional: bare `pitstop budget` shows the budgets
+    rc = bsub.add_parser("reconcile", help="list (or --release) reservations left by processes that died mid-call")
+    rc.add_argument("--older-than-min", type=_minutes, default=60.0,
+                    help="only reservations older than this many minutes (default 60)")
+    rc.add_argument("--release", action="store_true", help="release them (default: only list them)")
     args = p.parse_args()
     handler = {"check": cmd_check, "run": cmd_run, "compare": cmd_compare, "timeline": cmd_timeline,
                "serve": cmd_serve, "demo": cmd_demo, "status": cmd_status, "drifts": cmd_drifts,

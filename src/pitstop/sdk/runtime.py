@@ -7,7 +7,7 @@ from pathlib import Path
 
 from ..budget.ledger import Ledger
 from ..config import pitstop_home
-from ..store import Store
+from ..store import Store, StoreVersionError
 from ..userconfig import ConfigInvalid, UserConfig, load_user_config
 from .errors import Halted
 
@@ -27,15 +27,18 @@ _runtime: Runtime | None = None
 def init(config_path: Path | None = None, home: Path | None = None) -> Runtime:
     """Create (or return the existing) runtime. Idempotent per home.
 
-    Raises ConfigInvalid (a ValueError) when config.toml is unusable; no runtime is cached then, so every
-    later call re-checks the config and keeps failing closed until it is fixed."""
+    Raises ConfigInvalid (a ValueError) when config.toml is unusable or pitstop.db was written by a newer
+    PitStop; no runtime is cached then, so every later call re-checks and keeps failing closed until it is fixed."""
     global _runtime
     home = Path(home).expanduser() if home is not None else pitstop_home()
     with _lock:
         if _runtime is not None and _runtime.home == home:
             return _runtime
         config = load_user_config(Path(config_path) if config_path is not None else home / "config.toml")
-        store = Store(home / "pitstop.db")
+        try:
+            store = Store(home / "pitstop.db")
+        except StoreVersionError as e:  # a too-new store fails closed like a bad config: budgets must not vanish
+            raise ConfigInvalid(str(e)) from e
         try:
             ledger = Ledger(store, config)
         except Exception as e:  # e.g. a timezone the zoneinfo database cannot load

@@ -70,7 +70,7 @@ def test_budget_exhausted_records_p0_drift(tmp_path):
     rows = list_drifts(get_runtime().store)
     assert [(r["drift_type"], r["level"], r["action"], r["workflow"]) for r in rows] == \
         [("budget_exhausted", "P0", "halt", "wf")]
-    assert rows[0]["evidence"][0]["scope"] == "workflow:wf"
+    assert rows[0]["evidence"][0]["detail"]["scope"] == "workflow:wf"
 
 
 def test_budget_exhausted_outside_workflow(tmp_path):

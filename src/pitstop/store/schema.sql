@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS events (
     payload TEXT, cost_usd REAL, parent_id INTEGER);
 CREATE TABLE IF NOT EXISTS drifts (
     id INTEGER PRIMARY KEY, run_id TEXT, workflow TEXT, ts REAL, level TEXT, kind TEXT,
-    drift_type TEXT, evidence TEXT, action TEXT, status TEXT DEFAULT 'open');
+    drift_type TEXT, evidence TEXT, action TEXT, status TEXT DEFAULT 'open', last_seen REAL,
+    occurrences INTEGER NOT NULL DEFAULT 1);
 CREATE TABLE IF NOT EXISTS ledger (
     id INTEGER PRIMARY KEY, ts REAL, run_id TEXT, workflow TEXT, meter TEXT, model TEXT,
     base_url TEXT, prompt_tokens INTEGER, completion_tokens INTEGER, usd REAL, state TEXT);
@@ -18,4 +19,4 @@ CREATE TABLE IF NOT EXISTS prompts (
 CREATE INDEX IF NOT EXISTS idx_events_run ON events(run_id);
 CREATE INDEX IF NOT EXISTS idx_drifts_wf_status ON drifts(workflow, status);
 CREATE INDEX IF NOT EXISTS idx_ledger_ts ON ledger(ts);
-INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '2');
+INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '3');

@@ -133,7 +133,7 @@ def test_sync_call_settles_usage_and_records_event(tmp_path):
     assert "unmetered" not in ev["payload"]
     run = dict(_db().execute("SELECT * FROM runs WHERE id=?", (ctx.run_id,)).fetchone())
     assert (run["model"], run["base_url"], run["adapter"], run["pitstop_version"], run["price_known"]) == (
-        MODEL, BASE_URL, "wrap", pitstop.__version__, 1)
+        MODEL, BASE_URL.rstrip("/"), "wrap", pitstop.__version__, 1)  # normalized, as in the ledger
 
 
 def test_prompt_estimate_and_max_tokens(tmp_path, monkeypatch):

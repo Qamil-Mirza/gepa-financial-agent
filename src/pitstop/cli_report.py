@@ -53,5 +53,6 @@ def drift_rows(store, workflow: str | None = None, open_only: bool = True) -> li
     drifts.sort(key=lambda d: -d["ts"])  # stable: newest first within a level
     drifts.sort(key=lambda d: _LEVELS.index(d["level"]) if d["level"] in _LEVELS else len(_LEVELS))
     return [{"id": d["id"], "level": d["level"], "workflow": d["workflow"], "drift_type": d["drift_type"],
-             "action": d["action"], "count": len(d["evidence"]) if isinstance(d["evidence"], list) else 1,
-             "first_seen": d["ts"], "last_seen": d["ts"]} for d in drifts]
+             "action": d["action"], "count": d["occurrences"],
+             "first_seen": d["ts"], "last_seen": d["last_seen"] if d["last_seen"] is not None else d["ts"]}
+            for d in drifts]

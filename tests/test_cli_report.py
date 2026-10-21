@@ -104,3 +104,61 @@ def test_cli_invalid_config_is_a_clean_error(tmp_path):
         assert out.returncode == 2, (cmd, out.stdout, out.stderr)
         assert "Traceback" not in out.stderr + out.stdout
         assert "invalid period 'weekly'" in out.stdout + out.stderr
+
+
+def test_drift_rows_use_occurrences_and_last_seen(tmp_path):
+    store = Store(tmp_path / "pitstop.db")
+    for i in range(3):
+        record_drift(store, run_id=f"r{i}", workflow="wf", finding=Finding("loop", "off_task", False, {"i": i}),
+                     level="P1", action="steer")
+    with store.transaction(immediate=True) as c:
+        c.execute("UPDATE drifts SET ts=100.0, last_seen=200.0, occurrences=42")
+    [row] = drift_rows(store)
+    assert (row["count"], row["first_seen"], row["last_seen"]) == (42, 100.0, 200.0)
+
+
+def _main(monkeypatch, *argv):
+    from pitstop import cli
+
+    monkeypatch.setattr(sys, "argv", ["pitstop", *argv])
+    cli.main()
+
+
+def test_budget_reconcile_cli_dry_run_then_release(tmp_path, capsys, monkeypatch):
+    from pitstop.sdk.runtime import get_runtime
+
+    ledger = get_runtime().ledger
+    now = time.time()
+    with ledger.store.transaction(immediate=True) as c:
+        for ts, state, wf in ((now - 7200, "reserved", "stale-wf"), (now - 7200, "settled", "done-wf"),
+                              (now - 60, "reserved", "live-wf")):
+            c.execute("INSERT INTO ledger(ts, run_id, workflow, meter, model, usd, state) VALUES (?,?,?,?,?,?,?)",
+                      (ts, "r", wf, "agent", "m", 1.5, state))
+
+    _main(monkeypatch, "budget", "reconcile")
+    out = capsys.readouterr().out
+    assert "stale-wf" in out and "live-wf" not in out and "done-wf" not in out
+    assert "re-run with --release to free them" in out
+    states = lambda: [r[0] for r in ledger.store.connect().execute("SELECT state FROM ledger ORDER BY id")]
+    assert states() == ["reserved", "settled", "reserved"]  # dry run changes nothing
+
+    _main(monkeypatch, "budget", "reconcile", "--older-than-min", "1", "--release")
+    out = capsys.readouterr().out
+    assert "Released 2 stale reservation" in out
+    assert states() == ["released", "settled", "released"]
+
+    _main(monkeypatch, "budget", "reconcile")
+    assert "No stale reservations" in capsys.readouterr().out
+
+
+def test_budget_reconcile_rejects_negative_age(monkeypatch, capsys):
+    import pytest
+
+    with pytest.raises(SystemExit) as ei:
+        _main(monkeypatch, "budget", "reconcile", "--older-than-min", "-5")
+    assert ei.value.code == 2
+
+
+def test_bare_budget_still_works_in_process(monkeypatch, capsys):
+    _main(monkeypatch, "budget")
+    assert "No runs yet" in capsys.readouterr().out

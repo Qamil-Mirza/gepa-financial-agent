@@ -32,6 +32,7 @@ from typing import Any, TypeVar
 
 from ..budget.ledger import Reservation
 from ..budget.prices import cost_usd, price_for
+from ..store.urls import normalize_base_url
 from .context import RunContext, _safe, check_halt, current_run
 from .errors import BudgetExceeded
 from ..userconfig import ConfigInvalid
@@ -685,7 +686,8 @@ class _Call:
                 c.execute(
                     "UPDATE runs SET model=?, base_url=?, adapter='wrap', pitstop_version=?, price_known=?"
                     " WHERE id=?",
-                    (self.model, self.base_url, __version__, 0 if known is False else 1, ctx.run_id),
+                    (self.model, normalize_base_url(self.base_url), __version__, 0 if known is False else 1,
+                     ctx.run_id),
                 )
             elif known is False:
                 c.execute("UPDATE runs SET price_known=0 WHERE id=?", (ctx.run_id,))
