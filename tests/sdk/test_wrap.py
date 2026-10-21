@@ -595,3 +595,11 @@ async def test_real_openai_async_client_non_stream_and_stream(tmp_path):
     rows = _ledger_rows()
     assert [r["state"] for r in rows] == ["settled", "settled"]
     assert (rows[1]["prompt_tokens"], rows[1]["completion_tokens"]) == (21, 2)
+
+
+def test_wrapped_client_supports_weakref():
+    import weakref
+
+    w = pitstop.wrap(FakeOpenAI([]))
+    ref = weakref.ref(w)
+    assert ref() is w

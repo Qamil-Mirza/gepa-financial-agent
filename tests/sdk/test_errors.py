@@ -15,3 +15,13 @@ def test_budget_exceeded_pickle_round_trip():
     assert type(e) is BudgetExceeded
     assert (e.scope, e.limit_usd, e.spent_usd) == ("global:x", 5.0, 5.25)
     assert e.reason == orig.reason and str(e) == str(orig)
+
+
+class MyHalt(Halted):
+    pass
+
+
+def test_halted_subclass_pickle_keeps_its_type():
+    e = pickle.loads(pickle.dumps(MyHalt("custom", 3)))
+    assert type(e) is MyHalt
+    assert (e.reason, e.drift_id) == ("custom", 3)

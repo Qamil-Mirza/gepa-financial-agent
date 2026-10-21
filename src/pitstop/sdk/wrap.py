@@ -142,7 +142,7 @@ def _on_budget_exceeded(ctx: RunContext | None, exc: BudgetExceeded) -> None:
 
 
 class _Wrapped:
-    __slots__ = ("_pitstop_client", "_pitstop_chat")
+    __slots__ = ("_pitstop_client", "_pitstop_chat", "__weakref__")
 
     def __init__(self, client: Any):
         object.__setattr__(self, "_pitstop_client", client)

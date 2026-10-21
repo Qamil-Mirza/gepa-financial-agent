@@ -11,7 +11,7 @@ class Halted(Exception):
         self.drift_id = drift_id
 
     def __reduce__(self):
-        return (Halted, (self.reason, self.drift_id))
+        return (type(self), (self.reason, self.drift_id))
 
 
 class BudgetExceeded(Halted):
@@ -22,4 +22,4 @@ class BudgetExceeded(Halted):
         super().__init__(f"PitStop budget exceeded: {scope} spent ${spent_usd:.2f} of ${limit_usd:.2f}")
 
     def __reduce__(self):
-        return (BudgetExceeded, (self.scope, self.limit_usd, self.spent_usd))
+        return (type(self), (self.scope, self.limit_usd, self.spent_usd))
