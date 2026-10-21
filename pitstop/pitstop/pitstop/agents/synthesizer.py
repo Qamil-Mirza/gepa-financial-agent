@@ -106,24 +106,30 @@ class ReportSynthesizer:
                 "\n".join(f"[{f['tag']}] {f['claim']} (period: {f.get('period') or 'n/a'})" for f in fs)
                 or "(no usable findings)"))
         user = f"Team objective: {objective}\n\nFindings by agent:\n\n" + "\n\n".join(listing)
-        for attempt in range(self.attempts):  # provider rate limits are common at the end of a run
-            try:
-                obj, _ = await self.llm.complete_json(self.prompt, user)
-                break
-            except Exception as e:  # the swarm's research is still logged; the failure is recorded, not raised
-                if attempt == self.attempts - 1:
-                    return {"title": "Report failed", "markdown": "", "error": f"{type(e).__name__}: {e}"[:300],
-                            "included": included, "excluded": excluded, "cited_finding_ids": [],
-                            "invalid_citations": [], "unverified_figures": [], "model": self.llm.model}
-                await asyncio.sleep(min(60.0, self.backoff_s * 2 ** attempt))
-        body = str(obj.get("report_markdown", "")).strip()
         by_tag = {f["tag"]: f for f in included}
         by_id = {f["event_id"]: f for f in included}
-        cited, invalid = [], []
-        for _, toks in citation_groups(body):
-            for t in toks:
-                f = by_tag.get(t) or by_id.get(t)
-                (cited if f else invalid).append(f["event_id"] if f else t)
+        for rewrite in range(2):  # one rewrite when the model ignores the citation rule
+            obj = None
+            for attempt in range(self.attempts):  # provider rate limits are common at the end of a run
+                try:
+                    obj, _ = await self.llm.complete_json(self.prompt, user)
+                    break
+                except Exception as e:  # the swarm's research is still logged; the failure is recorded, not raised
+                    if attempt == self.attempts - 1:
+                        return {"title": "Report failed", "markdown": "", "error": f"{type(e).__name__}: {e}"[:300],
+                                "included": included, "excluded": excluded, "cited_finding_ids": [],
+                                "invalid_citations": [], "unverified_figures": [], "model": self.llm.model}
+                    await asyncio.sleep(min(60.0, self.backoff_s * 2 ** attempt))
+            body = str(obj.get("report_markdown", "")).strip()
+            cited, invalid = [], []
+            for _, toks in citation_groups(body):
+                for t in toks:
+                    f = by_tag.get(t) or by_id.get(t)
+                    (cited if f else invalid).append(f["event_id"] if f else t)
+            if cited:
+                break
+            user += ("\n\nYour previous report cited no findings. Rewrite it so that every figure and claim is "
+                     "followed by its finding tag in square brackets, e.g. [F3] or [F3, F7].")
         return {"title": str(obj.get("title") or "Financial research report")[:200], "markdown": body,
                 "gaps": str(obj.get("gaps", ""))[:1000], "cited_finding_ids": list(dict.fromkeys(cited)),
                 "invalid_citations": list(dict.fromkeys(invalid)), "unverified_figures": unverified_figures(body, included),

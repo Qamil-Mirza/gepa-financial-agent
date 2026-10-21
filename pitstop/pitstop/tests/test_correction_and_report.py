@@ -158,6 +158,21 @@ def test_unverified_figures_ignores_citations_and_known_numbers():
 
 
 @pytest.mark.asyncio
+async def test_uncited_report_is_rewritten_once(tmp_path, FakeLLMClass, fixture_response):
+    replies = []
+
+    def lazy_then_cited(system, user):
+        replies.append("cited no findings" in user)
+        if len(replies) == 1:
+            return json.dumps({"title": "T", "report_markdown": "Revenue was $10B.", "gaps": ""})
+        return report_handler(system, user)
+
+    synth = ReportSynthesizer(FakeLLMClass(lazy_then_cited), ROOT / "prompts" / "worker", backoff_s=0.0)
+    run = await _swarm(tmp_path, FakeLLMClass, fixture_response, synthesizer=synth).run_all()
+    assert replies == [False, True] and run.report["cited_finding_ids"]
+
+
+@pytest.mark.asyncio
 async def test_report_agent_retries_after_a_rate_limit(tmp_path, FakeLLMClass, fixture_response):
     calls = []
 
