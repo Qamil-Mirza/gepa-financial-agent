@@ -1,6 +1,7 @@
 """User config (~/.pitstop/config.toml): budgets, price overrides, timezone."""
 from __future__ import annotations
 
+import math
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -46,7 +47,11 @@ def load_user_config(path: Path | None = None) -> UserConfig:
     if not path.exists():
         return UserConfig((), {}, None)
     try:
-        return _parse(tomllib.loads(path.read_text()))
+        text = path.read_text()
+    except (OSError, UnicodeDecodeError) as e:
+        raise ConfigInvalid(f"{path}: cannot read config: {type(e).__name__}") from e
+    try:
+        return _parse(tomllib.loads(text))
     except ConfigInvalid as e:
         raise ConfigInvalid(f"{path}: {e}") from e
     except (ValueError, TypeError, KeyError, AttributeError) as e:  # bad TOML, wrong types, missing keys
@@ -65,15 +70,27 @@ def _parse(data: dict) -> UserConfig:
             limit = -1.0
         if not limit >= 0:  # also rejects NaN
             raise ConfigInvalid(f"budget {name!r}: limit_usd must be a non-negative number")
-        budgets.append(BudgetSpec(name, limit, period, raw.get("base_url")))
-    prices = {
-        model: PriceOverride(float(p["input"]), float(p["output"]), float(p.get("cached_input", p["input"])))
-        for model, p in data.get("prices", {}).items()
-    }
+        base_url = raw.get("base_url")
+        if base_url is not None and not isinstance(base_url, str):
+            raise ConfigInvalid(f"budget {name!r}: base_url must be a string")
+        budgets.append(BudgetSpec(name, limit, period, base_url))
+    prices = {}
+    for model, p in data.get("prices", {}).items():
+        inp = _finite_nonneg(p["input"], f"price {model!r} input")
+        out = _finite_nonneg(p["output"], f"price {model!r} output")
+        cached = _finite_nonneg(p["cached_input"], f"price {model!r} cached_input") if "cached_input" in p else inp
+        prices[model] = PriceOverride(inp, out, cached)
     timezone = data.get("timezone") or None  # "" means unset (system local time)
     if timezone is not None:
         _check_timezone(timezone)
     return UserConfig(tuple(budgets), prices, timezone)
+
+
+def _finite_nonneg(value: object, what: str) -> float:
+    """A finite, non-negative real number (bool, NaN, +-inf, negatives and non-numbers raise ConfigInvalid)."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+        raise ConfigInvalid(f"{what} must be a finite non-negative number, got {value!r}")
+    return float(value)
 
 
 def _check_timezone(name: object) -> None:

@@ -69,6 +69,7 @@ async def cmd_check(args) -> None:
 
 
 async def cmd_run(args) -> None:
+    _runtime()  # an invalid config.toml exits 2 before any model or research call
     s = load_settings()
     scenario = Scenario.model_validate_json(Path(args.scenario).read_text())
     worker_llm = _llm(s, s.worker_model, 0.4)

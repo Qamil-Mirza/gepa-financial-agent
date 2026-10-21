@@ -38,3 +38,36 @@ def test_invalid_period_raises(tmp_path):
     p.write_text(TOML.replace('"total"', '"weekly"'))
     with pytest.raises(ValueError, match="crusoe"):
         load_user_config(p)
+
+
+@pytest.mark.parametrize("body", [
+    '[budgets.x]\nlimit_usd = 1\nbase_url = 5',
+    '[prices."m"]\ninput = -1\noutput = 1',
+    '[prices."m"]\ninput = nan\noutput = 1',
+    '[prices."m"]\ninput = 1\noutput = inf',
+    '[prices."m"]\ninput = "cheap"\noutput = 1',
+    '[prices."m"]\ninput = 1\noutput = 1\ncached_input = -0.5',
+    '[prices."m"]\ninput = true\noutput = 1',
+])
+def test_bad_values_raise_config_invalid(tmp_path, body):
+    from pitstop.userconfig import ConfigInvalid
+    p = tmp_path / "config.toml"
+    p.write_text(body)
+    with pytest.raises(ConfigInvalid):
+        load_user_config(p)
+
+
+def test_unreadable_config_raises_config_invalid(tmp_path):
+    from pitstop.userconfig import ConfigInvalid
+    p = tmp_path / "config.toml"
+    p.mkdir()  # reading a directory raises IsADirectoryError (OSError)
+    with pytest.raises(ConfigInvalid, match="cannot read"):
+        load_user_config(p)
+
+
+def test_non_utf8_config_raises_config_invalid(tmp_path):
+    from pitstop.userconfig import ConfigInvalid
+    p = tmp_path / "config.toml"
+    p.write_bytes(b"\xff\xfe[budgets]")
+    with pytest.raises(ConfigInvalid):
+        load_user_config(p)
