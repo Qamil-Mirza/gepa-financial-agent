@@ -15,6 +15,7 @@ from ..collector import TrajectoryCollector
 from ..llm import JSONParseError, LLMClient
 from ..research.youcom import FinanceResearchClient, YouComError
 from ..schemas import AgentSpec, EventType, ProposedAction
+from ..sdk.errors import Halted
 
 MAX_QUERY_CHARS = 300
 MAX_ANSWER_CHARS_FOR_EXTRACTION = 6000
@@ -85,6 +86,8 @@ class ResearchWorker:
             user += "\n\nThis is your last turn: you must choose finish."
         try:
             obj, _ = await self.llm.complete_json(self.planner_prompt, user)
+        except Halted:  # a PitStop budget/drift halt stops the agent; it is not a planning failure
+            raise
         except (JSONParseError, Exception) as e:  # keep the swarm alive; the failure is observable
             s.consecutive_plan_failures += 1
             self.collector.emit(self.id, s.step, EventType.ERROR, f"planning failed: {type(e).__name__}",
@@ -156,6 +159,8 @@ class ResearchWorker:
         )
         try:
             obj, _ = await self.llm.complete_json(self.extractor_prompt, user)
+        except Halted:
+            raise
         except Exception as e:
             self.collector.emit(self.id, s.step, EventType.ERROR, "finding extraction failed",
                                 {"error": str(e)[:300]}, parent_event_id=response_event_id)
@@ -186,6 +191,8 @@ class ResearchWorker:
         try:
             obj, _ = await self.llm.complete_json(self.reporter_prompt,
                                                   f"Your directive: {self.spec.directive}\n\nFindings:\n{listing}")
+        except Halted:
+            raise
         except Exception as e:
             self.collector.emit(self.id, s.step, EventType.ERROR, "report failed", {"error": str(e)[:300]})
             return
