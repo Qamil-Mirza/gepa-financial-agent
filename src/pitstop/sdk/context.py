@@ -45,7 +45,7 @@ class RunContext:
     steers: int = 0
     halt_reason: str | None = None
     halt_drift_id: int | None = None
-    tool_history: list = field(default_factory=list)
+    tool_history: dict = field(default_factory=dict)  # agent name (None = no agent) -> [ToolCallRecord]
     llm_history: list = field(default_factory=list)
     llm_calls: int = 0
 

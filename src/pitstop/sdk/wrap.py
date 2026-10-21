@@ -63,7 +63,7 @@ class ResponseSummary:
         return len(self.content) if self.content else 0
 
 
-def _apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None = None) -> None:
+def _apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None = None) -> list[tuple]:
     """Record each finding with its level and action. A P0 on a high workflow sets a pending halt that the
     next boundary raises. Outside a workflow: workflow=None, criticality medium, sensitivity normal."""
     from ..detect import drifts
@@ -73,6 +73,7 @@ def _apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | Non
     workflow = ctx.spec.name if ctx is not None else None
     run_id = ctx.run_id if ctx is not None else run_id
     store = get_runtime().store
+    applied: list[tuple] = []  # (finding, level, action, drift_id)
     for f in findings:
         level = classify(f.drift_type, criticality, f.side_effects)
         action = action_for(f, level, criticality)
@@ -81,6 +82,8 @@ def _apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | Non
         if ctx is not None and level is Level.P0 and criticality == "high" and ctx.halt_reason is None:
             ctx.halt_reason = f"{f.drift_type} (P0) on high-criticality workflow {workflow!r}"
             ctx.halt_drift_id = drift_id
+        applied.append((f, level, action, drift_id))
+    return applied
 
 
 def _after_llm_call(ctx: RunContext | None, summary: ResponseSummary) -> None:
