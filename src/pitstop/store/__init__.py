@@ -31,16 +31,29 @@ class Store:
 
     @contextmanager
     def transaction(self, immediate: bool = False) -> Iterator[sqlite3.Connection]:
+        """Run the block in one transaction. The thread-local connection is never left inside an open
+        transaction: a failing COMMIT (e.g. SQLITE_BUSY) is rolled back and re-raised, and a failing
+        ROLLBACK never masks the original error."""
         conn = self.connect()
         conn.execute("BEGIN IMMEDIATE" if immediate else "BEGIN")
         try:
             yield conn
         except BaseException:
-            conn.execute("ROLLBACK")
+            _rollback_quietly(conn)
             raise
-        else:
+        try:
             conn.execute("COMMIT")
+        except BaseException:
+            _rollback_quietly(conn)
+            raise
 
     def schema_version(self) -> int:
         row = self.connect().execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
         return int(row[0]) if row else 0
+
+
+def _rollback_quietly(conn: sqlite3.Connection) -> None:
+    try:
+        conn.execute("ROLLBACK")
+    except Exception:
+        pass
