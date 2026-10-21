@@ -54,6 +54,11 @@ class Ledger:
 
     # -- public API -------------------------------------------------------------------------------
 
+    @property
+    def tz(self) -> ZoneInfo | None:
+        """The configured timezone for day/month windows (None: system local time)."""
+        return self._tz
+
     def reserve(self, *, model: str, base_url: str | None, est_prompt_tokens: int, max_completion_tokens: int,
                 run_id: str | None, workflow: str | None, workflow_budget_usd: float | None,
                 meter: str = "agent") -> Reservation:

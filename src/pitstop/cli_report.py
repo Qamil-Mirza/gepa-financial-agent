@@ -1,7 +1,7 @@
 """Pure row builders for `pitstop status`, `pitstop drifts` and `pitstop budget` (the CLI renders them)."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, tzinfo
 
 from .detect.drifts import list_drifts
 
@@ -9,13 +9,14 @@ _LEVELS = ("P0", "P1", "P2", "P3")
 _LIVE = ("reserved", "settled")
 
 
-def _day_start(now: float) -> float:
-    return datetime.fromtimestamp(now).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+def _day_start(now: float, tz: tzinfo | None = None) -> float:
+    """Start of `now`'s day in `tz` (the config's timezone, as the ledger uses); system local time when None."""
+    return datetime.fromtimestamp(now, tz).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
 
 
-def workflow_rows(store, now: float) -> list[dict]:
+def workflow_rows(store, now: float, tz: tzinfo | None = None) -> list[dict]:
     conn = store.connect()
-    start = _day_start(now)
+    start = _day_start(now, tz)
     names = [r[0] for r in conn.execute(
         "SELECT workflow FROM runs WHERE workflow IS NOT NULL GROUP BY workflow ORDER BY MAX(started_at) DESC")]
     rows = []

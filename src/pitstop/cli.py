@@ -32,6 +32,7 @@ from .llm import LLMClient, UsageTracker
 from .agents.synthesizer import ReportSynthesizer
 from .research.youcom import FinanceResearchClient
 from .sdk.runtime import get_runtime
+from .userconfig import ConfigInvalid
 from .schemas import Scenario, SupervisorInput
 from .orchestrator import Swarm
 from .supervisor.supervisor import Supervisor
@@ -176,15 +177,24 @@ def _budget_table(rt) -> Table:
     return t
 
 
+def _runtime():
+    """The SDK runtime for the read-only commands; an invalid config.toml is a clean error (exit 2)."""
+    try:
+        return get_runtime()
+    except ConfigInvalid as e:
+        console.print(f"[red]Invalid PitStop config:[/] {escape(str(e))}", soft_wrap=True)
+        sys.exit(2)
+
+
 def cmd_status(args) -> None:
-    rt = get_runtime()
+    rt = _runtime()
     if not _has_runs(rt):
         console.print(EMPTY_MSG)
         return
     t = Table(title="Workflows")
     for col in ("workflow", "criticality", "runs today", "P0", "P1", "P2", "P3", "spend today", "budget", "last status"):
         t.add_column(col)
-    for r in workflow_rows(rt.store, time.time()):
+    for r in workflow_rows(rt.store, time.time(), tz=rt.ledger.tz):
         t.add_row(r["workflow"], str(r["criticality"]), str(r["runs_today"]), str(r["open_p0"]), str(r["open_p1"]),
                   str(r["open_p2"]), str(r["open_p3"]), _usd(r["spend_today_usd"]), _usd(r["budget_usd"]),
                   str(r["last_status"]))
@@ -194,7 +204,7 @@ def cmd_status(args) -> None:
 
 
 def cmd_drifts(args) -> None:
-    rt = get_runtime()
+    rt = _runtime()
     rows = drift_rows(rt.store, workflow=args.workflow, open_only=not args.all)
     if not rows and not _has_runs(rt):
         console.print(EMPTY_MSG)
@@ -209,7 +219,7 @@ def cmd_drifts(args) -> None:
 
 
 def cmd_budget(args) -> None:
-    rt = get_runtime()
+    rt = _runtime()
     if not _has_runs(rt):
         console.print(EMPTY_MSG)
         return

@@ -69,3 +69,38 @@ def test_cli_status_empty_db_is_friendly(tmp_path):
                              capture_output=True, text=True)
         assert out.returncode == 0, out.stderr
         assert "No runs yet" in out.stdout
+
+
+def test_workflow_rows_spend_today_uses_configured_timezone(tmp_path):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    now = 1_760_000_000.0  # fixed instant; only the configured timezone decides where "today" starts
+    for name in ("Pacific/Kiritimati", "Pacific/Pago_Pago"):
+        tz = ZoneInfo(name)
+        store = Store(tmp_path / f"{name.replace('/', '_')}.db")
+        start = datetime.fromtimestamp(now, tz).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+        _run(store, "r1", "wf", started=start + 1)
+        _run(store, "r0", "wf", started=start - 1)
+        with store.transaction(immediate=True) as c:
+            for ts, usd in ((start + 1, 1.0), (start - 1, 10.0)):
+                c.execute("INSERT INTO ledger(ts, workflow, meter, model, usd, state) VALUES (?,?,?,?,?,?)",
+                          (ts, "wf", "agent", "m", usd, "settled"))
+        [row] = workflow_rows(store, now, tz=tz)
+        assert (row["spend_today_usd"], row["runs_today"]) == (1.0, 1), name
+
+
+def _cli(tmp_path, cmd):
+    env = {k: v for k, v in os.environ.items() if k not in ("CRUSOE_API_KEY", "YDC_API_KEY")}
+    env["PITSTOP_HOME"] = str(tmp_path)
+    return subprocess.run([sys.executable, "-m", "pitstop.cli", cmd], cwd=tmp_path, env=env,
+                          capture_output=True, text=True)
+
+
+def test_cli_invalid_config_is_a_clean_error(tmp_path):
+    (tmp_path / "config.toml").write_text('[budgets.all]\nlimit_usd = 5\nperiod = "weekly"\n')
+    for cmd in ("status", "drifts", "budget"):
+        out = _cli(tmp_path, cmd)
+        assert out.returncode == 2, (cmd, out.stdout, out.stderr)
+        assert "Traceback" not in out.stderr + out.stdout
+        assert "invalid period 'weekly'" in out.stdout + out.stderr
