@@ -5,10 +5,11 @@
   GET  /                      static/demo.html
   GET  /static/<file>         other files next to it
   GET  /api/snapshot          the exported snapshot (demo mode: no network, no model calls)
-  POST /api/live/start        {"objective": str} -> {"run_id": pair_id}; starts a PAIR of real swarms (costs money)
+  POST /api/live/start        {"objective": str} -> {"run_id": pair_id, "agents": [{agent_id, label}]}; starts a
+                              PAIR of real swarms (costs money)
   GET  /api/live/<pair_id>    build_pair_view of that pair as it is written, plus "error" if its thread crashed
 
-Live mode (demo/pair.py): scenarios/nvda_amd.json (objective replaceable) run twice at once, one swarm run by
+Live mode (demo/pair.py): scenarios/nvda_amd.json, or a team planned for the typed objective (demo/team.py), run twice at once, one swarm run by
 Nano + the original prompt (a), one by Nano + the GEPA prompt (b); each corrects its own drifting agents and
 writes its own team report. 409 while a pair is going, 400 without API keys.
 """
@@ -25,6 +26,7 @@ from typing import Any, Callable, Optional
 from urllib.parse import unquote, urlparse
 
 from ..config import ROOT, load_settings
+from ..timeline import agent_label
 from .pair import LiveError, Pair, build_pair
 from .views import PAIR_FILE, build_pair_view
 
@@ -70,6 +72,11 @@ class LiveRuns:
             asyncio.run(pair.run_all())
         except Exception as e:  # surfaced to the page via /api/live/<pair_id>
             self.errors[rid] = f"{type(e).__name__}: {e}"
+
+    def agents(self, run_id: str) -> list[dict]:
+        pair = self._pairs.get(run_id)
+        return [{"agent_id": a.agent_id, "label": a.label or agent_label(a.agent_id)}
+                for a in (pair.left.scenario.agents if pair else [])]
 
     def view(self, run_id: str) -> Optional[dict]:
         if not _RUN_ID.match(run_id) or run_id in (".", ".."):
@@ -147,7 +154,8 @@ class _Handler(BaseHTTPRequestHandler):
         except (ValueError, AttributeError):
             return self._json({"error": 'body must be JSON like {"objective": "..."}'}, 400)
         try:
-            return self._json({"run_id": self.live.start(objective)})
+            rid = self.live.start(objective)
+            return self._json({"run_id": rid, "agents": self.live.agents(rid)})
         except LiveError as e:
             return self._json({"error": str(e)}, e.status)
         except Exception as e:

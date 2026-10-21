@@ -476,16 +476,21 @@ $("chat").addEventListener("submit", async (e) => {
   $("go").disabled = true;
   try {
     if (S.live) {
+      // a goal other than the default gets its own team, planned before the run starts (a few seconds)
+      $("spawn").innerHTML = `<span class="note">Planning the research team…</span>`;
       const r = await fetch("/api/live/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ objective: goal }) });
       const body = await r.json().catch(() => ({}));
+      let agents = body.agents;
       if (r.status === 409 && await attachLive()) {
         // a live run is already going (e.g. started before a reload): show that one
+        agents = (await fetchLive())?.agents;
       } else if (!r.ok) {
+        $("spawn").innerHTML = "";
         throw new Error(body.error || `Couldn't start a live run (HTTP ${r.status}).`);
       } else {
         S.liveRun = body.run_id; S.liveErr = null; S.swarm = null;
       }
-      await spawnAgents(S.snap?.swarm?.agents ?? [{ label: "NVDA DC" }, { label: "AMD AI" }, { label: "Supply" }]);
+      await spawnAgents(agents?.length ? agents : [{ label: "Agent 1" }, { label: "Agent 2" }, { label: "Agent 3" }]);
     } else {
       if (!S.snap?.swarm) throw new Error("There's no recorded run in the snapshot yet. Export one with python -m pitstop.demo.export.");
       await spawnAgents(S.snap.swarm.agents);

@@ -334,7 +334,10 @@ def test_server_live_pair_one_at_a_time(tmp_path, serve, FakeLLMClass, fixture_r
     base = serve(tmp_path / "snapshot.json", tmp_path / "runs",
                  build=_fake_pair_build(tmp_path, FakeLLMClass, fixture_response, worker=slow_worker))
     with httpx.Client(base_url=base, timeout=5) as c:
-        pair_id = c.post("/api/live/start", json={"objective": "typed objective"}).json()["run_id"]
+        started = c.post("/api/live/start", json={"objective": "typed objective"}).json()
+        pair_id = started["run_id"]
+        assert [a["agent_id"] for a in started["agents"]] == [a.agent_id for a in Scenario.model_validate(SCENARIO).agents]
+        assert all(a["label"] for a in started["agents"])
         assert pair_id.startswith("pair-") and (tmp_path / "runs" / pair_id / "pair.json").is_file()
         busy = c.post("/api/live/start", json={"objective": "again"})
         assert busy.status_code == 409 and pair_id in busy.json()["error"]
@@ -409,8 +412,12 @@ def test_build_pair_puts_each_prompt_in_charge_of_its_own_swarm(tmp_path):
     """Live mode: two swarms, original prompt (left) and GEPA prompt (right), each correcting drift and writing
     a team report, sharing one You.com client. Building makes no network calls, so fake keys are safe here."""
     from pitstop.demo.pair import LIVE_MAX_CORRECTIONS, LIVE_MAX_RETRIES, MAX_OBJECTIVE_CHARS, NANO, PROMPT_A
+    from pitstop.demo.team import generic_team
     keys = _settings(tmp_path)
-    pair = build_pair("my goal", tmp_path / "runs", keys)
+    planned = []
+    plan = lambda o: planned.append(o) or generic_team(o)
+    pair = build_pair("my goal", tmp_path / "runs", keys, plan=plan)
+    assert planned == ["my goal"] and [a.agent_id for a in pair.left.scenario.agents][0] == "agent_financials"
     assert pair.pair_dir == tmp_path / "runs" / pair.pair_id and pair.pair_id.startswith("pair-")
     doc = json.loads((pair.pair_dir / "pair.json").read_text())
     assert set(doc) == {"pair_id", "objective", "left", "right", "started_at"}
@@ -429,9 +436,14 @@ def test_build_pair_puts_each_prompt_in_charge_of_its_own_swarm(tmp_path):
     assert pair.left.research is pair.right.research  # one client: identical queries are paid for once
     assert pair.left.research.max_live_calls >= 2 * sum(a.max_steps for a in pair.left.scenario.agents)
     assert pair.left.workers[0].llm is not pair.right.workers[0].llm
-    assert build_pair("x" * 2000, tmp_path / "runs", keys).left.scenario.swarm_objective == "x" * MAX_OBJECTIVE_CHARS
-    default = build_pair("  ", tmp_path / "runs", keys)
-    assert default.left.scenario.swarm_objective.startswith("Produce a comparative analysis")
+    assert build_pair("x" * 2000, tmp_path / "runs", keys, plan=plan).left.scenario.swarm_objective == \
+        "x" * MAX_OBJECTIVE_CHARS
+    # the default objective (empty, or typed as is) runs scenarios/nvda_amd.json with no planning
+    from pitstop.demo.pair import SCENARIO as NVDA_AMD
+    for goal in ("  ", Scenario.model_validate_json(NVDA_AMD.read_text()).swarm_objective):
+        default = build_pair(goal, tmp_path / "runs", keys, plan=lambda o: pytest.fail("planned the default"))
+        assert default.left.scenario.swarm_objective.startswith("Produce a comparative analysis")
+        assert [a.agent_id for a in default.left.scenario.agents] == ["agent_nvda_dc", "agent_amd_ai", "agent_supply"]
 
 
 def test_build_pair_needs_keys(tmp_path):

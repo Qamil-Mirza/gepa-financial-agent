@@ -37,7 +37,8 @@ def main() -> None:
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
 
-    split = getattr(split_by_scenario(load_jsonl(a.dataset).examples, seed=a.seed), a.split)
+    examples = load_jsonl(a.dataset).examples
+    split = examples if a.split == "all" else getattr(split_by_scenario(examples, seed=a.seed), a.split)
     by_id = {e.example_id: e for e in split}
     runs = sorted(Path(p) for p in glob.glob(a.runs))
     per: dict[str, dict] = defaultdict(lambda: {"runs": [], "metrics": defaultdict(list), "infra_failures": [],

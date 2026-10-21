@@ -10,6 +10,9 @@ starting states, so many queries are identical and are paid for once (cache, or 
   runs_dir/pair-<6 hex>/pair.json        {"pair_id", "objective", "left", "right", "started_at"[, "finished_at"]}
   runs_dir/pair-<6 hex>/<left run_id>/   an ordinary swarm run dir, likewise the right one
 
+The default objective runs scenarios/nvda_amd.json as is (what the recording and a warm cache are built on); any
+other objective gets its own three agents from demo/team.py, planned by the report model before anything runs.
+
 The swarm stack (rich, httpx, openai) is imported only when a pair is built, so the demo server starts without it.
 """
 from __future__ import annotations
@@ -19,7 +22,7 @@ import json
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from ..config import ROOT, Settings
 from ..schemas import utc_now
@@ -27,6 +30,7 @@ from .views import PAIR_FILE
 
 if TYPE_CHECKING:
     from ..orchestrator import Swarm
+    from ..schemas import Scenario
 
 SCENARIO = ROOT / "scenarios" / "nvda_amd.json"
 NANO = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B"
@@ -36,6 +40,7 @@ PROMPT_B_FALLBACK = ROOT.parent.parent / "policies" / "versions" / "gepa_nano_15
 LIVE_MAX_RETRIES = 6
 LIVE_MAX_CORRECTIONS = 2
 MAX_OBJECTIVE_CHARS = 600
+PLAN_TIMEOUT_S = 90.0  # the team plan is made while the page waits on /api/live/start
 
 
 class LiveError(Exception):
@@ -78,8 +83,10 @@ class Pair:
                 raise r
 
 
-def build_pair(objective: str, runs_dir: Path, settings: Settings) -> Pair:
-    """Two real swarms, built the way `cli run` builds one. Raises LiveError (400) when keys are missing."""
+def build_pair(objective: str, runs_dir: Path, settings: Settings,
+               plan: Optional[Callable[[str], "Scenario"]] = None) -> Pair:
+    """Two real swarms, built the way `cli run` builds one. Raises LiveError (400) when keys are missing.
+    `plan(objective) -> Scenario` (injectable for tests) makes the team for a non-default objective."""
     missing = [k for k, v in (("CRUSOE_API_KEY", settings.crusoe_api_key), ("YDC_API_KEY", settings.ydc_api_key))
                if not v]
     if missing:
@@ -94,8 +101,15 @@ def build_pair(objective: str, runs_dir: Path, settings: Settings) -> Pair:
     from ..supervisor.supervisor import Supervisor
 
     scenario = Scenario.model_validate_json(SCENARIO.read_text())
-    if objective.strip():
-        scenario = scenario.model_copy(update={"swarm_objective": objective.strip()[:MAX_OBJECTIVE_CHARS]})
+    objective = objective.strip()[:MAX_OBJECTIVE_CHARS]
+    if objective and objective != scenario.swarm_objective:
+        if plan is None:
+            from .team import plan_team
+            planner = LLMClient(settings.report_model, api_key=settings.crusoe_api_key,
+                                base_url=settings.crusoe_base_url, temperature=0.2, max_tokens=4000,
+                                timeout=PLAN_TIMEOUT_S, max_retries=2)
+            plan = lambda o: asyncio.run(plan_team(o, planner, ROOT / "prompts" / "worker"))
+        scenario = plan(objective)
     # More retries than the CLI default: on stage a 429 should cost a few seconds, not a failed check.
     llm = lambda model, t, **kw: LLMClient(model, api_key=settings.crusoe_api_key, base_url=settings.crusoe_base_url,
                                            temperature=t, usage=UsageTracker(), max_retries=LIVE_MAX_RETRIES, **kw)
