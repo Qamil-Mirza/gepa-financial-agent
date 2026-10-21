@@ -101,7 +101,7 @@ flowchart LR
     subgraph USER["Your process"]
         SDK["wrap / @tool / workflow<br/>L0 code checks<br/>L1 pre-action gate<br/>budget ledger<br/>P0 alerts"]
     end
-    DB[("SQLite (WAL)<br/>~/.pitstop/pitstop.db")]
+    DB[("SQLite (WAL)<br/>pitstop.db under ~/.pitstop")]
     subgraph SERVER["pitstop server process"]
         WK["Background worker<br/>L2 change-point stats<br/>L3 run judge<br/>L4 endpoint canaries<br/>L5 attribution<br/>GEPA correction + gate<br/>alert routing (P1–P3)"]
         DASH["Local API +<br/>dashboard"]
