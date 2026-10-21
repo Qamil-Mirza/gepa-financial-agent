@@ -49,7 +49,7 @@ def wrap(client: T) -> T:
     return _Wrapped(client)  # type: ignore[return-value]
 
 
-# -- hooks filled in by Task 5 --------------------------------------------------------------------------
+# -- post-call hooks (L0 detection) --------------------------------------------------------------------------
 
 
 @dataclass
@@ -63,12 +63,52 @@ class ResponseSummary:
         return len(self.content) if self.content else 0
 
 
+def _apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None = None) -> None:
+    """Record each finding with its level and action. A P0 on a high workflow sets a pending halt that the
+    next boundary raises. Outside a workflow: workflow=None, criticality medium, sensitivity normal."""
+    from ..detect import drifts
+    from ..detect.urgency import Level, action_for, classify
+
+    criticality = ctx.spec.criticality if ctx is not None else "medium"
+    workflow = ctx.spec.name if ctx is not None else None
+    run_id = ctx.run_id if ctx is not None else run_id
+    store = get_runtime().store
+    for f in findings:
+        level = classify(f.drift_type, criticality, f.side_effects)
+        action = action_for(f, level, criticality)
+        drift_id = drifts.record_drift(store, run_id=run_id, workflow=workflow, finding=f, level=level,
+                                       action=action)
+        if ctx is not None and level is Level.P0 and criticality == "high" and ctx.halt_reason is None:
+            ctx.halt_reason = f"{f.drift_type} (P0) on high-criticality workflow {workflow!r}"
+            ctx.halt_drift_id = drift_id
+
+
 def _after_llm_call(ctx: RunContext | None, summary: ResponseSummary) -> None:
-    """Post-call L0 checks (Task 5). No-op for now."""
+    """Post-call L0 checks: build the call record, update the run's history, record findings as drifts."""
+    from ..detect.l0 import LLMCallRecord, check_llm_call, is_refusal
+
+    failures = 0
+    for tc in summary.tool_calls:
+        try:
+            json.loads(_g(tc, "arguments"))
+        except Exception:
+            failures += 1
+    record = LLMCallRecord(failures, len(summary.tool_calls),
+                           is_refusal(summary.content, len(summary.tool_calls)))
+    history = ctx.llm_history if ctx is not None else []
+    sensitivity = ctx.spec.sensitivity if ctx is not None else "normal"
+    findings = check_llm_call(history, record, sensitivity)
+    if ctx is not None:
+        ctx.llm_history.append(record)
+    _apply_findings(ctx, findings)
 
 
 def _on_budget_exceeded(ctx: RunContext | None, exc: BudgetExceeded) -> None:
-    """Record a budget_exhausted drift (Task 5). No-op for now."""
+    """Record a budget_exhausted drift (P0, halt) before the exception is raised."""
+    from ..detect.l0 import Finding
+
+    _apply_findings(ctx, [Finding("budget_exhausted", "degraded", False,
+                                  {"scope": exc.scope, "limit_usd": exc.limit_usd, "spent_usd": exc.spent_usd})])
 
 
 # -- proxies --------------------------------------------------------------------------------------------
