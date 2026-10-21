@@ -1,8 +1,11 @@
 import os
+import shutil
 import subprocess
 import sys
 import zipfile
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -37,6 +40,8 @@ def test_dotenv_loaded_from_cwd(tmp_path):
 
 
 def test_wheel_contains_package_data(tmp_path):
+    if shutil.which("uv") is None:
+        pytest.skip("uv not on PATH; run the suite via `uv run pytest`")
     subprocess.run(["uv", "build", "--wheel", "--out-dir", str(tmp_path)], check=True, cwd=REPO_ROOT)
     names = zipfile.ZipFile(next(tmp_path.glob("pitstop-*.whl"))).namelist()
     for required in ("pitstop/assets/prompts/supervisor_v0.txt", "pitstop/assets/prompts/worker/planner.txt",
@@ -46,5 +51,7 @@ def test_wheel_contains_package_data(tmp_path):
 
 
 def test_console_script_help():
+    if shutil.which("pitstop") is None:
+        pytest.skip("pitstop console script not on PATH; run the suite via `uv run pytest`")
     out = subprocess.run(["pitstop", "--help"], capture_output=True, text=True)
     assert out.returncode == 0 and "demo" in out.stdout

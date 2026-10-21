@@ -25,7 +25,11 @@ uv run pytest      # offline by design
 uv run ruff check
 ```
 
-The test suite is offline: sockets are blocked via `pytest-socket`. Tests must not call paid APIs; use fakes or recorded fixtures.
+The test suite is offline: sockets are blocked via `pytest-socket`. Loopback (127.0.0.1/localhost) is allowed, so tests that start a local server are fine. Tests are meant to be run via `uv run pytest` (some need the project environment and `uv`). Tests must not call paid APIs; use fakes or recorded fixtures.
+
+### Before deleting a tracked directory
+
+Run `git clean -ndX <dir>` to list ignored local files inside it (runs, caches, `.env`) and move them out first.
 
 ## Branches and pull requests
 

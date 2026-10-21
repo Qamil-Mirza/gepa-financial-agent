@@ -1,6 +1,6 @@
 """GEPA demo server. Standard library only.
 
-  python -m pitstop.demo.server [--port 8770] [--snapshot demo/snapshot.json]
+  python -m pitstop.demo.server [--port 8770] [--snapshot PATH]  (default: the packaged snapshot, pitstop.config.SNAPSHOT)
 
   GET  /                      static/demo.html
   GET  /static/<file>         other files next to it

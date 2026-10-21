@@ -32,8 +32,8 @@ class Settings:
     def from_env(cls, load_dotenv_file: bool = True) -> "Settings":
         if load_dotenv_file:
             try:
-                from dotenv import load_dotenv
-                load_dotenv()
+                from dotenv import find_dotenv, load_dotenv
+                load_dotenv(find_dotenv(usecwd=True))
             except ImportError:
                 pass
         return cls(

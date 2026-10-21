@@ -1,6 +1,6 @@
 """Local pit-wall dashboard. Standard library only; reads runs/ directly.
 
-  python -m pitstop.cli ui            # then open http://localhost:8765
+  python -m pitstop.ui.server         # then open http://localhost:8765
 
 Logs are append-only JSONL, so the UI can tail a run while it is in progress.
 """
