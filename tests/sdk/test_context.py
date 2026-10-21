@@ -182,3 +182,56 @@ def test_parallel_agents_in_one_workflow_are_isolated(tmp_path):
     assert a == [("a", "ga")] * 3
     assert b == [("b", "gb")] * 3
     assert after == (None, None)
+
+
+def test_shared_agent_instance_under_gather_is_isolated(tmp_path):
+    pitstop.init(home=tmp_path)
+    researcher = agent("researcher", goal="rg")
+    writer = agent("writer", goal="wg")
+
+    async def worker(scope, delay):
+        async with scope:
+            ctx = current_run()
+            first = (ctx.agent, ctx.agent_goal)
+            await asyncio.sleep(delay)
+            with researcher:  # the same instance re-entered inside an overlapping task
+                inner = ctx.agent
+            return first, (ctx.agent, ctx.agent_goal), inner
+
+    async def main():
+        async with workflow("w"):
+            ctx = current_run()
+            got = await asyncio.gather(worker(researcher, 0.01), worker(researcher, 0.03),
+                                       worker(writer, 0.02))
+            return got, (ctx.agent, ctx.agent_goal)
+
+    got, after = asyncio.run(main())
+    assert got[0] == (("researcher", "rg"), ("researcher", "rg"), "researcher")
+    assert got[1] == (("researcher", "rg"), ("researcher", "rg"), "researcher")
+    assert got[2] == (("writer", "wg"), ("writer", "wg"), "researcher")
+    assert after == (None, None)
+
+
+def test_shared_workflow_instance_under_gather_gets_separate_runs(tmp_path):
+    pitstop.init(home=tmp_path)
+    wf = workflow("shared")
+
+    async def one(delay, fail):
+        async with wf:
+            rid = current_run().run_id
+            await asyncio.sleep(delay)
+            assert current_run().run_id == rid
+            if fail:
+                raise KeyError("mine")
+            return rid
+
+    async def main():
+        return await asyncio.gather(one(0.01, False), one(0.03, False), one(0.02, True), return_exceptions=True)
+
+    r1, r2, err = asyncio.run(main())
+    assert isinstance(err, KeyError) and err.args == ("mine",)
+    assert r1 != r2
+    assert _row(r1)["status"] == "ok" and _row(r2)["status"] == "ok"
+    statuses = [r["status"] for r in get_runtime().store.connect().execute("SELECT status FROM runs")]
+    assert sorted(statuses) == ["error", "ok", "ok"]
+    assert current_run() is None

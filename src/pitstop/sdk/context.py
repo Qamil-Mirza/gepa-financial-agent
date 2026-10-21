@@ -8,9 +8,9 @@ import inspect
 import logging
 import time
 import uuid
-from contextvars import ContextVar, Token
+from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import Any, Callable, Literal, TypeVar
+from typing import Any, Callable, Literal, NamedTuple, TypeVar
 
 from .errors import Halted
 from .runtime import get_runtime
@@ -53,17 +53,27 @@ class RunContext:
     def agent(self) -> str | None:
         """The agent name set by the innermost `agent()` scope of the calling task, for this run."""
         cur = _agent_var.get()
-        return cur[1] if cur is not None and cur[0] == self.run_id else None
+        return cur.name if cur is not None and cur.run_id == self.run_id else None
 
     @property
     def agent_goal(self) -> str | None:
         cur = _agent_var.get()
-        return cur[2] if cur is not None and cur[0] == self.run_id else None
+        return cur.goal if cur is not None and cur.run_id == self.run_id else None
+
+
+class _AgentFrame(NamedTuple):
+    """One agent() scope. Frames link to the enclosing one, so each task's chain lives in its own Context."""
+    run_id: str
+    name: str
+    goal: str | None
+    prev: _AgentFrame | None
+    owner: object
 
 
 _current: ContextVar[RunContext | None] = ContextVar("pitstop_run", default=None)
-# (run_id, agent name, agent goal) of the innermost agent() scope in the calling task.
-_agent_var: ContextVar[tuple[str, str, str | None] | None] = ContextVar("pitstop_agent", default=None)
+# Innermost agent() scope of the calling task. Scope objects keep no per-instance state, so one agent() or
+# workflow() object can be entered concurrently from several tasks or threads.
+_agent_var: ContextVar[_AgentFrame | None] = ContextVar("pitstop_agent", default=None)
 
 
 def current_run() -> RunContext | None:
@@ -121,7 +131,6 @@ class _Scope:
 class _Workflow(_Scope):
     def __init__(self, spec: WorkflowSpec):
         self.spec = spec
-        self._stack: list[tuple[RunContext, Any]] = []
 
     def _fresh(self) -> _Workflow:
         return _Workflow(self.spec)
@@ -131,7 +140,7 @@ class _Workflow(_Scope):
             raise RuntimeError("pitstop.workflow cannot be nested")
         ctx = RunContext(run_id=uuid.uuid4().hex, spec=self.spec)
         _safe(lambda: self._insert(ctx))
-        self._stack.append((ctx, _current.set(ctx)))
+        _current.set(ctx)
         return ctx
 
     def _insert(self, ctx: RunContext) -> None:
@@ -147,8 +156,13 @@ class _Workflow(_Scope):
             )
 
     def __exit__(self, et, ev, tb):
-        ctx, token = self._stack.pop()
-        _current.reset(token)
+        # Workflows never nest, so the enclosing value is always None; the run being closed is this
+        # Context's current one (not per-instance state, which concurrent tasks would share).
+        ctx = _current.get()
+        _current.set(None)
+        if ctx is None:
+            log.warning("pitstop: workflow exit without a current run; ignored")
+            return False
         status = "ok" if et is None else "halted" if issubclass(et, Halted) else "error"
 
         def finish() -> None:
@@ -164,7 +178,6 @@ class _Agent(_Scope):
 
     def __init__(self, name: str, goal: str | None):
         self.name, self.goal = name, goal
-        self._stack: list[Token | None] = []
 
     def _fresh(self) -> _Agent:
         return _Agent(self.name, self.goal)
@@ -175,15 +188,17 @@ class _Agent(_Scope):
             if not _Agent._warned:
                 _Agent._warned = True
                 log.info("pitstop.agent used outside a workflow; ignored")
-            self._stack.append(None)
             return None
-        self._stack.append(_agent_var.set((ctx.run_id, self.name, self.goal)))
+        _agent_var.set(_AgentFrame(ctx.run_id, self.name, self.goal, _agent_var.get(), self))
         return ctx
 
     def __exit__(self, et, ev, tb):
-        token = self._stack.pop()
-        if token is not None:
-            _agent_var.reset(token)
+        try:
+            cur = _agent_var.get()
+            if cur is not None and cur.owner is self:  # no frame was pushed for a no-op (outside-workflow) enter
+                _agent_var.set(cur.prev)
+        except Exception:
+            log.warning("pitstop: internal error ignored", exc_info=True)
         return False
 
 
