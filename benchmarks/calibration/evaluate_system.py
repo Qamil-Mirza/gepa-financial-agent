@@ -1,7 +1,7 @@
 """Measure the live system on logged PitStop runs: does correction keep drifting agents on task, and are the
 final reports grounded?
 
-  uv run python scripts/evaluate_system.py --treatment runs/recursive/round_00/runs \\
+  uv run python -m benchmarks.calibration.evaluate_system --treatment runs/recursive/round_00/runs \\
       --control runs/recursive/round_99/runs [--judge-model deepseek-ai/DeepSeek-V4-Pro] [--regenerate-reports]
 
 Correction effect: for every agent with a planted drift (scenario `drift_injection`), each research query the agent
@@ -17,16 +17,13 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
-
-from gepa_financial_agent.adapters.pitstop import PITSTOP_ROOT, _pitstop  # noqa: E402
-from gepa_financial_agent.config import Settings  # noqa: E402
-from gepa_financial_agent.crusoe_client import CrusoeClient  # noqa: E402
+from pitstop import llm as llm_mod
+from pitstop.config import PROMPTS
+from pitstop.correct.client import CrusoeClient
+from pitstop.correct.settings import Settings
 
 QUERY_JUDGE = """You check one research query against a financial-research agent's assignment. Answer whether the
 query serves the directive within its constraints. Context the success criteria ask for (competitors, base-year
@@ -52,7 +49,6 @@ def drifted_agent_queries(run_dir: Path) -> list[dict]:
 
 
 def rate(client: CrusoeClient, q: dict) -> dict:
-    llm_mod, *_ = _pitstop()
     user = (f"Directive: {q['directive']}\nConstraints: {' '.join(q['constraints']) or '(none)'}\n"
             f"Query: {q['query']}")
     for _ in range(2):
@@ -82,7 +78,6 @@ def correction_effect(runs: list[Path], client: CrusoeClient, workers: int) -> d
 
 
 async def regenerate_reports(runs: list[Path]) -> None:
-    _pitstop()
     from pitstop.agents.synthesizer import ReportSynthesizer
     from pitstop.config import load_settings
     from pitstop.llm import LLMClient, UsageTracker
@@ -91,7 +86,7 @@ async def regenerate_reports(runs: list[Path]) -> None:
     s = load_settings()
     synth = ReportSynthesizer(LLMClient(s.report_model, api_key=s.crusoe_api_key, base_url=s.crusoe_base_url,
                                         temperature=0.2, max_tokens=4000, usage=UsageTracker()),
-                              PITSTOP_ROOT / "prompts" / "worker")
+                              PROMPTS / "worker")
     for d in runs:
         meta = json.loads((d / "meta.json").read_text())
         events = [TrajectoryEvent.model_validate_json(l) for l in (d / "events.jsonl").read_text().splitlines() if l.strip()]
@@ -128,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--judge-model", default="deepseek-ai/DeepSeek-V4-Pro")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--regenerate-reports", action="store_true", help="rerun the report agent on treatment runs")
-    ap.add_argument("--out", default=str(ROOT / "runs" / "recursive" / "system_eval.json"))
+    ap.add_argument("--out", default=str(Path("runs") / "recursive" / "system_eval.json"))
     args = ap.parse_args(argv)
 
     s = Settings.from_env()

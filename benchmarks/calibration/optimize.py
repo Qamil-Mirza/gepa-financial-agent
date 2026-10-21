@@ -1,27 +1,25 @@
-"""Run GEPA on PitStop's supervisor prompt (teammate system, pitstop/pitstop), scored by PitStop's own supervisor code.
+"""Run GEPA on PitStop's supervisor prompt, scored by PitStop's own supervisor code.
 
 Reflects on the hard-pairs train split (NVIDIA), selects on val (Broadcom). Never reads test (AMD): compare the saved
 prompt against the baseline afterwards with PitStop's own harness, e.g.
 
-  uv run python scripts/optimize_pitstop.py --model nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B --max-metric-calls 500
-  cd pitstop/pitstop && uv run --project ../.. python -m evals.run_hard_cases --splits test --trials 5 \\
-      --model nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B --prompt prompts/gepa/<name>.txt
+  uv run python -m benchmarks.calibration.optimize --model nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B --max-metric-calls 500
+  uv run python -m benchmarks.hard_pairs.run_hard_cases --splits test --trials 5 \\
+      --model nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B --prompt src/pitstop/assets/prompts/gepa/<name>.txt
 """
 from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from pitstop.config import PROMPTS
+from pitstop.correct.client import CrusoeClient, MockModelClient
+from pitstop.correct.gepa import CrusoeReflectionLM, OptimizeConfig, run_optimization
+from pitstop.correct.policy import Policy
+from pitstop.correct.settings import Settings
 
-from gepa_financial_agent.adapters.pitstop import (BACKGROUND, OBJECTIVE, PITSTOP_ROOT, SEED_PROMPT,  # noqa: E402
-                                                   load_hard_cases, make_pitstop_evaluator)
-from gepa_financial_agent.config import Settings  # noqa: E402
-from gepa_financial_agent.crusoe_client import CrusoeClient, MockModelClient  # noqa: E402
-from gepa_financial_agent.optimizer import CrusoeReflectionLM, OptimizeConfig, run_optimization  # noqa: E402
-from gepa_financial_agent.policy_store import Policy  # noqa: E402
+from .adapter import BACKGROUND, OBJECTIVE, SEED_PROMPT, load_hard_cases, make_pitstop_evaluator
 
 
 def mock_reflection(prompt):
@@ -74,7 +72,7 @@ def main(argv: list[str] | None = None) -> int:
     print("val score per candidate:", [round(x, 3) for x in result.get("val_aggregate_scores", [])])
 
     meta = {"name": name, "mocked": bool(args.mock), "supervisor_model": model, "run_dir": art.run_dir,
-            "seed_prompt": "pitstop/pitstop/prompts/supervisor_v0.txt", "seed_version": seed.version,
+            "seed_prompt": "src/pitstop/assets/prompts/supervisor_v0.txt", "seed_version": seed.version,
             "best_version": art.best_policy.version, "seed_val_score": art.seed_val_score,
             "best_val_score": art.best_val_score, "num_candidates": art.num_candidates,
             "total_metric_calls": art.total_metric_calls, "val_repeats": args.val_repeats,
@@ -82,9 +80,9 @@ def main(argv: list[str] | None = None) -> int:
                           "acceptance": args.acceptance, "gepa_seed": args.gepa_seed},
             "supervisor_usage": art.supervisor_usage, "reflection_usage": art.reflection_usage}
     if args.mock:
-        print("mock run: prompt not written to pitstop/pitstop/prompts/gepa/")
+        print(f"mock run: prompt not written to {PROMPTS / 'gepa'}")
         return 0
-    out = PITSTOP_ROOT / "prompts" / "gepa"
+    out = PROMPTS / "gepa"  # dev-only write into the source tree; the demo reads from here
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{name}.txt").write_text(art.best_policy.text.strip() + "\n", encoding="utf-8")
     (out / f"{name}.json").write_text(json.dumps(meta, indent=2, default=str) + "\n", encoding="utf-8")

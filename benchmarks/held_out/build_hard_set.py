@@ -1,11 +1,9 @@
-"""Build the hard held-out test set with the same pipeline as synthetic-data/ (imported, not copied).
+"""Build the hard held-out test set with the same pipeline as benchmarks/synth/ (imported, not copied).
 
-  python build_hard_set.py prefetch   # cache You.com answers for on-task, bait and detour queries
-  python build_hard_set.py generate   # real Nemotron rollouts on Crusoe, verified, stored in traces/
-  python build_hard_set.py export     # re-verify and write data/test.jsonl
-  python build_hard_set.py stats
-
-Run with the synthetic-data venv:  ../../synthetic-data/.venv/bin/python build_hard_set.py <cmd>
+  uv run python benchmarks/held_out/build_hard_set.py prefetch   # cache You.com answers for on-task, bait, detour queries
+  uv run python benchmarks/held_out/build_hard_set.py generate   # real Nemotron rollouts on Crusoe, verified, in traces/
+  uv run python benchmarks/held_out/build_hard_set.py export     # re-verify and write data/test.jsonl
+  uv run python benchmarks/held_out/build_hard_set.py stats
 """
 from __future__ import annotations
 
@@ -19,7 +17,7 @@ from collections import Counter
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parents[1] / "synthetic-data"))  # repo-root synthetic-data/
+sys.path.insert(0, str(HERE.parent / "synth"))  # benchmarks/synth/
 sys.path.insert(0, str(HERE))
 
 from hard_tasks import HARD_TASKS  # noqa: E402

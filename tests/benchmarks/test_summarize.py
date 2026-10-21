@@ -1,11 +1,7 @@
-import importlib.util
+import importlib
 import json
-from pathlib import Path
 
-_spec = importlib.util.spec_from_file_location("summarize_pitstop",
-                                               Path(__file__).resolve().parents[1] / "scripts" / "summarize_pitstop.py")
-sp = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(sp)
+sp = importlib.import_module("benchmarks.calibration.summarize")
 
 
 def _run(tmp_path, name, correct_by_case, trials=3, infra=0):

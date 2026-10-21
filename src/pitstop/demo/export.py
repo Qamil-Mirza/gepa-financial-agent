@@ -6,7 +6,7 @@
   python -m pitstop.demo.export --swarm-run runs/pair-<hex>     # a recorded live pair (dir with pair.json)
       [--gepa-run runs/gepa/pitstop_nano_800] [--arm key=label|sublabel|path[,fallback...]]... [--out PATH]
 
-An arm's path is an evals/run_hard_cases.py output dir, a glob of them (newest wins) or a summary JSON;
+An arm's path is a benchmarks/hard_pairs/run_hard_cases.py output dir, a glob of them (newest wins) or a summary JSON;
 relative paths are relative to the current directory. Comma-separated paths are tried in order.
 """
 from __future__ import annotations
@@ -25,8 +25,8 @@ from .views import PAIR_FILE, build_gepa_view, build_pair_view, build_scores_vie
 
 DEFAULT_OUT = SNAPSHOT
 DEFAULT_GEPA_RUN = Path("runs") / "gepa" / "pitstop_nano_800"  # relative to the current directory
-# No fallback to evals/results/baseline_v0_*.json: those were scored on an earlier, smaller test split, so a bar
-# built from them would not be comparable. An arm stays "pending" until its compare_* run exists.
+# No fallback to benchmarks/hard_pairs/results/baseline_v0_*.json: those were scored on an earlier, smaller test
+# split, so a bar built from them would not be comparable. An arm stays "pending" until its compare_* run exists.
 DEFAULT_ARMS = [
     ("nano", "Nano", "original prompt", ["runs/compare_nano/eval-supervisor_v0-*"]),
     ("nano_gepa", "Nano + GEPA", "optimized prompt", ["runs/compare_nano/eval-pitstop_nano_800-*"]),

@@ -2,14 +2,11 @@ import json
 
 import pytest
 
-from gepa_financial_agent.adapters.pitstop import (BACKGROUND, PITSTOP_ROOT, load_hard_cases, make_pitstop_evaluator,
-                                                   score_judgment)
-from gepa_financial_agent.crusoe_client import MockModelClient
-from gepa_financial_agent.optimizer import OptimizeConfig, run_optimization
-from gepa_financial_agent.policy_store import Policy
-
-pytestmark = pytest.mark.skipif(not (PITSTOP_ROOT / "evals" / "data" / "train.jsonl").exists(),
-                                reason="pitstop hard-pairs data not present")
+from benchmarks.calibration.adapter import (BACKGROUND, SEED_PROMPT, load_hard_cases, make_pitstop_evaluator,
+                                            score_judgment)
+from pitstop.correct.client import MockModelClient
+from pitstop.correct.gepa import OptimizeConfig, run_optimization
+from pitstop.correct.policy import Policy
 
 
 def _verdict(status, confidence, drift_type, evidence):
@@ -79,7 +76,7 @@ def test_background_states_the_contract_and_the_alert_rule():
 def test_run_optimization_end_to_end_on_pitstop_with_mocks(tmp_path):
     train, val = load_hard_cases("train")[:6], load_hard_cases("val")[:4]
     client = MockModelClient(_verdict("ON_TRACK", 0.9, "none", []))
-    seed = Policy.from_text((PITSTOP_ROOT / "prompts" / "supervisor_v0.txt").read_text(), name="supervisor_v0")
+    seed = Policy.from_text(SEED_PROMPT.read_text(), name="supervisor_v0")
     reflection = lambda prompt: "```\nYou are a careful supervisor. Flag repeated identical queries.\n```"
     cfg = OptimizeConfig(max_metric_calls=20, reflection_minibatch_size=2, max_workers=1, run_dir=str(tmp_path / "run"),
                          perfect_score=1.0)
@@ -89,3 +86,9 @@ def test_run_optimization_end_to_end_on_pitstop_with_mocks(tmp_path):
     # The ON_TRACK stub is right on exactly the healthy half of val; 0.0 would mean GEPA never reached the evaluator.
     assert art.seed_val_score == pytest.approx(sum(c.label == "ok" for c in val) / len(val))
     assert json.loads((tmp_path / "run" / "config.json").read_text())["objective"] == "test objective"
+
+
+def test_adapter_needs_no_sys_path_hack():
+    import sys, benchmarks.calibration.adapter as a
+    assert not any(p.endswith("pitstop/pitstop") for p in sys.path)
+    assert a.SEED_PROMPT.is_file() and len(a.load_hard_cases("test")) > 0

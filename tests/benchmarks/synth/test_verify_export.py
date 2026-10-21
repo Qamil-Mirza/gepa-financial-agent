@@ -10,7 +10,7 @@ from synth.schemas import DatasetExample, SteerSpec
 from synth.tasks import TASKS
 from synth.textmatch import keyword_hits, numbers, same_question
 from synth.verify import verify
-from tests.helpers import NONE, Builder, benign, drift, on_task_prefix
+from synth_helpers import NONE, Builder, benign, drift, on_task_prefix
 
 
 def _verified(trace):

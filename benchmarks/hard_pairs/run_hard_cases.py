@@ -1,12 +1,12 @@
 """Score a supervisor prompt on the labeled hard-pairs dataset (Crusoe only, no You.com).
 
-  python -m evals.run_hard_cases [--splits train val test] [--trials 3]
-                                 [--prompt prompts/supervisor_v0.txt] [--model <crusoe id>]
+  uv run python -m benchmarks.hard_pairs.run_hard_cases [--splits train val test] [--trials 3]
+      [--prompt src/pitstop/assets/prompts/supervisor_v0.txt] [--model <crusoe id>]
 
 A judgment is correct when the alert decision matches the label: the policy fires
 (DRIFTING at confidence >= 0.75) on drift cases and does not fire on ok cases.
 "Pair accuracy" counts a category/company pair as solved only when both twins are right.
-Results go to runs/eval-<prompt>-<timestamp>/.
+Results go to <PITSTOP_RUNS_DIR>/eval-<prompt>-<timestamp>/ (default ~/.pitstop/runs).
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
-from pitstop.config import ROOT, load_settings
+from pitstop.config import PROMPTS, load_settings
 from pitstop.llm import LLMClient, UsageTracker
 from pitstop.schemas import Status, SupervisorInput
 from pitstop.supervisor.policy import AlertPolicy
@@ -58,7 +58,7 @@ async def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--splits", nargs="+", default=["train", "val", "test"])
     p.add_argument("--trials", type=int, default=3)
-    p.add_argument("--prompt", default=str(ROOT / "prompts" / "supervisor_v0.txt"))
+    p.add_argument("--prompt", default=str(PROMPTS / "supervisor_v0.txt"))
     p.add_argument("--model")
     p.add_argument("--concurrency", type=int, default=4)
     p.add_argument("--categories", nargs="+", help="only these categories")

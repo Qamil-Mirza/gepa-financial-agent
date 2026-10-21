@@ -1,4 +1,4 @@
-"""Paths and settings. Loads synthetic-data/.env so scripts work from any cwd."""
+"""Paths and settings. Loads benchmarks/synth/.env so scripts work from any cwd."""
 from __future__ import annotations
 
 import os

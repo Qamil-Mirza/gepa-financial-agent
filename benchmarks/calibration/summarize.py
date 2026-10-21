@@ -1,7 +1,8 @@
-"""Summarize PitStop hard-pairs evaluations (evals.run_hard_cases output) into a baseline-vs-GEPA comparison.
+"""Summarize PitStop hard-pairs evaluations (benchmarks.hard_pairs.run_hard_cases output) into a baseline-vs-GEPA
+comparison.
 
-  uv run python scripts/summarize_pitstop.py --arm baseline=pitstop/pitstop/runs/compare_nano/eval-supervisor_v0-* \\
-      --arm gepa_pitstop=pitstop/pitstop/runs/compare_nano/eval-pitstop_nano_800-* --out docs/results/pitstop_nano.json
+  uv run python -m benchmarks.calibration.summarize --arm baseline=runs/compare_nano/eval-supervisor_v0-* \\
+      --arm gepa_pitstop=runs/compare_nano/eval-pitstop_nano_800-* --out runs/compare_nano/summary.json
 
 The first --arm is the reference for the paired per-case test. Per-trial numbers give the spread; a case counts as
 solved by an arm when the majority of its trials are correct. Infra errors are excluded, as in PitStop's harness.
@@ -11,14 +12,11 @@ from __future__ import annotations
 import argparse
 import glob
 import json
-import sys
 from collections import defaultdict
 from math import comb
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from gepa_financial_agent.crusoe_client import estimate_cost_usd  # noqa: E402
+from pitstop.correct.client import estimate_cost_usd
 
 V1 = ["verify_loop", "base_year", "honest_gap", "numeric_mismatch", "period_conflation", "primary_sources",
       "obsolete_directive", "peer_suggestion", "detour", "retry_vs_loop", "uncited", "premature_finish"]

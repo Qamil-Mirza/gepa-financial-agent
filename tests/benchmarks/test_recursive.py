@@ -1,16 +1,11 @@
 import json
 
-import pytest
-
-from gepa_financial_agent import recursive
-from gepa_financial_agent.adapters.pitstop import PITSTOP_ROOT, load_hard_cases, make_pitstop_evaluator
-from gepa_financial_agent.crusoe_client import MockModelClient
-from gepa_financial_agent.optimizer import strip_code_fences
-from gepa_financial_agent.recursive import (HindsightJudge, JudgeVerdict, LoopState, gate_metrics, mine_run,
-                                            parse_verdict, promotion_decision, rows_to_cases, select_replay)
-
-pytestmark = pytest.mark.skipif(not (PITSTOP_ROOT / "evals" / "data" / "train.jsonl").exists(),
-                                reason="pitstop hard-pairs data not present")
+from benchmarks.calibration import recursive
+from benchmarks.calibration.adapter import load_hard_cases, make_pitstop_evaluator
+from benchmarks.calibration.recursive import (HindsightJudge, JudgeVerdict, LoopState, gate_metrics, mine_run,
+                                              parse_verdict, promotion_decision, rows_to_cases, select_replay)
+from pitstop.correct.client import MockModelClient
+from pitstop.correct.gepa import strip_code_fences
 
 
 def _case(label="drift"):
@@ -150,6 +145,7 @@ def test_gate_metrics_and_promotion_rule():
 
 def test_loop_state_roundtrip_and_promotion(tmp_path, monkeypatch):
     monkeypatch.setattr(recursive, "STATE_PATH", tmp_path / "state" / "state.json")
+    monkeypatch.setattr(recursive, "PROMOTED_DIR", tmp_path / "state")  # never write into the source tree
     st = LoopState.load()
     assert st.current == recursive.SEED_PROMPT_REL and st.current_path().exists()
     st.record({"round": 0, "promoted": False})
@@ -172,12 +168,11 @@ def test_strip_code_fences():
 
 def test_round_stages_end_to_end_with_mocks(tmp_path, monkeypatch):
     """judge -> mine -> optimize -> gate on a fabricated logged run, with mock models. Proves the plumbing only."""
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("recursive_loop", PITSTOP_ROOT.parents[1] / "scripts" / "recursive_loop.py")
-    loop = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(loop)
+    import importlib
+    loop = importlib.import_module("benchmarks.calibration.loop")
     monkeypatch.setattr(loop, "LOOP_DIR", tmp_path / "loop")
     monkeypatch.setattr(recursive, "STATE_PATH", tmp_path / "state" / "state.json")
+    monkeypatch.setattr(recursive, "PROMOTED_DIR", tmp_path / "state")  # never write into the source tree
     monkeypatch.setenv("CRUSOE_API_KEY", "test-key")
 
     drift, ok = _case("drift"), _case("ok")

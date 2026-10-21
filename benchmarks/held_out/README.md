@@ -5,8 +5,8 @@ against the **GEPA-optimized prompt**. Use it only for that final comparison, ne
 GEPA optimization or candidate selection.
 
 Same format as the main dataset: one `DatasetExample` per line in `data/test.jsonl`. See
-[../../synthetic-data/DATASET_FORMAT.md](../../synthetic-data/DATASET_FORMAT.md). Same pipeline: it
-imports `synth/` from the repo-root `synthetic-data/` (real `nvidia/Nemotron-3.5-Lightning-30B-A3B` workers on
+[../synth/DATASET_FORMAT.md](../synth/DATASET_FORMAT.md). Same pipeline: it
+imports `synth/` from `benchmarks/synth/` (real `nvidia/Nemotron-3.5-Lightning-30B-A3B` workers on
 Crusoe, real You.com Finance Research evidence, the same deterministic verifier and labels).
 
 ## Why it's held out
@@ -31,13 +31,15 @@ at every cutoff.
 ## Commands
 
 ```bash
-cd financial-agent/test-synthetic-data
-PY=../../synthetic-data/.venv/bin/python   # reuses synthetic-data/.env for API keys
-$PY build_hard_set.py prefetch   # ~45 live You.com calls (~$5), once
-$PY build_hard_set.py generate   # 75 rollouts; --max-youcom-calls caps extra live calls (default 50)
-$PY build_hard_set.py export     # re-verify -> data/test.jsonl
-$PY build_hard_set.py stats
+# from the repo root; API keys come from the environment or benchmarks/synth/.env
+uv run python benchmarks/held_out/build_hard_set.py prefetch   # ~45 live You.com calls (~$5), once
+uv run python benchmarks/held_out/build_hard_set.py generate   # 75 rollouts; --max-youcom-calls caps extra live calls (default 50)
+uv run python benchmarks/held_out/build_hard_set.py export     # re-verify -> data/test.jsonl
+uv run python benchmarks/held_out/build_hard_set.py stats
 ```
+
+`traces/`, `traces_archive/`, `evidence/` and `data/` here are generated on demand and git-ignored; the
+hackathon run of them is archived as a release asset.
 
 `traces/` holds the raw runs, including ground truth and the private steer conversation. Never
 feed them to the supervisor; use `data/test.jsonl`.

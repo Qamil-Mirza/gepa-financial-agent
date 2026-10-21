@@ -11,7 +11,7 @@ The label of every case is decidable from what the supervisor is shown.
 Splits are by company context so the test set uses entities GEPA never saw:
   train = NVIDIA, val = Broadcom, test = AMD   (12 categories x 2 labels each)
 
-  python -m evals.hard_cases           # build and write evals/data/{train,val,test}.jsonl
+  python -m benchmarks.hard_pairs.hard_cases   # build and write benchmarks/hard_pairs/data/{train,val,test}.jsonl
 """
 from __future__ import annotations
 

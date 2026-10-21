@@ -1,6 +1,6 @@
 # Drift Dataset Format (v1)
 
-The contract between the synthetic data generator (`synthetic-data/`) and the supervisor / GEPA
+The contract between the synthetic data generator (`benchmarks/synth/`) and the supervisor / GEPA
 evaluator. The supervisor teammate can adopt it into `docs/DATASET_CONTRACT.md`. The
 Pydantic source of truth is `synth/schemas.py` (`DatasetExample`).
 

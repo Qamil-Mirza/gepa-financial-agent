@@ -22,7 +22,7 @@ from pitstop.supervisor.supervisor import Supervisor
 from test_pipeline_offline import SCENARIO, supervisor_handler, worker_handler
 
 REAL_GEPA_RUN = Path(__file__).resolve().parents[2] / "runs" / "gepa" / "pitstop_nano_800"
-BASELINE_NANO = Path(__file__).resolve().parents[2] / "pitstop" / "pitstop" / "evals" / "results" / "baseline_v0_nano.json"
+BASELINE_NANO = Path(__file__).resolve().parents[2] / "benchmarks" / "hard_pairs" / "results" / "baseline_v0_nano.json"
 
 
 def shadow_handler(system, user):

@@ -1,12 +1,13 @@
-"""Recursive improvement loop for PitStop's live supervisor (see gepa_financial_agent/recursive.py).
+"""Recursive improvement loop for PitStop's live supervisor (see benchmarks/calibration/recursive.py).
 
-  uv run python scripts/recursive_loop.py calibrate --judge-model <id>     # judge vs known hard-pair labels
-  uv run python scripts/recursive_loop.py round                            # swarm -> judge -> mine -> optimize -> gate
-  uv run python scripts/recursive_loop.py swarm|judge|mine|optimize|gate [--round N]   # one stage at a time
-  uv run python scripts/recursive_loop.py status
+  uv run python -m benchmarks.calibration.loop calibrate --judge-model <id>     # judge vs known hard-pair labels
+  uv run python -m benchmarks.calibration.loop round                            # swarm -> judge -> mine -> optimize -> gate
+  uv run python -m benchmarks.calibration.loop swarm|judge|mine|optimize|gate [--round N]   # one stage at a time
+  uv run python -m benchmarks.calibration.loop status
 
-Round artifacts go to runs/recursive/round_NN/ (git-ignored). Promoted prompts and the loop state are written to
-pitstop/pitstop/prompts/recursive/, and `state.json` there names the prompt the live supervisor should use.
+Round artifacts go to runs/recursive/round_NN/ under the current directory (git-ignored). Promoted prompts are
+written to src/pitstop/assets/prompts/recursive/; benchmarks/calibration/state.json names the prompt the live
+supervisor should use.
 GEPA never reads the hard-pairs test split; only the gate does, after the candidate is fixed.
 """
 from __future__ import annotations
@@ -15,27 +16,22 @@ import argparse
 import asyncio
 import json
 import os
-import sys
 from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+from pitstop.correct.client import CrusoeClient
+from pitstop.correct.gepa import CrusoeReflectionLM, OptimizeConfig, run_optimization
+from pitstop.correct.policy import Policy
+from pitstop.correct.settings import Settings
 
-from gepa_financial_agent.adapters.pitstop import (BACKGROUND, OBJECTIVE, _make_llm_class, _pitstop,  # noqa: E402
-                                                   load_hard_cases, make_pitstop_evaluator)
-from gepa_financial_agent.config import Settings  # noqa: E402
-from gepa_financial_agent.crusoe_client import CrusoeClient  # noqa: E402
-from gepa_financial_agent.optimizer import CrusoeReflectionLM, OptimizeConfig, run_optimization  # noqa: E402
-from gepa_financial_agent.policy_store import Policy  # noqa: E402
-from gepa_financial_agent.recursive import (HindsightJudge, JudgeVerdict, LoopState, final_inputs,  # noqa: E402
-                                            gate_metrics, load_run, mine_run, promotion_decision, rows_to_cases,
-                                            select_replay)
+from .adapter import BACKGROUND, OBJECTIVE, _make_llm_class, load_hard_cases, make_pitstop_evaluator
+from .recursive import (HindsightJudge, JudgeVerdict, LoopState, final_inputs, gate_metrics, load_run, mine_run,
+                        promotion_decision, rows_to_cases, select_replay)
 
 NANO = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B"
 SUPER = "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B"
-LOOP_DIR = ROOT / "runs" / "recursive"
+LOOP_DIR = Path("runs") / "recursive"  # relative to the current directory
 DEFAULT_SCENARIOS = ["nvda_amd", "hard_subtle", "hard_constraints", "hard_clean"]
 
 
@@ -107,8 +103,7 @@ def cmd_calibrate(args, s: Settings, state: LoopState) -> int:
 
 
 def cmd_swarm(args, s: Settings, state: LoopState) -> int:
-    _pitstop()
-    from pitstop.config import ROOT as PROOT, load_settings
+    from pitstop.config import PROMPTS, SCENARIOS, load_settings
     from pitstop.llm import LLMClient, UsageTracker
     from pitstop.agents.synthesizer import ReportSynthesizer
     from pitstop.orchestrator import Swarm
@@ -127,7 +122,7 @@ def cmd_swarm(args, s: Settings, state: LoopState) -> int:
     async def go():
         swarms = []
         for name in args.scenarios:
-            path = Path(name) if Path(name).exists() else PROOT / "scenarios" / f"{name}.json"
+            path = Path(name) if Path(name).exists() else SCENARIOS / f"{name}.json"
             research = FinanceResearchClient(api_key=ps.ydc_api_key, cache_dir=ps.cache_dir, mode=args.mode,
                                              effort=ps.youcom_effort,
                                              max_live_calls=args.max_research_calls or ps.max_research_calls)
@@ -135,9 +130,9 @@ def cmd_swarm(args, s: Settings, state: LoopState) -> int:
                                usage=UsageTracker())
             synth = None if args.no_report else ReportSynthesizer(
                 LLMClient(ps.report_model, api_key=s.crusoe_api_key, base_url=s.base_url, temperature=0.2,
-                          max_tokens=4000, usage=UsageTracker()), PROOT / "prompts" / "worker")
+                          max_tokens=4000, usage=UsageTracker()), PROMPTS / "worker")
             swarms.append(Swarm(Scenario.model_validate_json(path.read_text()), worker_llm=worker, supervisor=sup,
-                                research=research, prompts_dir=PROOT / "prompts" / "worker", runs_dir=rd / "runs",
+                                research=research, prompts_dir=PROMPTS / "worker", runs_dir=rd / "runs",
                                 verbose_events=False, correct_on_drift=not args.no_correct, synthesizer=synth))
         await asyncio.gather(*(sw.run_all() for sw in swarms))
 

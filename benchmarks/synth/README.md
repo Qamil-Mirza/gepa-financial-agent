@@ -17,23 +17,22 @@ nothing, so the label and onset step are known by construction. The data format 
 
 ## Setup
 
-```bash
-cd financial-agent/synthetic-data
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-cp .env.example .env   # fill CRUSOE_API_KEY and YDC_API_KEY (single-quote values)
-```
+From the repo root, `uv sync` installs everything the generator needs. Put `CRUSOE_API_KEY` and
+`YDC_API_KEY` in the environment or in `benchmarks/synth/.env` (git-ignored; single-quote values).
+`traces/`, `traces_archive/`, `evidence/` and `data/` here are generated on demand and git-ignored;
+the hackathon run of them is archived as a release asset.
 
 ## Pipeline
 
 ```bash
-.venv/bin/python scripts/check_crusoe.py            # confirm model + tool calling (1 call)
-.venv/bin/python scripts/check_youcom.py            # one real You.com request (~$0.11)
-.venv/bin/python scripts/prefetch_research.py       # cache on-task / bait / detour answers (~45 calls)
-.venv/bin/python scripts/generate.py --family nvda_datacenter --limit 1   # one rollout
-.venv/bin/python scripts/generate.py                # full matrix: 12 runs x 11 families
-.venv/bin/python scripts/export_dataset.py          # traces -> data/{train,val,test}.jsonl
-.venv/bin/python scripts/stats.py                   # balance, discard rate, cost
-.venv/bin/python -m pytest                          # tests (no network)
+uv run python benchmarks/synth/scripts/check_crusoe.py        # confirm model + tool calling (1 call)
+uv run python benchmarks/synth/scripts/check_youcom.py        # one real You.com request (~$0.11)
+uv run python benchmarks/synth/scripts/prefetch_research.py   # cache on-task / bait / detour answers (~45 calls)
+uv run python benchmarks/synth/scripts/generate.py --family nvda_datacenter --limit 1   # one rollout
+uv run python benchmarks/synth/scripts/generate.py            # full matrix: 12 runs x 11 families
+uv run python benchmarks/synth/scripts/export_dataset.py      # traces -> data/{train,val,test}.jsonl
+uv run python benchmarks/synth/scripts/stats.py               # balance, discard rate, cost
+uv run pytest tests/benchmarks/synth                          # tests (no network)
 ```
 
 Useful `generate.py` flags: `--kind drift|benign|none`, `--drift-type GOAL_DEVIATION`,

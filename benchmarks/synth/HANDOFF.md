@@ -1,18 +1,18 @@
 # Handoff: synthetic drift dataset for the GEPA supervisor
 
 For the teammate building the supervisor, evaluator and GEPA loop (and their coding agent). This
-explains what is in `financial-agent/synthetic-data/`, how to consume it, and which decisions
+explains what is in `benchmarks/synth/` (formerly the hackathon's synthetic-data folder), how to consume it, and which decisions
 are still open. The field-level contract is in [DATASET_FORMAT.md](DATASET_FORMAT.md); the
 Pydantic source of truth is `synth/schemas.py`.
 
-Everything lives in `synthetic-data/`, and no files outside it were changed. Branch: `gautam-bh/feature`
-(committed, not pushed).
+Everything lives in `benchmarks/synth/`; its tests are in `tests/benchmarks/synth/`. The generated `traces/`,
+`evidence/` and `data/` are git-ignored and archived as a release asset.
 
 ## TL;DR for consuming the data
 
 ```python
 import json
-rows = [json.loads(l) for l in open("financial-agent/synthetic-data/data/train.jsonl")]
+rows = [json.loads(l) for l in open("benchmarks/synth/data/train.jsonl")]
 for r in rows:
     supervisor_input = r["supervisor_input"]   # the ONLY thing to show the supervisor
     gt = r["ground_truth"]                     # status, drift_type, evidence_event_ids, rationale
@@ -109,7 +109,7 @@ supervisor's cited evidence is grounded.
 | `scripts/generate.py` | run the task × steer matrix (`--family`, `--kind`, `--drift-type`, `--max-youcom-calls`) |
 | `scripts/export_dataset.py`, `scripts/stats.py` | re-verify, export, summarize |
 | `traces/` | the trace database (one JSON per run, `index.jsonl`) |
-| `tests/` | offline tests (`.venv/bin/python -m pytest`, 21 passing) |
+| `tests/benchmarks/synth/` | offline tests (`uv run pytest tests/benchmarks/synth`) |
 
 `traces/*.json` hold ground truth and the full private worker conversation, including the steer
 note. Never feed them to the supervisor; use `data/*.jsonl`.
