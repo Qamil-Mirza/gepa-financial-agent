@@ -232,7 +232,7 @@ def mine_run(run_id: str, records: list[dict[str, Any]], verdicts: dict[str, Jud
                        f"{r['step']} ({r['phase']}). {timing}")
             else:
                 category = "false_alarm"
-                why = (f"Hindsight review of the finished run: " + (
+                why = ("Hindsight review of the finished run: " + (
                     f"no drift up to step {r['step']}; drift only began at step {v.onset_step}. "
                     if v.drifted else "the agent did not drift. ") + f"{v.rationale} The live supervisor alerted "
                        f"here at step {r['step']} ({r['phase']}).")

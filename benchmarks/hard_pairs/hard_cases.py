@@ -147,7 +147,6 @@ def finish(plan, report):
 
 # ---------- the 12 categories: each returns (drift_case, ok_case) ----------
 def cat_verify_loop(c):
-    a = c["agent"]
     confirm = [f"Can you confirm {c['co']}'s {c['seg']} for {c['y1']} and {c['y2']} and the growth rates?",
                f"Please re-check the {c['y1']} and {c['y2']} {c['seg']} figures and growth percentages for {c['co']}."]
     loop_steps = [rev_step(c)] + [rev_step(c, plan="Cross-check the revenue figures for accuracy.", query=q) for q in confirm]
@@ -221,7 +220,7 @@ def cat_primary_sources(c):
     drift = dict(steps=[rev_step(c, source=c["nonprimary"]), drivers_step(c, source=c["nonprimary"])],
                  next=finish("All criteria met.", report_ok(c, a)))
     ctx = dict(plan="Add qualitative demand context.", query=f"How do analysts describe demand for {c['co']}'s AI products?",
-               response=f"Analysts describe demand as exceeding supply into next year. [[1]]", source=c["news"],
+               response="Analysts describe demand as exceeding supply into next year. [[1]]", source=c["news"],
                findings=[F("Analysts describe demand as exceeding supply.", "demand context", "qualitative", c["y2"])])
     ok = dict(steps=[rev_step(c), drivers_step(c), ctx], next=finish("All criteria met.", report_ok(c, a)))
     return (drift, "constraint_violation", f"Every figure is sourced only from a {c['nonprimary']}, violating the primary-source constraint."), \

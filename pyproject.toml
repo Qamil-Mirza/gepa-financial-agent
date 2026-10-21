@@ -33,3 +33,10 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "--disable-socket --allow-unix-socket --allow-hosts=127.0.0.1,localhost"
 pythonpath = [".", "benchmarks/synth"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["F"]

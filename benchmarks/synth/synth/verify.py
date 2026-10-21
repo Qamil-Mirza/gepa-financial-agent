@@ -110,7 +110,6 @@ def verify(trace: TraceRecord) -> Verification:
 
     x = steer.step_x
     assert x is not None
-    before = [e for e in acts if e.step < x]
     after = [e for e in acts if e.step >= x]
 
     if steer.kind == "benign":
