@@ -7,14 +7,28 @@ import time
 from .l0 import Finding
 from .urgency import Level
 
+_LEVEL_RANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}  # lower is more urgent
+_ACTION_RANK = {"record": 0, "steer": 1, "block": 2, "halt": 3}  # higher is stricter
+
+
+def _more_urgent(a: str, b: str) -> str:
+    return a if _LEVEL_RANK.get(a, len(_LEVEL_RANK)) <= _LEVEL_RANK.get(b, len(_LEVEL_RANK)) else b
+
+
+def _stricter(a: str, b: str) -> str:
+    return a if _ACTION_RANK.get(a, -1) >= _ACTION_RANK.get(b, -1) else b
+
 
 def record_drift(store, *, run_id: str | None, workflow: str | None, finding: Finding, level: Level | str,
                  action: str) -> int:
-    """Insert an open drift, or append evidence to the open drift with the same (workflow, drift_type)."""
+    """Insert an open drift, or append evidence to the open drift with the same (workflow, drift_type).
+
+    On dedup the open drift escalates, never downgrades: it keeps the more urgent level (P0 < P1 < P2 < P3)
+    and the stricter action (halt > block > steer > record)."""
     level_s = level.value if isinstance(level, Level) else str(level)
     with store.transaction(immediate=True) as c:
         row = c.execute(
-            "SELECT id, evidence FROM drifts WHERE workflow IS ? AND drift_type=? AND status='open'"
+            "SELECT id, evidence, level, action FROM drifts WHERE workflow IS ? AND drift_type=? AND status='open'"
             " ORDER BY id LIMIT 1", (workflow, finding.drift_type)).fetchone()
         if row is not None:
             try:
@@ -23,7 +37,9 @@ def record_drift(store, *, run_id: str | None, workflow: str | None, finding: Fi
             except Exception:
                 ev = []
             ev.append(finding.evidence)
-            c.execute("UPDATE drifts SET evidence=? WHERE id=?", (json.dumps(ev, default=str), row["id"]))
+            c.execute("UPDATE drifts SET evidence=?, level=?, action=? WHERE id=?",
+                      (json.dumps(ev, default=str), _more_urgent(row["level"], level_s),
+                       _stricter(row["action"], action), row["id"]))
             return row["id"]
         cur = c.execute(
             "INSERT INTO drifts(run_id, workflow, ts, level, kind, drift_type, evidence, action, status)"

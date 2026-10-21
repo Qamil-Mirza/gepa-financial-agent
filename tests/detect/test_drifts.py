@@ -43,3 +43,20 @@ def test_record_drift_null_workflow_dedups(tmp_path):
     assert a == b
     raw = s.connect().execute("SELECT evidence FROM drifts WHERE id=?", (a,)).fetchone()[0]
     assert json.loads(raw) == [{"n": 1}, {"n": 2}]
+
+
+def test_record_drift_dedup_escalates_level_and_action(tmp_path):
+    s = _store(tmp_path)
+    a = record_drift(s, run_id="r1", workflow="wf", finding=f(n=1), level=Level.P1, action="steer")
+    b = record_drift(s, run_id="r2", workflow="wf", finding=f(n=2), level=Level.P0, action="block")
+    assert a == b
+    [row] = list_drifts(s)
+    assert (row["level"], row["action"]) == ("P0", "block")
+    # a later, milder occurrence never downgrades the open drift
+    record_drift(s, run_id="r3", workflow="wf", finding=f(n=3), level="P3", action="record")
+    [row] = list_drifts(s)
+    assert (row["level"], row["action"]) == ("P0", "block")
+    assert row["evidence"] == [{"n": 1}, {"n": 2}, {"n": 3}]
+    record_drift(s, run_id="r4", workflow="wf", finding=f(n=4), level="P2", action="halt")
+    [row] = list_drifts(s)
+    assert (row["level"], row["action"]) == ("P0", "halt")
