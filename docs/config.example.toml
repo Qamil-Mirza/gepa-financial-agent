@@ -1,0 +1,19 @@
+# PitStop user config (example).
+#
+# Copy this file to ~/.pitstop/config.toml (or $PITSTOP_HOME/config.toml if you set PITSTOP_HOME)
+# and edit. It holds no keys or secrets: API keys stay in environment variables.
+
+# Hard dollar budget for everything sent to Crusoe, including PitStop's own calls
+# (research swarm, supervisor/judge, GEPA, trace generator). Once $50 has been spent in
+# total, the next call raises BudgetExceeded before it reaches the provider.
+[budgets.crusoe]
+base_url = "https://api.inference.crusoecloud.com/v1"
+limit_usd = 50
+period = "total"        # one of the periods PitStop accepts, "total" = lifetime
+
+# Optional price override per model, in USD per million tokens. Unknown models are priced
+# conservatively until you add an entry like this one.
+# [prices."vendor/model-name"]
+# input = 0.10
+# output = 0.40
+# cached_input = 0.05

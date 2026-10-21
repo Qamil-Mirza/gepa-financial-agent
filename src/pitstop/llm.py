@@ -116,18 +116,25 @@ class LLMClient:
         timeout: float = 120.0,
         max_retries: int = 2,
         usage: UsageTracker | None = None,
+        client=None,
     ):
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.usage = usage or UsageTracker()
         self._client = None
-        if api_key:
+        if client is not None:  # injected (tests); metered like the real one
+            from .sdk.wrap import wrap
+
+            self._client = wrap(client)
+        elif api_key:
             from openai import AsyncOpenAI
 
-            self._client = AsyncOpenAI(
+            from .sdk.wrap import wrap
+
+            self._client = wrap(AsyncOpenAI(
                 api_key=api_key, base_url=base_url, timeout=timeout, max_retries=max_retries
-            )
+            ))
 
     async def complete(self, system: str, user: str, *, temperature: float | None = None) -> LLMResult:
         if self._client is None:

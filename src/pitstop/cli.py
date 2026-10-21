@@ -7,6 +7,7 @@
   pitstop timeline --run-dir <runs_dir>/<id>   # rebuild + print the curated drift timeline
   pitstop serve --port 8765               # timeline API + live SSE stream for the UI
   pitstop demo --port 8770                # GEPA demo page (pitstop.demo)
+  pitstop status | drifts [--workflow W] [--all] | budget   # SDK runs, drifts and budgets (local DB)
 
 Runs and the You.com cache live under $PITSTOP_HOME (default ~/.pitstop); see pitstop.config.
 """
@@ -14,24 +15,30 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import inspect
 import json
 import sys
+import time
+from datetime import datetime
 from pathlib import Path
 
 from rich.console import Console
 from rich.markup import escape
 from rich.table import Table
 
+from .cli_report import budget_rows, drift_rows, workflow_rows
 from .config import PROMPTS, SCENARIOS, load_settings
 from .llm import LLMClient, UsageTracker
 from .agents.synthesizer import ReportSynthesizer
 from .research.youcom import FinanceResearchClient
+from .sdk.runtime import get_runtime
+from .userconfig import ConfigInvalid
 from .schemas import Scenario, SupervisorInput
 from .orchestrator import Swarm
 from .supervisor.supervisor import Supervisor
 from .timeline import build_from_run_dir
 
-console = Console()
+console = Console(width=None if sys.stdout.isatty() else 140)  # piped output: no 80-column truncation
 
 
 def _llm(settings, model: str, temperature: float) -> LLMClient:
@@ -146,6 +153,82 @@ async def cmd_demo(args) -> None:
         server.server_close()
 
 
+EMPTY_MSG = "No runs yet. See examples/quickstart."
+
+
+def _fmt_ts(ts: float) -> str:
+    return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _usd(v: float | None) -> str:
+    return "-" if v is None else f"${v:.4f}"
+
+
+def _has_runs(rt) -> bool:
+    return rt.store.connect().execute("SELECT 1 FROM runs LIMIT 1").fetchone() is not None
+
+
+def _budget_table(rt) -> Table:
+    t = Table(title="Budgets")
+    for col in ("scope", "period", "spent", "limit", "remaining"):
+        t.add_column(col)
+    for r in budget_rows(rt.ledger, rt.config):
+        t.add_row(r["scope"], r["period"], _usd(r["spent_usd"]), _usd(r["limit_usd"]), _usd(r["remaining_usd"]))
+    return t
+
+
+def _runtime():
+    """The SDK runtime for the read-only commands; an invalid config.toml is a clean error (exit 2)."""
+    try:
+        return get_runtime()
+    except ConfigInvalid as e:
+        console.print(f"[red]Invalid PitStop config:[/] {escape(str(e))}", soft_wrap=True)
+        sys.exit(2)
+
+
+def cmd_status(args) -> None:
+    rt = _runtime()
+    if not _has_runs(rt):
+        console.print(EMPTY_MSG)
+        return
+    t = Table(title="Workflows")
+    for col in ("workflow", "criticality", "runs today", "P0", "P1", "P2", "P3", "spend today", "budget", "last status"):
+        t.add_column(col)
+    for r in workflow_rows(rt.store, time.time(), tz=rt.ledger.tz):
+        t.add_row(r["workflow"], str(r["criticality"]), str(r["runs_today"]), str(r["open_p0"]), str(r["open_p1"]),
+                  str(r["open_p2"]), str(r["open_p3"]), _usd(r["spend_today_usd"]), _usd(r["budget_usd"]),
+                  str(r["last_status"]))
+    console.print(t)
+    if rt.config.budgets:
+        console.print(_budget_table(rt))
+
+
+def cmd_drifts(args) -> None:
+    rt = _runtime()
+    rows = drift_rows(rt.store, workflow=args.workflow, open_only=not args.all)
+    if not rows and not _has_runs(rt):
+        console.print(EMPTY_MSG)
+        return
+    t = Table(title="Drifts" + ("" if args.all else " (open)"))
+    for col in ("id", "level", "workflow", "drift_type", "action", "evidence", "first seen", "last seen"):
+        t.add_column(col)
+    for r in rows:
+        t.add_row(str(r["id"]), r["level"], str(r["workflow"]), r["drift_type"], r["action"], str(r["count"]),
+                  _fmt_ts(r["first_seen"]), _fmt_ts(r["last_seen"]))
+    console.print(t)
+
+
+def cmd_budget(args) -> None:
+    rt = _runtime()
+    if not _has_runs(rt):
+        console.print(EMPTY_MSG)
+        return
+    if not rt.config.budgets:
+        console.print("No budgets configured. See docs/config.example.toml.")
+        return
+    console.print(_budget_table(rt))
+
+
 def main() -> None:
     p = argparse.ArgumentParser(prog="pitstop")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -178,9 +261,18 @@ def main() -> None:
     d = sub.add_parser("demo")
     d.add_argument("--host", default="127.0.0.1"); d.add_argument("--port", type=int, default=8770)
     d.add_argument("--snapshot", help="default: demo/snapshot.json")
+    sub.add_parser("status")
+    g = sub.add_parser("drifts")
+    g.add_argument("--workflow"); g.add_argument("--all", action="store_true", help="include resolved drifts")
+    sub.add_parser("budget")
     args = p.parse_args()
-    asyncio.run({"check": cmd_check, "run": cmd_run, "compare": cmd_compare,
-                 "timeline": cmd_timeline, "serve": cmd_serve, "demo": cmd_demo}[args.cmd](args))
+    handler = {"check": cmd_check, "run": cmd_run, "compare": cmd_compare, "timeline": cmd_timeline,
+               "serve": cmd_serve, "demo": cmd_demo, "status": cmd_status, "drifts": cmd_drifts,
+               "budget": cmd_budget}[args.cmd]
+    if inspect.iscoroutinefunction(handler):
+        asyncio.run(handler(args))
+    else:
+        handler(args)
 
 
 if __name__ == "__main__":

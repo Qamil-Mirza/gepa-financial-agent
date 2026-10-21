@@ -14,6 +14,7 @@ Never commit `.env` or any API key. If you do, revoke the key immediately.
 ## Repo map
 
 - `src/pitstop`: the installable package (runtime, CLI, demo server and `pitstop.correct`, the GEPA engine).
+- `examples`: runnable demos (`quickstart` shows the SDK with no keys).
 - `benchmarks`: eval sets and detector calibration tooling (`hard_pairs`, `calibration`, `held_out`, `synth`).
 - `tests`: the offline test suite (`runtime`, `correct`, `benchmarks`, repo hygiene).
 - `docs`: design specs and plans under `docs/superpowers/`; hackathon-era documents under `docs/history/`.

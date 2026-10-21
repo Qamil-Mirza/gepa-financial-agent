@@ -11,6 +11,8 @@ import json
 import re
 from pathlib import Path
 
+from ..sdk.errors import Halted
+from ..sdk.wrap import meter
 from ..llm import LLMClient, LLMError, extract_json_object
 from ..schemas import (
     DriftType,
@@ -220,8 +222,9 @@ class Supervisor:
         for attempt in range(self.json_retries + 1):
             msg = user if attempt == 0 else user + "\n\nReply with ONLY the JSON object."
             try:
-                r = await self.llm.complete(self.system_prompt, msg, temperature=0.0)
-            except LLMError:
+                with meter("watch"):
+                    r = await self.llm.complete(self.system_prompt, msg, temperature=0.0)
+            except (LLMError, Halted):  # a budget/drift halt must reach the caller, not become UNCERTAIN
                 raise
             except Exception as e:  # network/provider failure: fail safe, never crash the swarm
                 vd = ValidatedDecision(

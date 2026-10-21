@@ -17,6 +17,7 @@ from typing import Any, Optional
 
 from ..llm import LLMClient
 from ..schemas import EventType, TrajectoryEvent
+from ..sdk.errors import Halted
 
 _GROUP = re.compile(r"\[([^\[\]]{1,200})\]")
 _TAG = re.compile(r"F\d+")
@@ -114,6 +115,8 @@ class ReportSynthesizer:
                 try:
                     obj, _ = await self.llm.complete_json(self.prompt, user)
                     break
+                except Halted:  # a budget/drift halt is final: never retried, never turned into a failed report
+                    raise
                 except Exception as e:  # the swarm's research is still logged; the failure is recorded, not raised
                     if attempt == self.attempts - 1:
                         return {"title": "Report failed", "markdown": "", "error": f"{type(e).__name__}: {e}"[:300],

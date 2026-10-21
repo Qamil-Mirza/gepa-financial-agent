@@ -11,38 +11,17 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Callable, Protocol
 
+from ..budget.prices import PRICES_PER_M, estimate_cost_usd  # noqa: F401  (re-exported for existing callers)
+from ..sdk.wrap import meter, wrap
 from .settings import CRUSOE_BASE_URL, Settings
 
 log = logging.getLogger("pitstop.correct.client")
-
-# USD per 1M tokens: (input, output, cached input). Source: docs/skills/crusoe-recursive-hack-skill.md §4.1
-PRICES_PER_M: dict[str, tuple[float, float, float]] = {
-    "deepseek-ai/Deepseek-V4-Flash": (0.14, 0.28, 0.03),
-    "deepseek-ai/DeepSeek-V4.1-Flash": (0.29, 0.20, 0.007),
-    "deepseek-ai/DeepSeek-V4-Pro": (1.74, 3.48, 0.15),
-    "nvidia/Nemotron-3-Nano-30B-A3B": (0.05, 0.20, 0.03),
-    "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": (0.05, 0.20, 0.03),  # id as served by /v1/models
-    "nvidia/nemotron-3.5-lightning-30b-a3b": (0.05, 0.20, 0.03),
-    "nvidia/Nemotron-3-Super-120B-A12B": (0.30, 2.40, 0.15),
-    "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B": (0.30, 2.40, 0.15),  # id as served by /v1/models
-    "openai/gpt-oss-120b": (0.05, 0.20, 0.05),
-    "zai-org/GLM-5.3-Flash": (0.15, 0.50, 0.03),
-    "google/gemma-4-31b-it": (0.14, 0.40, 0.14),
-}
 
 
 def _thinking_key(model: str) -> str:
     """chat_template_kwargs key that toggles reasoning: DeepSeek uses `thinking`, Nemotron and Qwen `enable_thinking`."""
     m = model.lower()
     return "enable_thinking" if ("nemotron" in m or "qwen" in m) else "thinking"
-
-
-def estimate_cost_usd(model: str, prompt_tokens: int, completion_tokens: int, cached_tokens: int = 0) -> float | None:
-    p = PRICES_PER_M.get(model)
-    if p is None:
-        return None
-    uncached = max(prompt_tokens - cached_tokens, 0)
-    return (uncached * p[0] + completion_tokens * p[1] + cached_tokens * p[2]) / 1_000_000
 
 
 class ConfigError(RuntimeError):
@@ -131,6 +110,10 @@ class ModelClient(Protocol):
 
 
 def _is_retryable(exc: BaseException) -> bool:
+    from ..sdk.errors import Halted
+
+    if isinstance(exc, Halted):  # a budget/drift halt is final: never retried
+        return False
     status = getattr(exc, "status_code", None)
     if status in (429, 500, 502, 503, 504):
         return True
@@ -176,6 +159,7 @@ class CrusoeClient:
                 # async client is rebuilt whenever the running loop changes (e.g. repeated asyncio.run).
                 self._async_factory = lambda: openai.AsyncOpenAI(api_key=key, base_url=base_url, timeout=timeout,
                                                                  max_retries=0)
+        # Injected clients are stored as given (callers may hold identity) and metered at each call.
         self._sync, self._async = sync_client, async_client
         self._async_client_loop: asyncio.AbstractEventLoop | None = None
         log.info("CrusoeClient model=%s base_url=%s max_concurrent=%d", model, base_url, max_concurrent)
@@ -223,7 +207,9 @@ class CrusoeClient:
             for attempt in range(self.max_retries + 1):
                 t0 = time.perf_counter()
                 try:
-                    return self._to_result(self._sync.chat.completions.create(**kw), t0)
+                    with meter("correction"):
+                        resp = wrap(self._sync).chat.completions.create(**kw)
+                    return self._to_result(resp, t0)
                 except Exception as e:  # noqa: BLE001
                     if not _is_retryable(e):
                         self.tracker.record_error()
@@ -256,7 +242,9 @@ class CrusoeClient:
                 for attempt in range(self.max_retries + 1):
                     t0 = time.perf_counter()
                     try:
-                        return self._to_result(await self._async_client().chat.completions.create(**kw), t0)
+                        with meter("correction"):
+                            resp = await wrap(self._async_client()).chat.completions.create(**kw)
+                        return self._to_result(resp, t0)
                     except Exception as e:  # noqa: BLE001
                         if not _is_retryable(e):
                             self.tracker.record_error()
