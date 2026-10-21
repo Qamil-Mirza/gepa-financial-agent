@@ -25,3 +25,8 @@ runs/
 .DS_Store
 .vscode/
 .idea/
+.superpowers/
+dist-data/
+dist/
+docs/superpowers/plans/m1-baseline.txt
+.ruff_cache/
