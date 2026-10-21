@@ -18,6 +18,8 @@ proceeds unmetered and its event carries `unmetered: true`. The only exceptions 
 """
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import functools
 import inspect
 import json
@@ -40,6 +42,19 @@ T = TypeVar("T")
 DEFAULT_MAX_COMPLETION_TOKENS = 4096
 # Client methods that return a new client; their result is wrapped too so it stays metered.
 _REWRAP = frozenset({"with_options", "copy"})
+
+
+_meter: contextvars.ContextVar[str] = contextvars.ContextVar("pitstop_meter", default="agent")
+
+
+@contextlib.contextmanager
+def meter(name: str):
+    """Tag every metered call made inside the block with ledger meter `name` (default "agent")."""
+    token = _meter.set(name)
+    try:
+        yield
+    finally:
+        _meter.reset(token)
 
 
 def wrap(client: T) -> T:
@@ -500,7 +515,7 @@ class _Call:
                 run_id=ctx.run_id if ctx is not None else None,
                 workflow=ctx.spec.name if ctx is not None else None,
                 workflow_budget_usd=ctx.spec.budget_usd if ctx is not None else None,
-                meter="agent",
+                meter=_meter.get(),
             )
         except BudgetExceeded as e:
             _safe(functools.partial(_on_budget_exceeded, ctx, e))

@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional
 
 from openai import APIConnectionError, AsyncOpenAI, InternalServerError, RateLimitError
 
+from pitstop.sdk.wrap import wrap
+
 from . import config
 
 
@@ -28,7 +30,7 @@ class Completion:
 class CrusoeClient:
     def __init__(self, model: str = config.WORKER_MODEL, max_concurrent: int = 4, max_total_calls: int = 1000):
         self.model = model
-        self._client = AsyncOpenAI(base_url=config.CRUSOE_BASE_URL, api_key=config.crusoe_key())
+        self._client = wrap(AsyncOpenAI(base_url=config.CRUSOE_BASE_URL, api_key=config.crusoe_key()))
         self._sem = asyncio.Semaphore(max_concurrent)
         self.max_total_calls = max_total_calls
         self.total_calls = 0
