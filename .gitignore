@@ -25,3 +25,18 @@ runs/
 .DS_Store
 .vscode/
 .idea/
+.superpowers/
+dist-data/
+dist/
+docs/superpowers/plans/m1-baseline.txt
+.ruff_cache/
+
+# Generated benchmark data (archived as a release asset; regenerate with the scripts)
+benchmarks/synth/traces/
+benchmarks/synth/traces_archive/
+benchmarks/synth/evidence/
+benchmarks/synth/data/
+benchmarks/held_out/traces/
+benchmarks/held_out/traces_archive/
+benchmarks/held_out/data/
+benchmarks/held_out/evidence/
