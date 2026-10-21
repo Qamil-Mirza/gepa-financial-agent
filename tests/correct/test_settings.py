@@ -1,4 +1,4 @@
-from gepa_financial_agent.config import Settings
+from pitstop.correct.settings import Settings
 
 
 def test_settings_from_env_defaults(monkeypatch):

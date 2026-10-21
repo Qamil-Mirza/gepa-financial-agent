@@ -3,8 +3,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from gepa_financial_agent import crusoe_client as cc
-from gepa_financial_agent.crusoe_client import (
+from pitstop.correct import client as cc
+from pitstop.correct.client import (
     ConfigError, CrusoeClient, MockModelClient, ModelUnavailableError, estimate_cost_usd,
 )
 

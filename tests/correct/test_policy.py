@@ -1,4 +1,4 @@
-from gepa_financial_agent.policy_store import Policy, PolicyStore
+from pitstop.correct.policy import Policy, PolicyStore
 
 
 def test_policy_version_is_content_hash():

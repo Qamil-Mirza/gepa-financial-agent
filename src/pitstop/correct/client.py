@@ -11,9 +11,9 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Callable, Protocol
 
-from .config import CRUSOE_BASE_URL, Settings
+from .settings import CRUSOE_BASE_URL, Settings
 
-log = logging.getLogger("gepa_financial_agent.crusoe_client")
+log = logging.getLogger("pitstop.correct.client")
 
 # USD per 1M tokens: (input, output, cached input). Source: docs/skills/crusoe-recursive-hack-skill.md §4.1
 PRICES_PER_M: dict[str, tuple[float, float, float]] = {
