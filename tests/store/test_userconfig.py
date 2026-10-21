@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from pitstop.userconfig import BudgetSpec, load_user_config
+from pitstop.userconfig import BudgetSpec, ConfigInvalid, load_user_config
 
 TOML = """
 timezone = "America/Los_Angeles"
@@ -48,9 +48,10 @@ def test_invalid_period_raises(tmp_path):
     '[prices."m"]\ninput = "cheap"\noutput = 1',
     '[prices."m"]\ninput = 1\noutput = 1\ncached_input = -0.5',
     '[prices."m"]\ninput = true\noutput = 1',
+    '[prices."m"]\ninput = 1' + '0' * 400 + '\noutput = 1',
+    '[budgets.x]\nlimit_usd = 1' + '0' * 400,
 ])
 def test_bad_values_raise_config_invalid(tmp_path, body):
-    from pitstop.userconfig import ConfigInvalid
     p = tmp_path / "config.toml"
     p.write_text(body)
     with pytest.raises(ConfigInvalid):
@@ -58,7 +59,6 @@ def test_bad_values_raise_config_invalid(tmp_path, body):
 
 
 def test_unreadable_config_raises_config_invalid(tmp_path):
-    from pitstop.userconfig import ConfigInvalid
     p = tmp_path / "config.toml"
     p.mkdir()  # reading a directory raises IsADirectoryError (OSError)
     with pytest.raises(ConfigInvalid, match="cannot read"):
@@ -66,7 +66,6 @@ def test_unreadable_config_raises_config_invalid(tmp_path):
 
 
 def test_non_utf8_config_raises_config_invalid(tmp_path):
-    from pitstop.userconfig import ConfigInvalid
     p = tmp_path / "config.toml"
     p.write_bytes(b"\xff\xfe[budgets]")
     with pytest.raises(ConfigInvalid):

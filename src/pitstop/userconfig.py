@@ -66,7 +66,7 @@ def _parse(data: dict) -> UserConfig:
             raise ConfigInvalid(f"budget {name!r}: invalid period {period!r} (expected one of {_PERIODS})")
         try:
             limit = float(raw.get("limit_usd", -1))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             limit = -1.0
         if not limit >= 0:  # also rejects NaN
             raise ConfigInvalid(f"budget {name!r}: limit_usd must be a non-negative number")
@@ -88,9 +88,14 @@ def _parse(data: dict) -> UserConfig:
 
 def _finite_nonneg(value: object, what: str) -> float:
     """A finite, non-negative real number (bool, NaN, +-inf, negatives and non-numbers raise ConfigInvalid)."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
-        raise ConfigInvalid(f"{what} must be a finite non-negative number, got {value!r}")
-    return float(value)
+    try:
+        ok = not isinstance(value, bool) and isinstance(value, (int, float)) and math.isfinite(value) and value >= 0
+        result = float(value) if ok else 0.0  # a huge int raises OverflowError here
+    except OverflowError:
+        ok = False
+    if not ok:
+        raise ConfigInvalid(f"{what} must be a finite non-negative number")
+    return result
 
 
 def _check_timezone(name: object) -> None:
