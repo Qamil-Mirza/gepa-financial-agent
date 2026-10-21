@@ -107,3 +107,17 @@ def test_refusal_regex_and_limit():
     assert check_llm_call([], r, "high")[0].drift_type == "refusal_spike"
     assert check_llm_call([r, r], r, "low")[0].evidence["refusals"] == 3
     assert json.dumps(out[0].evidence)
+
+
+def test_breakage_window_counts_last_20_tool_call_calls_only():
+    bad, ok, text = _llm(1, 1), _llm(0, 1), _llm(0, 0)
+    hist = []
+    for _ in range(4):
+        hist += [bad] + [text] * 30
+    assert check_llm_call(hist, bad, "normal")[0].drift_type == "tool_call_breakage"
+    # the oldest failure is the 21st tool-call call back, so it falls out: 4 failures of 20 still trip,
+    # but with only that one failure left in the window the rate is 1/20 = 5% < 10%
+    hist = [bad] + [ok] * 19
+    assert check_llm_call(hist, ok, "normal") == []
+    hist = [bad, bad] + [text] * 25 + [ok] * 17
+    assert check_llm_call(hist, ok, "normal")[0].evidence["tool_calls"] == 20

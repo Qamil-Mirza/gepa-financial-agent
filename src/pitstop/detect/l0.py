@@ -79,7 +79,7 @@ def check_llm_call(history: list[LLMCallRecord], call: LLMCallRecord, sensitivit
     """`history` holds the run's earlier calls; `call` is the one just made."""
     t = THRESHOLDS[sensitivity]
     out: list[Finding] = []
-    recent = [r for r in [*history, call][-_BREAKAGE_WINDOW:] if r.tool_calls > 0]
+    recent = [r for r in [*history, call] if r.tool_calls > 0][-_BREAKAGE_WINDOW:]
     if len(recent) >= t["min_calls"]:
         failures = sum(r.tool_call_parse_failures for r in recent)
         total = sum(r.tool_calls for r in recent)
