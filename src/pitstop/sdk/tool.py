@@ -39,7 +39,7 @@ def tool(fn: Callable | None = None, *, side_effects: bool = False, name: str | 
                 try:
                     result = await f(*a, **k)
                 except BaseException as e:
-                    err = repr(e)
+                    err = _summ(e)
                     _safe(lambda: _event(ctx, "tool_result", tname, {"error": err}))
                     raise
                 _safe(lambda: _event(ctx, "tool_result", tname, {"result": _summ(result)}))
@@ -57,7 +57,7 @@ def tool(fn: Callable | None = None, *, side_effects: bool = False, name: str | 
             try:
                 result = f(*a, **k)
             except BaseException as e:
-                err = repr(e)
+                err = _summ(e)
                 _safe(lambda: _event(ctx, "tool_result", tname, {"error": err}))
                 raise
             _safe(lambda: _event(ctx, "tool_result", tname, {"result": _summ(result)}))
@@ -133,6 +133,8 @@ def _before(ctx: RunContext, tname: str, side_effects: bool, args: tuple, kwargs
     if ctx.steers >= MAX_STEERS:
         if ctx.halt_reason is None:
             ctx.halt_reason = "steer limit exceeded"
+        reason = ctx.halt_reason
+        _safe(lambda: _event(ctx, "halt", tname, {"reason": reason, "drift": text, "args": args_text[:500]}))
         raise Halted(ctx.halt_reason, ctx.halt_drift_id)
     ctx.steers += 1
     _safe(lambda: _event(ctx, "steer", tname, {"reason": text, "args": args_text[:500]}))

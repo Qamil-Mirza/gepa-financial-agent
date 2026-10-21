@@ -175,3 +175,85 @@ def test_tool_exception_propagates(tmp_path):
             boom()
     res = _events("tool_result")
     assert "error" in json.loads(res[0]["payload"])
+
+
+def _broken_drift_store(monkeypatch):
+    def boom(*a, **k):
+        raise RuntimeError("drift store down")
+
+    monkeypatch.setattr("pitstop.detect.drifts.record_drift", boom)
+
+
+def test_block_does_not_depend_on_the_drift_write(tmp_path, monkeypatch):
+    _init(tmp_path)
+    _broken_drift_store(monkeypatch)
+    called = []
+
+    @pitstop.tool(side_effects=True)
+    def send_email(to):
+        called.append(to)
+
+    with workflow("wf", criticality="medium", tools=["search"]):
+        out = send_email("x")
+    assert called == [] and out["blocked_by"] == "pitstop"
+    assert len(_events("block")) == 1
+
+
+def test_p0_halt_does_not_depend_on_the_drift_write(tmp_path, monkeypatch):
+    _init(tmp_path)
+    _broken_drift_store(monkeypatch)
+
+    @pitstop.tool(side_effects=True)
+    def send_email(to):
+        raise AssertionError("must not run")
+
+    with pytest.raises(Halted) as ei:
+        with workflow("wf", criticality="high", tools=["search"]):
+            assert send_email("x")["blocked_by"] == "pitstop"
+            send_email("x")
+    assert ei.value.drift_id is None
+
+
+def test_steer_does_not_depend_on_the_drift_write(tmp_path, monkeypatch):
+    _init(tmp_path)
+    _broken_drift_store(monkeypatch)
+
+    @pitstop.tool
+    def search(q):
+        return "r"
+
+    with workflow("wf", goal="wf goal"):
+        search("a")
+        search("a")
+        assert search("a").startswith("PitStop: this step drifts")
+
+
+def test_steer_limit_halt_is_recorded_as_an_event(tmp_path):
+    _init(tmp_path)
+
+    @pitstop.tool
+    def search(q):
+        return "r"
+
+    with pytest.raises(Halted, match="steer limit exceeded"):
+        with workflow("wf", goal="wf goal"):
+            for _ in range(5):
+                search("a")
+    [ev] = _events("halt")
+    payload = json.loads(ev["payload"])
+    assert ev["name"] == "search" and payload["reason"] == "steer limit exceeded"
+    assert payload["drift"].startswith("unproductive_loop: ")
+
+
+def test_tool_error_payload_is_capped(tmp_path):
+    _init(tmp_path)
+
+    @pitstop.tool
+    def boom():
+        raise ValueError("x" * 5000)
+
+    with workflow("wf"):
+        with pytest.raises(ValueError):
+            boom()
+    err = json.loads(_events("tool_result")[0]["payload"])["error"]
+    assert len(err) == 500

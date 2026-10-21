@@ -81,21 +81,28 @@ class ResponseSummary:
 
 
 def _apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None = None) -> list[tuple]:
-    """Record each finding with its level and action. A P0 on a high workflow sets a pending halt that the
-    next boundary raises. Outside a workflow: workflow=None, criticality medium, sensitivity normal."""
+    """Classify each finding (level, action), then record it. A P0 on a high workflow sets a pending halt that
+    the next boundary raises. Outside a workflow: workflow=None, criticality medium, sensitivity normal.
+
+    The decision never depends on the store: a failed drift write is logged and leaves drift_id None, and the
+    block/steer/halt still applies."""
     from ..detect import drifts
     from ..detect.urgency import Level, action_for, classify
 
     criticality = ctx.spec.criticality if ctx is not None else "medium"
     workflow = ctx.spec.name if ctx is not None else None
     run_id = ctx.run_id if ctx is not None else run_id
-    store = get_runtime().store
     applied: list[tuple] = []  # (finding, level, action, drift_id)
     for f in findings:
         level = classify(f.drift_type, criticality, f.side_effects)
         action = action_for(f, level, criticality)
-        drift_id = drifts.record_drift(store, run_id=run_id, workflow=workflow, finding=f, level=level,
-                                       action=action)
+        try:
+            drift_id = drifts.record_drift(get_runtime().store, run_id=run_id, workflow=workflow, finding=f,
+                                           level=level, action=action)
+        except Exception:
+            log.warning("pitstop: could not record a %s drift; its action still applies", f.drift_type,
+                        exc_info=True)
+            drift_id = None
         if ctx is not None and level is Level.P0 and criticality == "high" and ctx.halt_reason is None:
             ctx.halt_reason = f"{f.drift_type} (P0) on high-criticality workflow {workflow!r}"
             ctx.halt_drift_id = drift_id
