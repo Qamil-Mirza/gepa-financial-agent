@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Literal, NamedTuple, TypeVar
 
 from .errors import Halted
-from .runtime import get_runtime
+from .runtime import get_runtime, halt_if_config_invalid
 
 log = logging.getLogger("pitstop")
 
@@ -139,6 +139,7 @@ class _Workflow(_Scope):
     def __enter__(self) -> RunContext:
         if _current.get() is not None:
             raise RuntimeError("pitstop.workflow cannot be nested")
+        halt_if_config_invalid()  # an invalid config.toml fails closed before the run starts
         ctx = RunContext(run_id=uuid.uuid4().hex, spec=self.spec)
         _safe(lambda: self._insert(ctx))
         _current.set(ctx)

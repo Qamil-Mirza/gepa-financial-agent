@@ -13,8 +13,9 @@ wrapped clients so derived clients stay metered. Each intercepted call:
 Streams are returned as proxies that yield every chunk unchanged and settle when the stream ends, fails,
 is closed, or is dropped after an early `break`. A reservation is always settled or released, including
 on KeyboardInterrupt and asyncio cancellation. Store or ledger failures never reach user code: the call
-proceeds unmetered and its event carries `unmetered: true`. The only exceptions raised on purpose are
-`Halted` and `BudgetExceeded`.
+proceeds unmetered and its event carries `unmetered: true`. An invalid config.toml is different: the call
+fails closed with `Halted("pitstop config invalid: ...")` before the client is called. The only exceptions
+raised on purpose are `Halted` and `BudgetExceeded`.
 """
 from __future__ import annotations
 
@@ -33,7 +34,8 @@ from ..budget.ledger import Reservation
 from ..budget.prices import cost_usd, price_for
 from .context import RunContext, _safe, check_halt, current_run
 from .errors import BudgetExceeded
-from .runtime import Runtime, get_runtime
+from ..userconfig import ConfigInvalid
+from .runtime import Runtime, config_halt, get_runtime
 
 log = logging.getLogger("pitstop")
 
@@ -520,7 +522,9 @@ class _Call:
         except BudgetExceeded as e:
             _safe(functools.partial(_on_budget_exceeded, ctx, e))
             raise
-        except Exception:
+        except ConfigInvalid as e:  # fail closed: a broken config must never silently drop the hard budget
+            raise config_halt(e) from e
+        except Exception:  # transient store trouble (busy/locked DB): fail open, flagged on the event
             log.warning("pitstop: budget ledger unavailable; this call proceeds unmetered", exc_info=True)
             call.unmetered = True
         return call

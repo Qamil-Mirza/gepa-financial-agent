@@ -15,7 +15,7 @@ from typing import Any, Callable
 
 from .context import RunContext, _safe, check_halt, current_run
 from .errors import Halted
-from .runtime import get_runtime
+from .runtime import get_runtime, halt_if_config_invalid
 
 log = logging.getLogger("pitstop")
 
@@ -94,6 +94,7 @@ def _event(ctx: RunContext, kind: str, tname: str, payload: dict) -> None:
 def _before(ctx: RunContext, tname: str, side_effects: bool, args: tuple, kwargs: dict) -> Any:
     """Everything before the call. Returns _RUN to run the function, else the value to return instead."""
     check_halt()
+    halt_if_config_invalid()
     decision = None
     args_text = ""
     try:

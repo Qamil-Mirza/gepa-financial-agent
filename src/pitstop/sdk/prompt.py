@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from .context import _safe, current_run
-from .runtime import get_runtime
+from .runtime import get_runtime, halt_if_config_invalid
 
 log = logging.getLogger("pitstop")
 
@@ -67,6 +67,7 @@ def _record(run_id: str, versions: dict[str, int]) -> None:
 
 
 def prompt(name: str, default: str) -> ManagedPrompt:
+    halt_if_config_invalid()  # fail closed on an invalid config.toml; store trouble falls back below
     try:
         p = _resolve(name, default)
     except Exception:
