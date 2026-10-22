@@ -90,6 +90,8 @@ class Observed:
     # stream accumulators, folded into content / tool_calls by seal()
     _text: list[str] = field(default_factory=list, init=False, repr=False)
     _tools: dict[Any, dict] = field(default_factory=dict, init=False, repr=False)
+    # a shape's own stream state (Anthropic: the usage parts and which blocks are tool calls)
+    state: dict[str, Any] = field(default_factory=dict, init=False, repr=False)
 
     @property
     def content_chars(self) -> int:

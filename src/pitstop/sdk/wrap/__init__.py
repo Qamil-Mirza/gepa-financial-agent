@@ -1,8 +1,9 @@
-"""`pitstop.wrap(client)`: meter an OpenAI-compatible client's model calls against hard budgets.
+"""`pitstop.wrap(client)`: meter an OpenAI-compatible or Anthropic client's model calls against hard budgets.
 
 The wrapper proxies the client (no global monkeypatching). A per-client method table names the metered methods
 by attribute path; for OpenAI-compatible clients, `chat.completions.create` / `parse` / `stream`,
-`responses.create` / `parse` / `stream` and legacy `completions.create`. Each path routes to a `Shape`
+`responses.create` / `parse` / `stream` and legacy `completions.create`; for Anthropic clients (a client with
+`messages` and no `chat`), `messages.create` / `parse` / `stream` (anthropic.py). Each path routes to a `Shape`
 (shapes.py), which knows that API's request and response format. Every other
 attribute is delegated unchanged, and `with_options`/`copy` return wrapped clients so derived clients stay
 metered. `with_raw_response` and `with_streaming_response`, on the client or on any resource on the way to a
@@ -22,11 +23,13 @@ the SDK's stream class) and settle when the stream ends, fails, is closed, or is
 the caller set `stream_options`; the extra usage chunk is hidden from the caller. If an endpoint rejects that
 injection with a 400, the call is retried once without it, and once a retry succeeds, later stream calls to
 the same base_url skip the injection (they settle by estimate). Legacy completions streams are handled the same
-way; Responses streams carry usage on their `response.completed` event, so nothing is injected into them.
+way; Responses streams carry usage on their `response.completed` event and Anthropic streams on `message_start` /
+`message_delta`, so nothing is injected into them.
 
 Stream helpers (`chat.completions.stream`, `responses.stream`) reserve when called. Entering the manager sends the
 request and yields the SDK's own stream class (proxied: every event passes through unchanged, and
-`get_final_completion()` / `get_final_response()` / `until_done()` read the stream through the proxy). The call
+`get_final_completion()` / `get_final_response()` / `get_final_message()` / `get_final_text()` / `until_done()` and
+Anthropic's `text_stream` read the stream through the proxy). The call
 settles when the manager exits; a manager that is never entered releases its reservation when it is garbage
 collected. An error raised mid-stream that carries the billed `completion` (LengthFinishReasonError) settles from
 its usage, or at the full reservation when no usage was seen. A Responses call with `background=True` (or a result
@@ -48,11 +51,13 @@ from __future__ import annotations
 import contextlib
 from typing import Any, TypeVar
 
+from .anthropic import ANTHROPIC, ANTHROPIC_METHODS
 from .call import _meter
 from .proxy import Table, _Wrapped
 from .shapes import CHAT, COMPLETIONS, METHODS, RESPONSES, Observed, Shape
 
-__all__ = ["wrap", "meter", "Observed", "Shape", "CHAT", "RESPONSES", "COMPLETIONS", "METHODS"]
+__all__ = ["wrap", "meter", "Observed", "Shape", "CHAT", "RESPONSES", "COMPLETIONS", "METHODS", "ANTHROPIC",
+           "ANTHROPIC_METHODS"]
 
 T = TypeVar("T")
 
@@ -68,7 +73,9 @@ def meter(name: str):
 
 
 def _table_for(client: Any) -> Table:
-    """The method table for this client's type."""
+    """The method table for this client's type: Anthropic's (`messages`, no `chat`) or the OpenAI-compatible one."""
+    if hasattr(client, "messages") and not hasattr(client, "chat"):
+        return ANTHROPIC_METHODS
     return METHODS
 
 

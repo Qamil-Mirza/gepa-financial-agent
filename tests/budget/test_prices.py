@@ -38,3 +38,26 @@ def test_client_reexports_estimate_cost_usd():
     from pitstop.correct.client import estimate_cost_usd as reexported
 
     assert reexported is estimate_cost_usd
+
+
+def test_unknown_claude_model_uses_family_conservative_price():
+    from pitstop.budget import prices
+
+    assert prices._CONSERVATIVE_BY_PREFIX == {"claude-": Price(15.00, 75.00, 15.00)}
+    assert price_for("claude-mystery-9", {}) == (Price(15.0, 75.0, 15.0), False)
+    # user overrides still win over the family fallback; a non-matching id keeps the global fallback
+    assert price_for("claude-mystery-9", {"claude-mystery-9": PriceOverride(3.0, 15.0, 0.3)}) == \
+        (Price(3.0, 15.0, 0.3), True)
+    assert price_for("acme/claude-x", {}) == (CONSERVATIVE_PRICE, False)
+
+
+def test_longest_matching_prefix_wins(monkeypatch):
+    from pitstop.budget import prices
+
+    monkeypatch.setattr(prices, "_CONSERVATIVE_BY_PREFIX",
+                        {"claude-": Price(15.0, 75.0, 15.0), "claude-haiku-": Price(1.0, 5.0, 1.0)})
+    assert price_for("claude-haiku-9", {}) == (Price(1.0, 5.0, 1.0), False)
+    assert price_for("claude-opus-9", {}) == (Price(15.0, 75.0, 15.0), False)
+    # an exact table entry beats any prefix
+    monkeypatch.setitem(prices.PRICES_PER_M, "claude-haiku-9", Price(0.8, 4.0, 0.08))
+    assert price_for("claude-haiku-9", {}) == (Price(0.8, 4.0, 0.08), True)

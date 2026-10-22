@@ -164,3 +164,79 @@ def text_completion_chunk(text: str | None = None, *, finish_reason: str | None 
             "choices": [{"index": 0, "text": text or "", "finish_reason": finish_reason, "logprobs": None}]
             if choices else [],
             "usage": _usage(*usage) if usage is not None else None}
+
+
+# -- Anthropic Messages API ---------------------------------------------------------------------------------------
+
+CLAUDE = "claude-test-1"  # not in the price table: priced by the claude-* conservative fallback
+
+
+def anthropic_client(handler, *, async_: bool = False):
+    """A real `anthropic` client (default base_url https://api.anthropic.com) over the in-process transport.
+    anthropic 2.x runs on `httpx2`; the handler's `httpx.Response` (the builders here) is converted."""
+    import anthropic
+    import httpx2
+
+    def handle(request):
+        r = handler(request)
+        if isinstance(r, httpx.Response):
+            r = httpx2.Response(r.status_code, content=r.content, headers=dict(r.headers))
+        return r
+
+    if async_:
+        return anthropic.AsyncAnthropic(api_key="test", max_retries=0,
+                                        http_client=httpx2.AsyncClient(transport=httpx2.MockTransport(handle)))
+    return anthropic.Anthropic(api_key="test", max_retries=0,
+                               http_client=httpx2.Client(transport=httpx2.MockTransport(handle)))
+
+
+def _anthropic_usage(input_tokens: int, output_tokens: int, cache_creation: int = 0, cache_read: int = 0) -> dict:
+    return {"input_tokens": input_tokens, "output_tokens": output_tokens,
+            "cache_creation_input_tokens": cache_creation, "cache_read_input_tokens": cache_read}
+
+
+def message_body(text: str | None = "hi", *, tool_uses: list[dict] | None = None, input_tokens: int = 13,
+                 output_tokens: int = 5, cache_creation: int = 0, cache_read: int = 0,
+                 stop_reason: str | None = None, model: str = CLAUDE) -> dict:
+    """A `message` object. `tool_uses` items are `{"name", "input": dict}` (tool_use content blocks)."""
+    content: list[dict] = [{"type": "text", "text": text}] if text is not None else []
+    content += [{"type": "tool_use", "id": f"toolu_{i}", "name": t["name"], "input": t["input"]}
+                for i, t in enumerate(tool_uses or [])]
+    return {"id": "msg_1", "type": "message", "role": "assistant", "model": model, "content": content,
+            "stop_reason": stop_reason or ("tool_use" if tool_uses else "end_turn"), "stop_sequence": None,
+            "usage": _anthropic_usage(input_tokens, output_tokens, cache_creation, cache_read)}
+
+
+def message_events(text: str = "Hello", *, tool_use: dict | None = None, input_tokens: int = 17,
+                   output_tokens: int = 6, cache_creation: int = 0, cache_read: int = 0,
+                   stop_reason: str | None = None, model: str = CLAUDE) -> list[dict]:
+    """The SSE events of a streamed message: `text` in two deltas, then optionally one tool_use block (its input
+    JSON in two deltas), then `message_delta` (cumulative output_tokens, stop_reason) and `message_stop`.
+    `message_start` carries the input usage (and output_tokens 1, as the API sends it)."""
+    start = message_body(None, input_tokens=input_tokens, output_tokens=1, cache_creation=cache_creation,
+                         cache_read=cache_read, model=model)
+    start["stop_reason"] = None
+    events: list[dict] = [
+        {"type": "message_start", "message": start},
+        {"type": "ping"},
+        {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}},
+        {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": text[:3]}},
+        {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": text[3:]}},
+        {"type": "content_block_stop", "index": 0},
+    ]
+    if tool_use is not None:
+        args = json.dumps(tool_use["input"])
+        events += [
+            {"type": "content_block_start", "index": 1,
+             "content_block": {"type": "tool_use", "id": "toolu_0", "name": tool_use["name"], "input": {}}},
+            {"type": "content_block_delta", "index": 1, "delta": {"type": "input_json_delta", "partial_json": args[:4]}},
+            {"type": "content_block_delta", "index": 1, "delta": {"type": "input_json_delta", "partial_json": args[4:]}},
+            {"type": "content_block_stop", "index": 1},
+        ]
+    events += [
+        {"type": "message_delta", "delta": {"stop_reason": stop_reason or ("tool_use" if tool_use else "end_turn"),
+                                            "stop_sequence": None},
+         "usage": {"output_tokens": output_tokens}},
+        {"type": "message_stop"},
+    ]
+    return events

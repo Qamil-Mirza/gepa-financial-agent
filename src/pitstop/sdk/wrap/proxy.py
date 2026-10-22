@@ -455,7 +455,7 @@ class _AsyncStream:
 
 # Stream methods that consume the stream inside the SDK; the proxy drives the stream through itself first, so
 # every event is observed.
-_FINAL = frozenset({"get_final_completion", "get_final_response"})
+_FINAL = frozenset({"get_final_completion", "get_final_response", "get_final_message", "get_final_text"})
 # Accumulated results shown without PitStop's injected usage.
 _SNAPSHOTS = frozenset({"current_completion_snapshot"})
 
@@ -584,8 +584,23 @@ class _AsyncManager(_ManagerBase):
             self._pitstop_call.close()
 
 
+def _text_delta(event: Any) -> Any:
+    """The text of an Anthropic `content_block_delta` / `text_delta` event, else None (as the SDK's text_stream)."""
+    if _g(event, "type") == "content_block_delta":
+        delta = _g(event, "delta")
+        if _g(delta, "type") == "text_delta":
+            return _g(delta, "text")
+    return None
+
+
 class _SyncHelperStream(_SyncStream):
-    """A helper's stream (ChatCompletionStream, ResponseStream): events pass through unchanged."""
+    """A helper's stream (ChatCompletionStream, ResponseStream, MessageStream): events pass through unchanged.
+
+    The SDK's own `text_stream` (Anthropic) iterates the inner stream directly, past the proxy; it is rebuilt over
+    the proxy so its events are observed. `until_done` drives the stream through the proxy, then returns what
+    the SDK's own `until_done` returns."""
+
+    _pitstop_text: Any = None
 
     def _pitstop_feed(self, event: Any) -> bool:
         return _feed_event(self._pitstop_call, event)
@@ -593,10 +608,21 @@ class _SyncHelperStream(_SyncStream):
     def until_done(self):
         for _ in self:
             pass
-        return self
+        r = self._pitstop_inner.until_done()  # a no-op on the consumed stream
+        return self if r is self._pitstop_inner else r
+
+    def _pitstop_texts(self):
+        for event in self:
+            text = _text_delta(event)
+            if text is not None:
+                yield text
 
     def __getattr__(self, name: str) -> Any:
         attr = super().__getattr__(name)
+        if name == "text_stream":
+            if self._pitstop_text is None:
+                self._pitstop_text = self._pitstop_texts()
+            return self._pitstop_text
         if name in _SNAPSHOTS:
             return _caller_view(self._pitstop_call, attr)
         if name not in _FINAL:
@@ -612,16 +638,30 @@ class _SyncHelperStream(_SyncStream):
 class _AsyncHelperStream(_AsyncStream):
     """Async counterpart of _SyncHelperStream."""
 
+    _pitstop_text: Any = None
+
     def _pitstop_feed(self, event: Any) -> bool:
         return _feed_event(self._pitstop_call, event)
 
     async def until_done(self):
         async for _ in self:
             pass
-        return self
+        r = self._pitstop_inner.until_done()
+        r = await r if inspect.isawaitable(r) else r
+        return self if r is self._pitstop_inner else r
+
+    async def _pitstop_texts(self):
+        async for event in self:
+            text = _text_delta(event)
+            if text is not None:
+                yield text
 
     def __getattr__(self, name: str) -> Any:
         attr = super().__getattr__(name)
+        if name == "text_stream":
+            if self._pitstop_text is None:
+                self._pitstop_text = self._pitstop_texts()
+            return self._pitstop_text
         if name in _SNAPSHOTS:
             return _caller_view(self._pitstop_call, attr)
         if name not in _FINAL:

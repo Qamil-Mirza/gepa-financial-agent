@@ -11,9 +11,23 @@ base_url = "https://api.inference.crusoecloud.com/v1"
 limit_usd = 50
 period = "total"        # one of the periods PitStop accepts, "total" = lifetime
 
+# A budget for Anthropic (pitstop.wrap(Anthropic())); the SDK's default base_url is shown.
+# [budgets.anthropic]
+# base_url = "https://api.anthropic.com"
+# limit_usd = 20
+# period = "total"
+
 # Optional price override per model, in USD per million tokens. Unknown models are priced
 # conservatively until you add an entry like this one.
 # [prices."vendor/model-name"]
 # input = 0.10
 # output = 0.40
 # cached_input = 0.05
+
+# Claude models without an entry are priced at a conservative $15 input / $75 output per million
+# tokens. Copy the current prices for the model you use from the provider's pricing page
+# (https://www.anthropic.com/pricing); the numbers below are placeholders, not real prices.
+# [prices."claude-model-name"]
+# input = 3.00
+# output = 15.00
+# cached_input = 0.30

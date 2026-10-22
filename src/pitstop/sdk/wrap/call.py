@@ -47,7 +47,9 @@ def _after_llm_call(ctx: RunContext | None, obs: Observed) -> None:
             json.loads(_g(tc, "arguments"))
         except Exception:
             failures += 1
-    record = LLMCallRecord(failures, len(obs.tool_calls), is_refusal(obs.content, len(obs.tool_calls)))
+    # A provider-declared refusal (Anthropic's stop_reason "refusal") counts whatever the text says.
+    refused = obs.refused or is_refusal(obs.content, len(obs.tool_calls))
+    record = LLMCallRecord(failures, len(obs.tool_calls), refused)
     if ctx is None:
         findings = check_llm_call([], record, "normal", 1 if record.refused else 0)
     else:
@@ -218,7 +220,14 @@ class _Call:
             return self.est_prompt, self.max_output, 0, "worst_case"
         o = self.obs
         if o.prompt_tokens is None or o.completion_tokens is None:
-            return self.est_prompt, math.ceil(o.chars / 4), 0, True
+            # Usage not (fully) seen. A part the stream did show is used as is (Anthropic's message_start carries
+            # the input usage; its output count arrives only at the end); the rest is estimated.
+            if o.prompt_tokens is not None:
+                prompt, cached = o.prompt_tokens, o.cached_tokens
+            else:
+                prompt, cached = self.est_prompt, 0
+            completion = o.completion_tokens if o.completion_tokens is not None else math.ceil(o.chars / 4)
+            return prompt, completion, cached, True
         return o.prompt_tokens, o.completion_tokens, o.cached_tokens, False
 
     def _rt(self) -> Runtime:
