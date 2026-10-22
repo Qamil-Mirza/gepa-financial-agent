@@ -1,5 +1,8 @@
+import gc
 import json
+import logging
 import threading
+import warnings
 
 import pytest
 
@@ -9,7 +12,7 @@ from pitstop.detect.l1 import GATE_PROMPT_VERSION
 from pitstop.sdk.context import agent, workflow
 from pitstop.sdk.errors import Halted
 from pitstop.sdk.runtime import get_runtime
-from tests.sdk.fakes import FakeOpenAI, make_response
+from tests.sdk.fakes import FakeAsyncOpenAI, FakeOpenAI, make_response
 
 MODEL = "openai/gpt-oss-120b"
 AGENT_MODEL = "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B"
@@ -151,7 +154,8 @@ def test_default_gate_error_policy_by_criticality():
     assert workflow("w").spec.on_gate_error is None
 
 
-def test_unparseable_and_exception_verdicts_are_errors(tmp_path):
+def test_unparseable_and_exception_verdicts_are_errors(tmp_path, caplog):
+    caplog.set_level(logging.DEBUG)
     secret = "sk-SECRET https://judge.example/v1"
     _init(tmp_path, FakeOpenAI([make_response(content="I'm sorry, I can't help"), ConnectionError(secret)]))
     calls = []
@@ -166,6 +170,7 @@ def test_unparseable_and_exception_verdicts_are_errors(tmp_path):
                     {"error": "ConnectionError", "policy": "block"}]
     dump = json.dumps([dict(r) for r in _db().execute("SELECT * FROM events").fetchall()])
     assert "SECRET" not in dump and "judge.example" not in dump
+    assert "SECRET" not in caplog.text and "judge.example" not in caplog.text
     assert list_drifts(get_runtime().store) == []  # an error is not a verdict: no drift
 
 
@@ -173,7 +178,7 @@ def test_judge_budget_exceeded_halts(tmp_path):
     _init(tmp_path, FakeOpenAI([_verdict(True)]), config="[budgets.all]\nlimit_usd = 0.0000001\n")
     calls = []
     send_email, _ = _tools(calls)
-    with pytest.raises(Halted):
+    with pytest.raises(pitstop.BudgetExceeded):
         with workflow("wf", goal="g", criticality="medium"):
             send_email("a@b", "hi")
     assert calls == []
@@ -186,7 +191,7 @@ def test_low_criticality_and_read_only_tools_not_gated(tmp_path):
     send_email, search = _tools(calls)
     with workflow("low", goal="g", criticality="low"):
         assert send_email("a@b", "hi") == "sent"
-    with workflow("med", goal="g", criticality="high"):
+    with workflow("high", goal="g", criticality="high"):
         assert search("q") == "found"
     assert judge.calls == [] and calls == ["a@b", "q"]
     assert _events("gate") == [] and _events("gate_error") == []
@@ -278,3 +283,49 @@ def test_gate_from_env_key_uses_config(tmp_path, monkeypatch):
     assert gate is not None and gate.model == "acme/judge-2"
     assert str(gate.client.base_url).rstrip("/") == "https://judge.example/v1"
     assert gate.client.timeout == 3.5 and gate.client.max_retries == 0
+
+
+def test_no_judge_hint_names_the_configured_key_env(tmp_path):
+    _init(tmp_path, config='[judge]\napi_key_env = "MY_JUDGE_KEY"\n')
+    calls = []
+    send_email, _ = _tools(calls)
+    with workflow("wf", goal="g", criticality="high"):
+        r = send_email("a@b", "hi")
+    want = "no judge configured: set MY_JUDGE_KEY or [judge] in config.toml"
+    assert calls == [] and f"({want})" in r["reason"]
+    assert _events("gate_error")[0]["payload"] == {"error": want, "policy": "block"}
+
+
+def test_async_judge_client_is_unavailable_with_specific_error(tmp_path, caplog):
+    judge = FakeAsyncOpenAI([_verdict(True)])
+    _init(tmp_path, judge)
+    calls = []
+    send_email, _ = _tools(calls)
+    want = "async judge_client unsupported; pass a sync client"
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        with workflow("wf", goal="g", criticality="high"):
+            r1 = send_email("a@b", "1")
+            r2 = send_email("c@d", "2")
+        gc.collect()
+    assert not [w for w in caught if issubclass(w.category, RuntimeWarning)]
+    assert judge.calls == [] and calls == []
+    assert f"({want})" in r1["reason"] and f"({want})" in r2["reason"]
+    assert [e["payload"] for e in _events("gate_error")] == [{"error": want, "policy": "block"}] * 2
+    assert caplog.text.count(want) == 1  # logged once, when the gate is resolved
+
+
+def test_l0_internal_failure_on_gated_call_still_goes_to_gate(tmp_path, monkeypatch):
+    judge = FakeOpenAI([_verdict(False, "off task")])
+    _init(tmp_path, judge)
+
+    def boom(*a, **k):
+        raise RuntimeError("l0 broke")
+
+    monkeypatch.setattr("pitstop.detect.l0.check_tool_call", boom)
+    calls = []
+    send_email, _ = _tools(calls)
+    with workflow("wf", goal="g", criticality="medium"):
+        out = send_email("a@b", "hi")
+    assert len(judge.calls) == 1 and calls == []
+    assert out["blocked_by"] == "pitstop" and "off task" in out["reason"]

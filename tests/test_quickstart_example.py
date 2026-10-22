@@ -66,3 +66,13 @@ def test_quickstart_offline_gate_uses_scripted_judge_even_with_a_key(tmp_path):
     gates = [json.loads(p) for (p,) in db.execute("SELECT payload FROM events WHERE kind='gate'")]
     assert [(g["allow"], g["reason"]) for g in gates] == [(True, "offline demo")]
     assert db.execute("SELECT count(*) FROM events WHERE kind='gate_error'").fetchone()[0] == 0
+
+
+def test_quickstart_offline_reports_invalid_config_as_halted(tmp_path):
+    env = {k: v for k, v in os.environ.items() if k not in ("CRUSOE_API_KEY", "YDC_API_KEY")}
+    env["PITSTOP_HOME"] = str(tmp_path)
+    (tmp_path / "config.toml").write_text('[judge]\ntimeout_s = 0\n')
+    out = subprocess.run([sys.executable, str(REPO / "examples/quickstart/agent.py"), "--offline"],
+                         cwd=tmp_path, env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert "Halted: pitstop config invalid:" in out.stdout and "timeout_s" in out.stdout

@@ -54,9 +54,10 @@ def _user_message(workflow_goal: str | None, agent_goal: str | None, tool: str, 
 
 
 class Gate:
-    """`client` is a wrapped OpenAI-compatible client (see `Runtime.gate()`); `model` is the judge model."""
+    """`client` is a wrapped sync OpenAI-compatible client (see `Runtime.gate()`); `model` is the judge model.
+    `max_tokens` leaves room for a reasoning model's thinking before it writes the verdict."""
 
-    def __init__(self, client: Any, model: str, *, max_tokens: int = 512):
+    def __init__(self, client: Any, model: str, *, max_tokens: int = 2048):
         self.client = client
         self.model = model
         self.max_tokens = max_tokens

@@ -142,6 +142,26 @@ def test_fix_mode_default_by_criticality(tmp_path):
     assert WorkflowSpec("w").tools is None
 
 
+@pytest.mark.parametrize("kw", [
+    {"criticality": "High"}, {"criticality": None}, {"sensitivity": "medium"}, {"fix_mode": "Manual"},
+    {"fix_mode": ""}, {"on_gate_error": "deny"}, {"on_gate_error": "Block"},
+])
+def test_workflow_rejects_invalid_settings_at_definition(kw):
+    name = next(iter(kw))
+    with pytest.raises(ValueError, match=f"invalid {name}"):
+        workflow("w", **kw)
+    with pytest.raises(ValueError, match=f"invalid {name}"):
+        WorkflowSpec("w", **kw)
+
+
+def test_workflow_accepts_every_valid_setting():
+    for crit in ("high", "medium", "low"):
+        for sens in ("low", "normal", "high"):
+            for fm in ("manual", "auto", None):
+                for oge in ("block", "allow", None):
+                    workflow("w", criticality=crit, sensitivity=sens, fix_mode=fm, on_gate_error=oge)
+
+
 def test_store_failure_never_surfaces(tmp_path, monkeypatch):
     rt = pitstop.init(home=tmp_path)
 

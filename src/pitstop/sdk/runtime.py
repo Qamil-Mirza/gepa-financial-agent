@@ -31,41 +31,64 @@ class Runtime:
     judge_client: Any = None  # from init(judge_client=...); wrapped when the gate is built
     judge_model: str | None = None
     _gate: Any = field(default=_UNBUILT, repr=False, compare=False)
+    _no_gate: str | None = field(default=None, repr=False, compare=False)  # why gate() is None
     _gate_lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
 
     def gate(self) -> Gate | None:
-        """The L1 pre-action gate, built once and cached; None when no judge is available.
+        """The L1 pre-action gate, resolved once per runtime and cached; None when no judge is available
+        (`no_gate_reason()` says why).
 
-        An `init(judge_client=...)` client is wrapped and used with `judge_model` or `[judge] model`. Otherwise, if
-        the `[judge] api_key_env` variable is set, an OpenAI client for `[judge] base_url` is built (no retries,
-        `timeout_s`). A failure to build it is logged (type name only) and leaves no gate."""
+        An `init(judge_client=...)` client is wrapped and used with `judge_model` or `[judge] model`; an async
+        client is refused (the gate's call is sync). Otherwise, if the `[judge] api_key_env` variable is set, an
+        OpenAI client for `[judge] base_url` is built (no retries, `timeout_s`). A key exported later takes effect
+        only after `reset_runtime()`, a restart or `init(judge_client=...)`. A failure to build the judge is logged
+        once (type name only) and leaves no gate."""
         g = self._gate
         if g is not _UNBUILT:
             return g
         with self._gate_lock:
             if self._gate is _UNBUILT:
-                self._gate = self._build_gate()
+                self._gate, self._no_gate = self._build_gate()
             return self._gate
 
-    def _build_gate(self) -> Gate | None:
+    def no_gate_reason(self) -> str:
+        """Why `gate()` returned None, for the gate_error event and the block reason. Names the env var, never
+        its value."""
+        self.gate()
+        return self._no_gate or _no_judge_text(self.config.judge.api_key_env)
+
+    def _build_gate(self) -> tuple[Gate | None, str | None]:
         from ..detect.l1 import Gate
         from .wrap import wrap
+        from .wrap.proxy import _is_async
 
         spec = self.config.judge
         try:
             if self.judge_client is not None:
-                return Gate(wrap(self.judge_client), self.judge_model or spec.model)
+                create = getattr(getattr(getattr(self.judge_client, "chat", None), "completions", None),
+                                 "create", None)
+                if _is_async(create):
+                    log.warning("pitstop: %s; gated tools follow on_gate_error", ASYNC_JUDGE)
+                    return None, ASYNC_JUDGE
+                return Gate(wrap(self.judge_client), self.judge_model or spec.model), None
             key = os.environ.get(spec.api_key_env)
             if not key:
-                return None
+                return None, _no_judge_text(spec.api_key_env)
             from openai import OpenAI
 
             client = OpenAI(api_key=key, base_url=spec.base_url, timeout=spec.timeout_s, max_retries=0)
-            return Gate(wrap(client), self.judge_model or spec.model)
+            return Gate(wrap(client), self.judge_model or spec.model), None
         except Exception as e:
             log.warning("pitstop: could not build the L1 gate judge (%s); gated tools follow on_gate_error",
                         type(e).__name__)
-            return None
+            return None, f"judge setup failed ({type(e).__name__})"
+
+
+ASYNC_JUDGE = "async judge_client unsupported; pass a sync client"
+
+
+def _no_judge_text(api_key_env: str) -> str:
+    return f"no judge configured: set {api_key_env} or [judge] in config.toml"
 
 
 _lock = threading.Lock()
@@ -76,8 +99,10 @@ def init(config_path: Path | None = None, home: Path | None = None, *, judge_cli
          judge_model: str | None = None) -> Runtime:
     """Create (or return the existing) runtime. Idempotent per home.
 
-    `judge_client` (any OpenAI-compatible client) and `judge_model` choose the L1 gate's judge; passing either
-    to an existing runtime replaces its judge and rebuilds the gate on next use.
+    `judge_client` (a sync OpenAI-compatible client) and `judge_model` choose the L1 gate's judge; passing either
+    to an existing runtime replaces its judge and rebuilds the gate on next use. Otherwise the judge is resolved
+    once per runtime: a key exported later takes effect after `reset_runtime()`, a restart or
+    `init(judge_client=...)`.
 
     Raises ConfigInvalid (a ValueError) when config.toml is unusable or pitstop.db was written by a newer
     PitStop; no runtime is cached then, so every later call re-checks and keeps failing closed until it is fixed."""
@@ -91,7 +116,7 @@ def init(config_path: Path | None = None, home: Path | None = None, *, judge_cli
                         _runtime.judge_client = judge_client
                     if judge_model is not None:
                         _runtime.judge_model = judge_model
-                    _runtime._gate = _UNBUILT
+                    _runtime._gate, _runtime._no_gate = _UNBUILT, None
             return _runtime
         config = load_user_config(Path(config_path) if config_path is not None else home / "config.toml")
         try:

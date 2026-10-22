@@ -29,6 +29,11 @@ Sensitivity = Literal["low", "normal", "high"]
 
 F = TypeVar("F", bound=Callable[..., Any])
 
+_CRITICALITIES = ("high", "medium", "low")
+_SENSITIVITIES = ("low", "normal", "high")
+_FIX_MODES = ("manual", "auto", None)
+_GATE_ERROR_POLICIES = ("block", "allow", None)
+
 HISTORY_MAX = 64  # per-agent tool history and per-run LLM history are capped at this many recent calls
 
 
@@ -47,17 +52,25 @@ class WorkflowSpec:
     tools: tuple[str, ...] | None = None
     on_gate_error: Literal["block", "allow"] | None = None
 
+    def __post_init__(self) -> None:
+        # Checked when the workflow is defined: a typo (criticality="High", on_gate_error="deny") must never
+        # silently turn a check off or fail open.
+        for what, value, allowed in (("criticality", self.criticality, _CRITICALITIES),
+                                     ("sensitivity", self.sensitivity, _SENSITIVITIES),
+                                     ("fix_mode", self.fix_mode, _FIX_MODES),
+                                     ("on_gate_error", self.on_gate_error, _GATE_ERROR_POLICIES)):
+            if value not in allowed:
+                raise ValueError(f"pitstop.workflow {self.name!r}: invalid {what} {value!r} "
+                                 f"(expected one of {allowed})")
+
     @property
     def effective_fix_mode(self) -> str:
         return self.fix_mode or ("manual" if self.criticality == "high" else "auto")
 
     @property
     def effective_on_gate_error(self) -> str:
-        """What a side-effect tool does when the L1 gate cannot decide: high blocks (fail closed), else runs.
-        An unrecognized override falls back to that default."""
-        if self.on_gate_error in ("block", "allow"):
-            return self.on_gate_error
-        return "block" if self.criticality == "high" else "allow"
+        """What a side-effect tool does when the L1 gate cannot decide: high blocks (fail closed), else runs."""
+        return self.on_gate_error or ("block" if self.criticality == "high" else "allow")
 
 
 @dataclass

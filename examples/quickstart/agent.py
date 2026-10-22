@@ -81,7 +81,6 @@ def main() -> None:
             ("search", {"query": "nvidia data center revenue"}),
             ("send_report", {"to": "ops@example.com", "body": "Data center revenue is up."})]
         client = _scripted(*script)
-        pitstop.init(judge_client=_scripted_judge())  # the send_report gate uses a fake judge too
     else:
         key = os.getenv("CRUSOE_API_KEY")
         if not key:
@@ -90,6 +89,11 @@ def main() -> None:
         client = OpenAI(api_key=key, base_url=os.getenv("CRUSOE_BASE_URL", "https://api.inference.crusoecloud.com/v1"))
     client = pitstop.wrap(client)
     try:
+        if args.offline:  # the send_report gate uses a fake judge too
+            try:
+                pitstop.init(judge_client=_scripted_judge())
+            except ValueError as e:  # an invalid config.toml: report it like every other PitStop call does
+                raise pitstop.Halted(f"pitstop config invalid: {e}") from e
         # A managed prompt: versioned in PitStop's store; editing the default here creates a new version.
         system = pitstop.prompt("quickstart.system", SYSTEM_DEFAULT).text
         with pitstop.workflow("quickstart", goal="Research NVIDIA data center revenue and send a short report",

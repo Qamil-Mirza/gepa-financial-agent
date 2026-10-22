@@ -81,7 +81,6 @@ def tool(fn: Callable | None = None, *, side_effects: bool = False, name: str | 
 _RUN = object()
 _GATED = ("high", "medium")
 _RECENT = 5  # the agent's recent tool calls shown to the gate's judge
-NO_JUDGE = "no judge configured: set CRUSOE_API_KEY or [judge] in config.toml"
 
 
 class _NeedsGate(NamedTuple):
@@ -184,9 +183,10 @@ def _gate(ctx: RunContext, tname: str, need: _NeedsGate) -> Any:
     try:
         from ..detect.l1 import GATE_PROMPT_VERSION, GateVerdict
 
-        gate = get_runtime().gate()
+        rt = get_runtime()
+        gate = rt.gate()
         if gate is None:
-            verdict = GateVerdict(False, "", error=NO_JUDGE)
+            verdict = GateVerdict(False, "", error=rt.no_gate_reason())
         else:
             verdict = gate.check(workflow_goal=ctx.spec.goal, agent_goal=ctx.agent_goal, tool=tname,
                                  args_text=args_text, recent=need.recent)

@@ -39,7 +39,7 @@ def test_allow_verdict_and_request_shape(tmp_path):
     assert (v.allow, v.reason, v.error) == (True, "sends the drafted reply", None)
     assert v.latency_s >= 0
     [kw] = fake.calls
-    assert kw["model"] == JUDGE and kw["temperature"] == 0 and kw["max_tokens"] == 512
+    assert kw["model"] == JUDGE and kw["temperature"] == 0 and kw["max_tokens"] == 2048
     text = "\n".join(m["content"] for m in kw["messages"])
     assert "serves_goal" in text  # the frozen prompt asks for the JSON verdict
     user = kw["messages"][-1]["content"]
