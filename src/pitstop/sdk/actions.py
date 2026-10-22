@@ -23,9 +23,10 @@ class Applied(NamedTuple):
 def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None = None) -> list[Applied]:
     """Classify each finding (level, action), then record it. A P0 on a high workflow sets a pending halt that
     the next boundary raises, and records a `halt` event marked `pending`. A P1 breakage or refusal spike on a
-    workflow that pins a `fallback_model`, in a run whose model or base_url changed since the workflow's previous
-    run, engages the fallback (sticky until cleared): the drift's action is "fallback" and a `fallback` event is
-    recorded. Outside a workflow: workflow=None, criticality medium, sensitivity normal.
+    workflow that pins a `fallback_model`, in a run whose model or base_url changed within the last 24 h (see
+    `pitstop.detect.changes.recent_change`), engages the fallback (sticky until cleared): the drift's action is
+    "fallback" and a `fallback` event is recorded. Outside a workflow: workflow=None, criticality medium,
+    sensitivity normal.
 
     The block/steer/halt decision never depends on the store: a failed drift or event write is logged, leaves
     drift_id None, and the action still applies. The fallback does need the store (the run's model, the previous
@@ -78,7 +79,7 @@ def _fallback_change(ctx: RunContext, drift_type: str, level: Any) -> tuple[str,
     row = store.connect().execute("SELECT model FROM runs WHERE id=?", (ctx.run_id,)).fetchone()
     if row is None or row["model"] is None or row["model"] == target:  # already on the pinned model
         return None
-    change = recent_change(store, ctx.spec.name, ctx.run_id)
+    change = recent_change(store, ctx.spec.name, ctx.run_id, ignore_model=target)  # pinned runs are no setup
     return (row["model"], change) if change is not None else None
 
 

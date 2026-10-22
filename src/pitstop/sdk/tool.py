@@ -27,7 +27,6 @@ from .runtime import get_runtime, halt_if_config_invalid
 log = logging.getLogger("pitstop")
 
 MAX_STEERS = 2
-_RANK = {"record": 0, "steer": 1, "block": 2}
 
 
 def tool(fn: Callable | None = None, *, side_effects: bool = False, name: str | None = None):
@@ -120,6 +119,7 @@ def _before(ctx: RunContext, tname: str, side_effects: bool, args: tuple, kwargs
     recent: list = []
     gated = side_effects and ctx.spec.criticality in _GATED
     try:
+        from ..detect.drifts import ACTION_RANK
         from ..detect.l0 import ToolCallRecord, check_tool_call
         from .actions import apply_findings
 
@@ -136,12 +136,10 @@ def _before(ctx: RunContext, tname: str, side_effects: bool, args: tuple, kwargs
             findings = check_tool_call(history, rec, ctx.spec)
             history.append(rec)
         applied = apply_findings(ctx, findings)
-        best = None
-        for item in applied:
-            if best is None or _RANK.get(item.action, 0) > _RANK.get(best.action, 0):
-                best = item
-        if best is not None and best.action in ("block", "steer"):
-            decision = best
+        # the strictest block or steer (first on a tie); other actions do not change how the tool runs
+        acting = [a for a in applied if a.action in ("block", "steer")]
+        if acting:
+            decision = max(acting, key=lambda a: ACTION_RANK[a.action])
     except Exception:
         if not gated:
             log.warning("pitstop: tool check failed; running the tool normally", exc_info=True)

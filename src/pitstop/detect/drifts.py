@@ -9,7 +9,9 @@ from .urgency import Level
 
 MAX_EVIDENCE = 20  # evidence entries kept per drift (newest); `occurrences` keeps the full count
 _LEVEL_RANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}  # lower is more urgent
-_ACTION_RANK = {"record": 0, "fallback": 1, "steer": 2, "block": 3, "halt": 4}  # higher is stricter
+# Higher is stricter. The one ranking of drift actions: dedup escalation here, and `@pitstop.tool` picking the
+# action to apply when one call raises several findings.
+ACTION_RANK = {"record": 0, "fallback": 1, "steer": 2, "block": 3, "halt": 4}
 
 
 def _more_urgent(a: str, b: str) -> str:
@@ -17,7 +19,7 @@ def _more_urgent(a: str, b: str) -> str:
 
 
 def _stricter(a: str, b: str) -> str:
-    return a if _ACTION_RANK.get(a, -1) >= _ACTION_RANK.get(b, -1) else b
+    return a if ACTION_RANK.get(a, -1) >= ACTION_RANK.get(b, -1) else b
 
 
 def record_drift(store, *, run_id: str | None, workflow: str | None, finding: Finding, level: Level | str,

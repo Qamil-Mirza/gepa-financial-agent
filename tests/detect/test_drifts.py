@@ -92,3 +92,13 @@ def test_new_drift_has_one_occurrence(tmp_path):
     [row] = list_drifts(s)
     assert row["occurrences"] == 1 and row["last_seen"] == row["ts"]
     assert row["evidence"] == [{"run_id": "r1", "ts": row["ts"], "detail": {"n": 1}}]
+
+
+def test_fallback_ranks_between_record_and_steer(tmp_path):
+    store = _store(tmp_path)
+    brk = Finding("tool_call_breakage", "degraded", False, {})
+    for action in ("record", "fallback", "record"):
+        record_drift(store, run_id="r", workflow="wf", finding=brk, level="P1", action=action)
+    assert [r["action"] for r in list_drifts(store)] == ["fallback"]
+    record_drift(store, run_id="r", workflow="wf", finding=brk, level="P1", action="steer")
+    assert [r["action"] for r in list_drifts(store)] == ["steer"]

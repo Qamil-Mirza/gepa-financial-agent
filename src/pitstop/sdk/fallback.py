@@ -33,11 +33,15 @@ def active(store, workflow: str) -> dict | None:
 
 
 def activate(store, workflow: str, *, model: str, drift_id: int | None, change: Change) -> bool:
-    """Engage the fallback. False (and the existing state kept) when one is already active."""
+    """Engage the fallback. False (and the existing state kept) when one is already active; an unreadable state
+    is replaced."""
     value = json.dumps({"model": model, "since": time.time(), "drift_id": drift_id, "change": asdict(change)})
     with store.transaction(immediate=True) as c:
-        return c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES (?,?)",
-                         (_key(workflow), value)).rowcount == 1
+        row = c.execute("SELECT value FROM meta WHERE key=?", (_key(workflow),)).fetchone()
+        if row is not None and _parse(row[0]) is not None:
+            return False
+        c.execute("INSERT OR REPLACE INTO meta(key, value) VALUES (?,?)", (_key(workflow), value))
+        return True
 
 
 def clear(store, workflow: str) -> bool:
@@ -47,12 +51,14 @@ def clear(store, workflow: str) -> bool:
 
 
 def list_active(store) -> list[dict]:
-    """Every active fallback, by workflow name: its state plus `"workflow"`."""
+    """Every fallback state, by workflow name: its state plus `"workflow"`. A state that cannot be read (no swap
+    happens for it) is listed with `"invalid": True` and the other fields None, so it can be seen and cleared."""
     rows = store.connect().execute("SELECT key, value FROM meta WHERE substr(key, 1, ?)=? ORDER BY key",
                                    (len(_PREFIX), _PREFIX)).fetchall()
     out = []
     for key, value in rows:
         state = _parse(value)
-        if state is not None:
-            out.append({"workflow": key[len(_PREFIX):], **state})
+        if state is None:
+            state = {"model": None, "since": None, "drift_id": None, "change": None, "invalid": True}
+        out.append({"workflow": key[len(_PREFIX):], **state})
     return out

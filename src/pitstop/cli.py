@@ -283,7 +283,8 @@ def cmd_fallback(args) -> None:
         t.add_column(col)
     for r in rows:
         since = r.get("since")
-        t.add_row(escape(r["workflow"]), escape(r["model"]),
+        model = "(unreadable state; clear it)" if r.get("invalid") else str(r.get("model"))
+        t.add_row(escape(r["workflow"]), escape(model),
                   _fmt_ts(since) if isinstance(since, (int, float)) else "-", escape(_change_text(r.get("change"))))
     console.print(t)
 

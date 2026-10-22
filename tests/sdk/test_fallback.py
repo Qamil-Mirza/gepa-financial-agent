@@ -282,3 +282,95 @@ def test_swap_applies_to_every_shape(tmp_path, api):
     assert model == FALLBACK  # reserved and settled at the pinned model's price
     [(_, name, payload)] = _events("llm_call")
     assert (name, payload["fallback_from"]) == (FALLBACK, MODEL_B)
+
+
+# -- the change window and pinned runs (recent_change with ignore_model) ---------------------------------------
+
+
+class _Script:
+    """A wrapped fake whose responses are queued per run."""
+
+    def __init__(self):
+        self.fake = FakeOpenAI([])
+        self.w = pitstop.wrap(self.fake)
+
+    def run(self, model, *, ok=0, bad=0, **wf):
+        self.fake._responses += [_ok() for _ in range(ok)] + [_bad() for _ in range(bad)]
+        with workflow("wf", fallback_model=FALLBACK, **wf) as ctx:
+            for _ in range(ok + bad):
+                self.w.chat.completions.create(model=model, messages=MSGS)
+        return ctx.run_id
+
+    def sent(self, n):
+        return [c["model"] for c in self.fake.calls[-n:]]
+
+
+def _drift_actions():
+    return [d["action"] for d in list_drifts(get_runtime().store)]
+
+
+def test_later_run_on_the_new_model_still_engages(tmp_path):
+    _init(tmp_path)
+    s = _Script()
+    s.run(MODEL_A, ok=1)
+    s.run(MODEL_B, ok=1)  # the first run on the new model did not break
+    s.run(MODEL_B, bad=5)
+    assert _drift_actions() == ["fallback"]
+    assert fallback.active(get_runtime().store, "wf")["change"]["before"] == MODEL_A
+    s.run(MODEL_B, ok=1)
+    assert s.sent(1) == [FALLBACK]
+
+
+def test_change_older_than_a_day_does_not_engage(tmp_path):
+    _init(tmp_path)
+    s = _Script()
+    s.run(MODEL_A, ok=1)
+    s.run(MODEL_B, ok=1)
+    with get_runtime().store.transaction() as c:  # both runs (and so the switch to MODEL_B) were 2 days ago
+        c.execute("UPDATE runs SET started_at = started_at - 2 * 86400")
+    s.run(MODEL_B, bad=5)
+    assert _drift_actions() == ["record"]
+    assert fallback.active(get_runtime().store, "wf") is None
+
+
+def test_after_clear_pinned_runs_are_not_a_change(tmp_path):
+    _init(tmp_path)
+    s = _Script()
+    s.run(MODEL_B, ok=1)
+    _activate()
+    s.run(MODEL_B, ok=1)  # sent to the pinned model: this run's model is FALLBACK
+    assert s.sent(1) == [FALLBACK]
+    assert fallback.clear(get_runtime().store, "wf")
+    s.run(MODEL_B, bad=5)  # back on MODEL_B, as before the fallback: FALLBACK -> MODEL_B is no change
+    assert s.sent(5) == [MODEL_B] * 5
+    assert _drift_actions() == ["record"]
+    assert fallback.active(get_runtime().store, "wf") is None
+
+
+def test_change_made_while_the_fallback_was_active_is_seen_after_clear(tmp_path):
+    _init(tmp_path)
+    s = _Script()
+    s.run(MODEL_B, ok=1)
+    _activate()
+    s.run("model-c", ok=1)  # the code moved to model-c while every call still went to the pinned model
+    assert s.sent(1) == [FALLBACK]
+    assert fallback.clear(get_runtime().store, "wf")
+    s.run("model-c", bad=5)
+    assert _drift_actions() == ["fallback"]
+    change = fallback.active(get_runtime().store, "wf")["change"]
+    assert (change["field"], change["before"], change["after"]) == ("model", MODEL_B, "model-c")
+
+
+def test_unreadable_state_is_listed_and_replaced(tmp_path, capsys, monkeypatch):
+    _init(tmp_path)
+    store = get_runtime().store
+    with store.transaction() as c:
+        c.execute("INSERT INTO meta(key, value) VALUES ('fallback:wf', 'not json')")
+    assert fallback.active(store, "wf") is None  # nothing is swapped on an unreadable state
+    [row] = fallback.list_active(store)
+    assert row["workflow"] == "wf" and row["invalid"] is True and row["model"] is None
+    _main(monkeypatch, "fallback", "status")
+    assert "unreadable" in capsys.readouterr().out
+    assert _activate() is True  # replaced, not blocked forever
+    assert fallback.active(store, "wf")["model"] == FALLBACK
+    assert "invalid" not in fallback.list_active(store)[0]

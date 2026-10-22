@@ -107,10 +107,12 @@ The `evidence` column counts every occurrence of the drift; the DB keeps the new
 Pin a known-good model on a workflow with `pitstop.workflow(..., fallback_model="...")`. The fallback engages when all of these hold:
 
 - a P1 `tool_call_breakage` or `refusal_spike` drift is detected in a run (a `low` workflow's P2 never engages it);
-- the run's model or provider `base_url` differs from the workflow's previous run (a breakage with no recent change is only recorded);
+- the run's model or provider `base_url` changed in the last 24 hours: it differs from the workflow's previous setup, and the first run on the new setup started less than a day ago (a breakage with no recent change is only recorded). Runs that went to the pinned model don't count as a setup, so clearing the fallback and going back to your old model is not a change, while a switch you made while the fallback was on still is;
 - the run is not already on the pinned model.
 
 From the next call on, every agent-meter call in that workflow is sent to the pinned model instead of the one your code asked for; the agent sees no other difference. The reservation, cost and `llm_call` event use the pinned model, and the event records the requested one as `fallback_from`. The drift's action is `fallback`, and a `fallback` event records `{"from", "to", "change"}`. Judge and supervisor calls (other meters) and calls outside the workflow are never swapped. If PitStop cannot read its state, the call keeps its own model.
+
+Only the model id is swapped: the call still goes to the client's own `base_url`. Every agent-meter client in the workflow sends the pinned id, and after a fallback engaged by a `base_url` change it goes to the new provider. Pick a `fallback_model` that every endpoint the workflow calls actually serves.
 
 The fallback is sticky: it stays on across runs and processes until you clear it, since only you can tell when the new model or provider is fixed:
 
