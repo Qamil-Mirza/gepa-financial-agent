@@ -8,7 +8,9 @@ wrapped clients so derived clients stay metered. Each intercepted call:
   2. estimates its worst-case cost (ceil(chars/4) prompt tokens + max completion tokens, default 4096)
      and reserves it in the ledger, which raises `BudgetExceeded` before the client is called;
   3. calls the real `create`, then settles the reservation from `usage` (or from a character estimate
-     when usage is missing), records an `llm_call` event and runs the post-call hook.
+     when usage is missing), records an `llm_call` event (its payload names the ledger meter) and, for
+     calls on the "agent" meter only, runs the post-call L0 checks and sets the run's first-call tags.
+     Judge, supervisor and other internal calls inside a run never feed detection or the run's model tag.
 
 Streams are returned as proxies that yield every chunk unchanged and settle when the stream ends, fails,
 is closed, or is dropped after an early `break`. A reservation is always settled or released, including
@@ -33,6 +35,7 @@ from typing import Any, TypeVar
 from ..budget.ledger import Reservation
 from ..budget.prices import cost_usd, price_for
 from ..store.urls import normalize_base_url
+from .actions import apply_findings
 from .context import RunContext, _safe, check_halt, current_run
 from .errors import BudgetExceeded
 from ..userconfig import ConfigInvalid
@@ -81,38 +84,9 @@ class ResponseSummary:
         return len(self.content) if self.content else 0
 
 
-def _apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None = None) -> list[tuple]:
-    """Classify each finding (level, action), then record it. A P0 on a high workflow sets a pending halt that
-    the next boundary raises. Outside a workflow: workflow=None, criticality medium, sensitivity normal.
-
-    The decision never depends on the store: a failed drift write is logged and leaves drift_id None, and the
-    block/steer/halt still applies."""
-    from ..detect import drifts
-    from ..detect.urgency import Level, action_for, classify
-
-    criticality = ctx.spec.criticality if ctx is not None else "medium"
-    workflow = ctx.spec.name if ctx is not None else None
-    run_id = ctx.run_id if ctx is not None else run_id
-    applied: list[tuple] = []  # (finding, level, action, drift_id)
-    for f in findings:
-        level = classify(f.drift_type, criticality, f.side_effects)
-        action = action_for(f, level, criticality)
-        try:
-            drift_id = drifts.record_drift(get_runtime().store, run_id=run_id, workflow=workflow, finding=f,
-                                           level=level, action=action)
-        except Exception:
-            log.warning("pitstop: could not record a %s drift; its action still applies", f.drift_type,
-                        exc_info=True)
-            drift_id = None
-        if ctx is not None and level is Level.P0 and criticality == "high" and ctx.halt_reason is None:
-            ctx.halt_reason = f"{f.drift_type} (P0) on high-criticality workflow {workflow!r}"
-            ctx.halt_drift_id = drift_id
-        applied.append((f, level, action, drift_id))
-    return applied
-
-
 def _after_llm_call(ctx: RunContext | None, summary: ResponseSummary) -> None:
-    """Post-call L0 checks: build the call record, update the run's history, record findings as drifts."""
+    """Post-call L0 checks: build the call record, update the run's history and refusal count, record findings
+    as drifts."""
     from ..detect.l0 import LLMCallRecord, check_llm_call, is_refusal
 
     failures = 0
@@ -123,20 +97,23 @@ def _after_llm_call(ctx: RunContext | None, summary: ResponseSummary) -> None:
             failures += 1
     record = LLMCallRecord(failures, len(summary.tool_calls),
                            is_refusal(summary.content, len(summary.tool_calls)))
-    history = ctx.llm_history if ctx is not None else []
-    sensitivity = ctx.spec.sensitivity if ctx is not None else "normal"
-    findings = check_llm_call(history, record, sensitivity)
-    if ctx is not None:
-        ctx.llm_history.append(record)
-    _apply_findings(ctx, findings)
+    if ctx is None:
+        findings = check_llm_call([], record, "normal", 1 if record.refused else 0)
+    else:
+        with ctx.lock:
+            if record.refused:
+                ctx.refusals += 1
+            findings = check_llm_call(ctx.llm_history, record, ctx.spec.sensitivity, ctx.refusals)
+            ctx.llm_history.append(record)
+    apply_findings(ctx, findings)
 
 
 def _on_budget_exceeded(ctx: RunContext | None, exc: BudgetExceeded) -> None:
     """Record a budget_exhausted drift (P0, halt) before the exception is raised."""
     from ..detect.l0 import Finding
 
-    _apply_findings(ctx, [Finding("budget_exhausted", "degraded", False,
-                                  {"scope": exc.scope, "limit_usd": exc.limit_usd, "spent_usd": exc.spent_usd})])
+    apply_findings(ctx, [Finding("budget_exhausted", "degraded", False,
+                                 {"scope": exc.scope, "limit_usd": exc.limit_usd, "spent_usd": exc.spent_usd})])
 
 
 # -- proxies --------------------------------------------------------------------------------------------
@@ -490,6 +467,7 @@ class _Call:
         self.base_url = base_url
         self.stream = stream
         self.inject_usage = inject_usage
+        self.meter = "agent"  # the ledger meter, read once at begin
         self.est_prompt = 0
         self.rt: Runtime | None = None
         self.res: Reservation | None = None
@@ -516,6 +494,7 @@ class _Call:
         model = kwargs.get("model")
         model = model if isinstance(model, str) else "unknown" if model is None else str(model)
         call = cls(ctx, kwargs, model, _base_url(client), stream, inject)
+        call.meter = _meter.get()
         try:
             call.est_prompt = _estimate_prompt_tokens(kwargs)
             call.rt = get_runtime()
@@ -525,7 +504,7 @@ class _Call:
                 run_id=ctx.run_id if ctx is not None else None,
                 workflow=ctx.spec.name if ctx is not None else None,
                 workflow_budget_usd=ctx.spec.budget_usd if ctx is not None else None,
-                meter=_meter.get(),
+                meter=call.meter,
             )
         except BudgetExceeded as e:
             _safe(functools.partial(_on_budget_exceeded, ctx, e))
@@ -636,8 +615,9 @@ class _Call:
         else:
             cost = _safe(lambda: self._unmetered_cost(prompt, completion, cached))
         _safe(lambda: self._record(cost, estimated))
-        summary = self.summary
-        _safe(lambda: _after_llm_call(self.ctx, summary))
+        if self.meter == "agent":  # only the agent's own calls feed L0 detection
+            summary = self.summary
+            _safe(lambda: _after_llm_call(self.ctx, summary))
 
     def _tokens(self) -> tuple[int, int, int, bool]:
         u = self.usage
@@ -663,15 +643,16 @@ class _Call:
 
         s = self.summary
         payload: dict[str, Any] = {"tool_calls": s.tool_calls, "finish_reason": s.finish_reason,
-                                   "content_chars": s.content_chars}
+                                   "content_chars": s.content_chars, "meter": self.meter}
         if estimated:
             payload["usage_estimated"] = True
         if self.unmetered:
             payload["unmetered"] = True
         ctx = self.ctx
         first = False
-        if ctx is not None:
-            first, ctx.llm_calls = ctx.llm_calls == 0, ctx.llm_calls + 1
+        if ctx is not None and self.meter == "agent":  # judge/supervisor calls never set the run's tags
+            with ctx.lock:
+                first, ctx.llm_calls = ctx.llm_calls == 0, ctx.llm_calls + 1
         rt = self._rt()
         known = _safe(self._price_known)
         with rt.store.transaction() as c:
@@ -683,11 +664,11 @@ class _Call:
             if ctx is None:
                 return
             if first:
+                # price_known only ever drops: an earlier unknown-priced call (any meter) keeps the run's 0
                 c.execute(
-                    "UPDATE runs SET model=?, base_url=?, adapter='wrap', pitstop_version=?, price_known=?"
-                    " WHERE id=?",
-                    (self.model, normalize_base_url(self.base_url), __version__, 0 if known is False else 1,
-                     ctx.run_id),
+                    "UPDATE runs SET model=?, base_url=?, adapter='wrap', pitstop_version=?,"
+                    " price_known=CASE WHEN ? THEN price_known ELSE 0 END WHERE id=?",
+                    (self.model, normalize_base_url(self.base_url), __version__, known is not False, ctx.run_id),
                 )
-            elif known is False:
+            elif known is False:  # any meter: an unknown-priced call makes the run's cost a lower bound
                 c.execute("UPDATE runs SET price_known=0 WHERE id=?", (ctx.run_id,))

@@ -257,3 +257,89 @@ def test_tool_error_payload_is_capped(tmp_path):
             boom()
     err = json.loads(_events("tool_result")[0]["payload"])["error"]
     assert len(err) == 500
+
+
+def test_pending_p0_halt_records_halt_event(tmp_path):
+    _init(tmp_path)
+
+    @pitstop.tool(side_effects=True)
+    def send_email(to):
+        raise AssertionError("must not run")
+
+    with pytest.raises(Halted):
+        with workflow("wf", criticality="high", tools=["search"]) as ctx:
+            assert send_email("x")["blocked_by"] == "pitstop"
+            [ev] = _events("halt")
+            assert (ev["run_id"], ev["name"]) == (ctx.run_id, "out_of_scope_action")
+            assert json.loads(ev["payload"]) == {"reason": ctx.halt_reason, "drift_id": ctx.halt_drift_id,
+                                                 "pending": True}
+            assert ctx.halt_drift_id is not None
+            send_email("x")  # the next boundary raises the pending halt
+    assert len(_events("halt")) == 1
+
+
+def test_histories_are_bounded(tmp_path):
+    import uuid
+    from collections import deque
+
+    from pitstop.sdk.context import HISTORY_MAX
+
+    _init(tmp_path)
+    assert HISTORY_MAX == 64
+
+    @pitstop.tool
+    def search(q):
+        return "r"
+
+    with workflow("wf") as ctx:
+        with agent("a"):
+            for _ in range(200):
+                assert search(uuid.uuid4().hex) == "r"
+    hist = ctx.tool_history["a"]
+    assert isinstance(hist, deque) and hist.maxlen == HISTORY_MAX and len(hist) == HISTORY_MAX
+    assert isinstance(ctx.llm_history, deque) and ctx.llm_history.maxlen == HISTORY_MAX
+
+
+class _SlowLimit:
+    """MAX_STEERS stand-in whose comparison yields the GIL, widening the steer check-to-increment window."""
+
+    def __le__(self, steers):  # `ctx.steers >= MAX_STEERS` falls back to this reflected comparison
+        import time
+
+        time.sleep(0.002)
+        return 2 <= steers
+
+
+def test_steer_limit_is_atomic_across_threads(tmp_path, monkeypatch):
+    import contextvars
+    import threading
+
+    _init(tmp_path)
+    monkeypatch.setattr("pitstop.sdk.tool.MAX_STEERS", _SlowLimit())
+
+    @pitstop.tool
+    def search(q):
+        return "r"
+
+    outcomes = []
+    with workflow("wf", goal="g") as ctx:
+        assert isinstance(ctx.lock, type(threading.Lock()))
+        barrier = threading.Barrier(8)
+
+        def worker():
+            barrier.wait()
+            for _ in range(50):
+                try:
+                    search("a")
+                except Halted:
+                    outcomes.append("halted")
+                    return
+            outcomes.append("never halted")
+
+        threads = [threading.Thread(target=contextvars.copy_context().run, args=(worker,)) for _ in range(8)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+    assert ctx.steers == 2 and len(_events("steer")) == 2
+    assert outcomes == ["halted"] * 8

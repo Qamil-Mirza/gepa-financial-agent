@@ -1,4 +1,5 @@
 import asyncio
+import gc
 
 import pytest
 
@@ -235,3 +236,165 @@ def test_shared_workflow_instance_under_gather_gets_separate_runs(tmp_path):
     statuses = [r["status"] for r in get_runtime().store.connect().execute("SELECT status FROM runs")]
     assert sorted(statuses) == ["error", "ok", "ok"]
     assert current_run() is None
+
+
+def test_workflow_on_generator_records_run_and_does_not_leak(tmp_path):
+    pitstop.init(home=tmp_path)
+
+    @workflow("g")
+    def gen():
+        yield current_run().run_id
+        yield current_run().run_id
+
+    it = gen()
+    a = next(it)
+    assert current_run() is None  # consumer code between yields sees no run
+    assert _row(a)["status"] == "running"
+    b = next(it)
+    assert a == b
+    assert list(it) == []
+    row = _row(a)
+    assert (row["workflow"], row["status"]) == ("g", "ok") and row["ended_at"] is not None
+
+
+def test_generator_workflow_passes_send_throw_and_return_value(tmp_path):
+    pitstop.init(home=tmp_path)
+
+    @workflow("g")
+    def gen():
+        got = yield current_run().run_id
+        try:
+            yield got
+        except KeyError:
+            yield "caught"
+        return "done"
+
+    it = gen()
+    rid = next(it)
+    assert it.send("hello") == "hello"
+    assert it.throw(KeyError("k")) == "caught"
+    with pytest.raises(StopIteration) as ei:
+        next(it)
+    assert ei.value.value == "done"
+    assert _row(rid)["status"] == "ok"
+
+
+def test_generator_workflow_error_and_halt_status(tmp_path):
+    pitstop.init(home=tmp_path)
+
+    @workflow("g")
+    def bad():
+        yield current_run().run_id
+        raise ValueError("boom")
+
+    it = bad()
+    rid = next(it)
+    with pytest.raises(ValueError):
+        next(it)
+    assert _row(rid)["status"] == "error"
+
+    @workflow("h")
+    def halts():
+        yield current_run().run_id
+        raise Halted("stop")
+
+    it = halts()
+    rid = next(it)
+    with pytest.raises(Halted):
+        next(it)
+    assert _row(rid)["status"] == "halted"
+
+
+def test_generator_closed_early_finishes_run(tmp_path):
+    pitstop.init(home=tmp_path)
+    cleaned = []
+
+    @workflow("g")
+    def gen():
+        try:
+            while True:
+                yield current_run().run_id
+        finally:
+            cleaned.append(current_run().run_id)
+
+    it = gen()
+    rid = next(it)
+    it.close()
+    assert cleaned == [rid]  # the generator's own finally still runs inside the run
+    row = _row(rid)
+    assert row["status"] == "ok" and row["ended_at"] is not None
+    assert current_run() is None
+
+    it = gen()  # dropped unfinished: best effort, the run still ends when the generator is collected
+    rid = next(it)
+    del it
+    gc.collect()
+    assert _row(rid)["status"] == "ok"
+
+
+def test_generator_workflow_cannot_nest(tmp_path):
+    pitstop.init(home=tmp_path)
+
+    @workflow("g")
+    def gen():
+        yield 1
+
+    with workflow("outer"):
+        with pytest.raises(RuntimeError, match="cannot be nested"):
+            next(gen())
+
+
+async def test_workflow_on_async_generator(tmp_path):
+    pitstop.init(home=tmp_path)
+
+    @workflow("ag")
+    async def agen():
+        yield current_run().run_id
+        await asyncio.sleep(0)
+        got = yield current_run().run_id
+        yield got
+
+    ids = []
+    it = agen()
+    async for rid in it:
+        assert current_run() is None
+        ids.append(rid)
+        if len(ids) == 2:
+            break
+    assert ids[0] == ids[1] and _row(ids[0])["status"] == "running"
+    assert await it.asend("x") == "x"
+    with pytest.raises(StopAsyncIteration):
+        await it.__anext__()
+    assert _row(ids[0])["status"] == "ok"
+
+    @workflow("ag2")
+    async def bad():
+        yield current_run().run_id
+        raise ValueError("boom")
+
+    it = bad()
+    rid = await it.__anext__()
+    with pytest.raises(ValueError):
+        await it.__anext__()
+    assert _row(rid)["status"] == "error"
+
+    it = agen()
+    rid = await it.__anext__()
+    await it.aclose()  # closed early
+    row = _row(rid)
+    assert row["status"] == "ok" and row["ended_at"] is not None
+
+
+def test_agent_on_generator_scopes_each_step(tmp_path):
+    pitstop.init(home=tmp_path)
+
+    @agent("a", goal="ag")
+    def steps():
+        yield current_run().agent
+        yield current_run().agent_goal
+
+    with workflow("wf") as ctx:
+        it = steps()
+        assert next(it) == "a"
+        assert ctx.agent is None  # the consumer is outside the agent scope
+        assert list(it) == ["ag"]

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -59,13 +60,14 @@ def is_refusal(content: str | None, tool_calls: int) -> bool:
         and REFUSAL_RE.match(content) is not None
 
 
-def check_tool_call(history: list[ToolCallRecord], call: ToolCallRecord, spec: WorkflowSpec) -> list[Finding]:
+def check_tool_call(history: Sequence[ToolCallRecord], call: ToolCallRecord, spec: WorkflowSpec) -> list[Finding]:
+    """`history` holds the agent's earlier calls (a list or a bounded deque); `call` is the one about to run."""
     out: list[Finding] = []
     if spec.tools is not None and call.name not in spec.tools:
         out.append(Finding("out_of_scope_action", "off_task", call.side_effects,
                            {"tool": call.name, "allowed": list(spec.tools)}))
     t = THRESHOLDS[spec.sensitivity]
-    window = (list(history[-t["loop_window"]:]) if t["loop_window"] > 0 else []) + [call]
+    window = (list(history)[-t["loop_window"]:] if t["loop_window"] > 0 else []) + [call]
     same = sum(1 for r in window if r.name == call.name
                and (r.args == call.args or jaccard(r.args, call.args) >= t["near_dup_jaccard"]))
     if same >= t["loop_repeats"]:
@@ -75,8 +77,10 @@ def check_tool_call(history: list[ToolCallRecord], call: ToolCallRecord, spec: W
     return out
 
 
-def check_llm_call(history: list[LLMCallRecord], call: LLMCallRecord, sensitivity: Sensitivity) -> list[Finding]:
-    """`history` holds the run's earlier calls; `call` is the one just made."""
+def check_llm_call(history: Sequence[LLMCallRecord], call: LLMCallRecord, sensitivity: Sensitivity,
+                   refusals: int) -> list[Finding]:
+    """`history` holds the run's recent earlier calls (capped); `call` is the one just made. `refusals` is the
+    run's total refusal count including `call`: the capped history cannot count the whole run."""
     t = THRESHOLDS[sensitivity]
     out: list[Finding] = []
     recent = [r for r in [*history, call] if r.tool_calls > 0][-_BREAKAGE_WINDOW:]
@@ -87,7 +91,6 @@ def check_llm_call(history: list[LLMCallRecord], call: LLMCallRecord, sensitivit
         if rate >= t["parse_fail_rate"]:
             out.append(Finding("tool_call_breakage", "degraded", False,
                                {"parse_failures": failures, "tool_calls": total, "rate": round(rate, 3)}))
-    refusals = sum(1 for r in [*history, call] if r.refused)
     if refusals >= t["refusals_per_run"]:
         out.append(Finding("refusal_spike", "degraded", False, {"refusals": refusals}))
     return out

@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Open-source repo basics: Apache-2.0 license, Contributor Covenant code of conduct, security policy, issue and pull-request templates, changelog and a CI workflow.
 - Ruff linting (pyflakes rules) and offline-by-default test suite.
 - `pitstop budget reconcile [--older-than-min 60] [--release]` lists old budget reservations, left open by a process that died mid-call or by a call still running; `--release` frees them and lists what it freed.
+- `pitstop.workflow` and `pitstop.agent` decorate generator and async-generator functions; the run spans the generator's steps and never leaks to the consuming code.
 
 ### Changed
 - `pitstop` is now an installable `src/` layout package with packaged assets.
@@ -24,6 +25,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Store schema v3: older DBs are upgraded step by step in one transaction, and a DB written by a newer PitStop fails closed with `Halted("pitstop config invalid: ...")`.
 - Drift records count every occurrence (`occurrences`, `last_seen`) and keep only the newest 20 evidence entries, each `{"run_id", "ts", "detail"}`; `pitstop drifts` shows the real first and last seen times.
 - `runs.base_url` is stored normalized (no trailing `/`), matching the budget ledger.
+- Drift detection and the run's model tag use only calls on the `agent` meter; judge, supervisor and GEPA calls no longer trigger L0 drifts. `llm_call` events carry their `meter`.
+- Per-agent tool history and per-run LLM history keep the newest 64 calls; refusals are counted over the whole run.
+- The steer limit (2 per run) holds when several threads share a run.
+- A pending P0 halt on a high-criticality workflow is recorded as a `halt` event (`pending: true`) when it is set.
 
 ### Removed
 - The superseded supervisor stack, dead scaffold and committed generated data.

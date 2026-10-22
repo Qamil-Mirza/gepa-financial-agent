@@ -78,16 +78,16 @@ def _llm(fail=0, calls=1, refused=False):
 
 def test_parse_failure_rate_needs_min_calls():
     bad = _llm(1, 1)
-    assert check_llm_call([bad] * 3, bad, "normal") == []  # 4 calls < min_calls
-    out = check_llm_call([bad] * 4, bad, "normal")
+    assert check_llm_call([bad] * 3, bad, "normal", 0) == []  # 4 calls < min_calls
+    out = check_llm_call([bad] * 4, bad, "normal", 0)
     assert [f.drift_type for f in out] == ["tool_call_breakage"] and out[0].kind == "degraded"
     # 1 failure in 10 calls = 10% >= normal threshold; 1 in 11 is below it; low needs 20%
     ok = _llm(0, 1)
-    assert check_llm_call([ok] * 9 + [bad], ok, "normal") == []
-    assert check_llm_call([bad] + [ok] * 8, ok, "normal")[0].drift_type == "tool_call_breakage"
-    assert check_llm_call([bad] + [ok] * 8, ok, "low") == []
+    assert check_llm_call([ok] * 9 + [bad], ok, "normal", 0) == []
+    assert check_llm_call([bad] + [ok] * 8, ok, "normal", 0)[0].drift_type == "tool_call_breakage"
+    assert check_llm_call([bad] + [ok] * 8, ok, "low", 0) == []
     # calls without tool calls are ignored
-    assert check_llm_call([_llm(0, 0)] * 30, bad, "normal") == []
+    assert check_llm_call([_llm(0, 0)] * 30, bad, "normal", 0) == []
 
 
 def test_refusal_regex_and_limit():
@@ -101,11 +101,11 @@ def test_refusal_regex_and_limit():
     assert not is_refusal("I'm sorry " + "x" * 400, 0)
     assert not is_refusal(None, 0)
     r = _llm(0, 0, True)
-    assert check_llm_call([], r, "normal") == []
-    out = check_llm_call([r], r, "normal")
+    assert check_llm_call([], r, "normal", 1) == []
+    out = check_llm_call([r], r, "normal", 2)
     assert [f.drift_type for f in out] == ["refusal_spike"]
-    assert check_llm_call([], r, "high")[0].drift_type == "refusal_spike"
-    assert check_llm_call([r, r], r, "low")[0].evidence["refusals"] == 3
+    assert check_llm_call([], r, "high", 1)[0].drift_type == "refusal_spike"
+    assert check_llm_call([r, r], r, "low", 3)[0].evidence["refusals"] == 3
     assert json.dumps(out[0].evidence)
 
 
@@ -114,10 +114,26 @@ def test_breakage_window_counts_last_20_tool_call_calls_only():
     hist = []
     for _ in range(4):
         hist += [bad] + [text] * 30
-    assert check_llm_call(hist, bad, "normal")[0].drift_type == "tool_call_breakage"
+    assert check_llm_call(hist, bad, "normal", 0)[0].drift_type == "tool_call_breakage"
     # the oldest failure is the 21st tool-call call back, so it falls out: 4 failures of 20 still trip,
     # but with only that one failure left in the window the rate is 1/20 = 5% < 10%
     hist = [bad] + [ok] * 19
-    assert check_llm_call(hist, ok, "normal") == []
+    assert check_llm_call(hist, ok, "normal", 0) == []
     hist = [bad, bad] + [text] * 25 + [ok] * 17
-    assert check_llm_call(hist, ok, "normal")[0].evidence["tool_calls"] == 20
+    assert check_llm_call(hist, ok, "normal", 0)[0].evidence["tool_calls"] == 20
+
+
+def test_refusal_spike_uses_the_run_total_not_the_history():
+    r, ok = _llm(0, 0, True), _llm()
+    # the run total includes refusals that fell out of the capped history
+    out = check_llm_call([], r, "normal", refusals=2)
+    assert [f.drift_type for f in out] == ["refusal_spike"] and out[0].evidence["refusals"] == 2
+    # the history is not scanned for refusals
+    assert check_llm_call([r, r, r], ok, "normal", refusals=1) == []
+
+
+def test_tool_loop_check_accepts_a_bounded_deque():
+    from collections import deque
+
+    hist = deque([tc("b")] * 10 + [tc()] * 2, maxlen=64)
+    assert [f.drift_type for f in check_tool_call(hist, tc(), spec())] == ["unproductive_loop"]

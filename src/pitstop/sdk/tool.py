@@ -3,6 +3,8 @@
 Outside a workflow the decorator just calls the function. Inside one, each invocation first raises a pending
 `Halted`, runs the L0 tool checks against the current agent's recent calls, records any drift, and then either
 blocks the call (side-effect tools), steers (read-only tools, at most 2 per run, then halts) or runs it.
+The history check and the steer check-and-increment run under the run's lock, so threads sharing a run cannot
+exceed the steer limit.
 Exceptions from the user's function propagate unchanged; PitStop's own failures never break the call."""
 from __future__ import annotations
 
@@ -99,7 +101,7 @@ def _before(ctx: RunContext, tname: str, side_effects: bool, args: tuple, kwargs
     args_text = ""
     try:
         from ..detect.l0 import ToolCallRecord, check_tool_call
-        from .wrap import _apply_findings
+        from .actions import apply_findings
 
         try:
             args_text = json.dumps({"args": args, "kwargs": kwargs}, sort_keys=True, separators=(",", ":"),
@@ -107,15 +109,16 @@ def _before(ctx: RunContext, tname: str, side_effects: bool, args: tuple, kwargs
         except Exception:
             args_text = repr((args, kwargs))
         rec = ToolCallRecord(tname, args_text, side_effects)
-        history = ctx.tool_history.setdefault(ctx.agent, [])
-        findings = check_tool_call(history, rec, ctx.spec)
-        history.append(rec)
-        applied = _apply_findings(ctx, findings)
+        with ctx.lock:
+            history = ctx.tool_history_for(ctx.agent)
+            findings = check_tool_call(history, rec, ctx.spec)
+            history.append(rec)
+        applied = apply_findings(ctx, findings)
         best = None
         for item in applied:
-            if best is None or _RANK.get(item[2], 0) > _RANK.get(best[2], 0):
+            if best is None or _RANK.get(item.action, 0) > _RANK.get(best.action, 0):
                 best = item
-        if best is not None and best[2] in ("block", "steer"):
+        if best is not None and best.action in ("block", "steer"):
             decision = best
     except Exception:
         log.warning("pitstop: tool check failed; running the tool normally", exc_info=True)
@@ -130,13 +133,17 @@ def _before(ctx: RunContext, tname: str, side_effects: bool, args: tuple, kwargs
         _safe(lambda: _event(ctx, "block", tname, {"reason": text, "args": args_text[:500]}))
         return {"blocked_by": "pitstop", "reason": text}
     # steer
-    if ctx.steers >= MAX_STEERS:
-        if ctx.halt_reason is None:
-            ctx.halt_reason = "steer limit exceeded"
-        reason = ctx.halt_reason
+    with ctx.lock:
+        over = ctx.steers >= MAX_STEERS
+        if over:
+            if ctx.halt_reason is None:
+                ctx.halt_reason = "steer limit exceeded"
+        else:
+            ctx.steers += 1
+        reason, drift_id = ctx.halt_reason, ctx.halt_drift_id
+    if over:
         _safe(lambda: _event(ctx, "halt", tname, {"reason": reason, "drift": text, "args": args_text[:500]}))
-        raise Halted(ctx.halt_reason, ctx.halt_drift_id)
-    ctx.steers += 1
+        raise Halted(reason, drift_id)
     _safe(lambda: _event(ctx, "steer", tname, {"reason": text, "args": args_text[:500]}))
     return (f"PitStop: this step drifts from your goal ({text}). "
             f"Return to: {ctx.agent_goal or ctx.spec.goal or 'your original task'}.")

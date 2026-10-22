@@ -1,13 +1,21 @@
 """Workflow and agent scopes. The current run and the current agent each live in a ContextVar, so they are
 isolated per thread and per asyncio task: parallel sub-agents started with asyncio.gather inside one workflow
-share the RunContext but each sees its own agent name and goal."""
+share the RunContext but each sees its own agent name and goal.
+
+A scope decorating a generator (or async generator) function opens on the generator's first step and closes
+when it finishes, raises or is closed. Every step runs inside one private Context per run, so code that
+consumes the generator between yields never sees the run."""
 from __future__ import annotations
 
+import asyncio
+import contextvars
 import functools
 import inspect
 import logging
+import threading
 import time
 import uuid
+from collections import deque
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal, NamedTuple, TypeVar
@@ -21,6 +29,12 @@ Criticality = Literal["high", "medium", "low"]
 Sensitivity = Literal["low", "normal", "high"]
 
 F = TypeVar("F", bound=Callable[..., Any])
+
+HISTORY_MAX = 64  # per-agent tool history and per-run LLM history are capped at this many recent calls
+
+
+def _history() -> deque:
+    return deque(maxlen=HISTORY_MAX)
 
 
 @dataclass(frozen=True)
@@ -45,10 +59,19 @@ class RunContext:
     steers: int = 0
     halt_reason: str | None = None
     halt_drift_id: int | None = None
-    tool_history: dict = field(default_factory=dict)  # agent name (None = no agent) -> [ToolCallRecord]
-    llm_history: list = field(default_factory=list)
-    llm_calls: int = 0
+    tool_history: dict = field(default_factory=dict)  # agent name (None = no agent) -> deque[ToolCallRecord]
+    llm_history: deque = field(default_factory=_history)
+    refusals: int = 0  # every refusal in the run; the capped llm_history cannot count them all
+    llm_calls: int = 0  # agent-meter LLM calls only
     prompt_versions: dict[str, int] = field(default_factory=dict)
+    # Guards the counters and histories when several threads share the run (e.g. the steer limit).
+    lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
+
+    def tool_history_for(self, agent: str | None) -> deque:
+        hist = self.tool_history.get(agent)
+        if hist is None:
+            hist = self.tool_history.setdefault(agent, _history())
+        return hist
 
     @property
     def agent(self) -> str | None:
@@ -97,7 +120,8 @@ def _safe(fn: Callable[[], Any]) -> Any:
 
 
 class _Scope:
-    """Usable as a decorator (sync or async), a context manager and an async context manager."""
+    """Usable as a decorator (sync or async function, generator or async generator), a context manager and an
+    async context manager."""
 
     def _fresh(self) -> _Scope:
         raise NotImplementedError
@@ -115,6 +139,10 @@ class _Scope:
         return self.__exit__(et, ev, tb)
 
     def __call__(self, fn: F) -> F:
+        if inspect.isasyncgenfunction(fn):
+            return self._wrap_asyncgen(fn)  # type: ignore[return-value]
+        if inspect.isgeneratorfunction(fn):
+            return self._wrap_gen(fn)  # type: ignore[return-value]
         if inspect.iscoroutinefunction(fn):
             @functools.wraps(fn)
             async def awrapper(*a, **k):
@@ -127,6 +155,71 @@ class _Scope:
             with self._fresh():
                 return fn(*a, **k)
         return wrapper  # type: ignore[return-value]
+
+    def _wrap_gen(self, fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        def gwrapper(*a, **k):
+            run_cv = contextvars.copy_context()  # the run's private Context: every step runs inside it
+            scope = self._fresh()
+            run_cv.run(scope.__enter__)
+            exc_info: tuple = (None, None, None)
+            try:
+                gen = run_cv.run(fn, *a, **k)
+                step, arg = gen.send, None
+                while True:
+                    try:
+                        value = run_cv.run(step, arg)
+                    except StopIteration as e:
+                        return e.value
+                    try:
+                        arg = yield value
+                        step = gen.send
+                    except GeneratorExit:
+                        run_cv.run(gen.close)
+                        raise
+                    except BaseException as e:  # consumer's throw(): forward it into the generator
+                        step, arg = gen.throw, e
+            except GeneratorExit:  # closed early (close() or garbage collection): the run ends normally
+                raise
+            except BaseException as e:
+                exc_info = (type(e), e, e.__traceback__)
+                raise
+            finally:
+                run_cv.run(scope.__exit__, *exc_info)
+        return gwrapper
+
+    def _wrap_asyncgen(self, fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        async def agwrapper(*a, **k):
+            run_cv = contextvars.copy_context()
+            scope = self._fresh()
+            run_cv.run(scope.__enter__)
+            exc_info: tuple = (None, None, None)
+            try:
+                agen = run_cv.run(fn, *a, **k)
+                step, arg = agen.asend, None
+                while True:
+                    try:
+                        # asend/athrow awaitables are Coroutines; each step is a task in the run's Context
+                        value = await asyncio.create_task(step(arg), context=run_cv)
+                    except StopAsyncIteration:
+                        return
+                    try:
+                        arg = yield value
+                        step = agen.asend
+                    except GeneratorExit:
+                        await asyncio.create_task(agen.aclose(), context=run_cv)
+                        raise
+                    except BaseException as e:
+                        step, arg = agen.athrow, e
+            except GeneratorExit:
+                raise
+            except BaseException as e:
+                exc_info = (type(e), e, e.__traceback__)
+                raise
+            finally:
+                run_cv.run(scope.__exit__, *exc_info)
+        return agwrapper
 
 
 class _Workflow(_Scope):
