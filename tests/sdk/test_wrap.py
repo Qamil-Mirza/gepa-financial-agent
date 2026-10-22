@@ -315,7 +315,7 @@ def test_settle_failure_keeps_reservation_and_returns_response(tmp_path, monkeyp
 
 
 def test_runtime_init_failure_does_not_break_user_call(tmp_path, monkeypatch):
-    import pitstop.sdk.wrap as wrap_mod
+    import pitstop.sdk.wrap.call as wrap_mod
 
     def boom():
         raise RuntimeError("bad config")

@@ -115,7 +115,7 @@ def test_transient_store_error_stays_fail_open(monkeypatch):
         raise sqlite3.OperationalError("database is locked")
 
     monkeypatch.setattr(runtime_mod, "get_runtime", boom)
-    monkeypatch.setattr("pitstop.sdk.wrap.get_runtime", boom)
+    monkeypatch.setattr("pitstop.sdk.wrap.call.get_runtime", boom)
     fake = FakeOpenAI([make_response("hi")])
     resp = pitstop.wrap(fake).chat.completions.create(model=MODEL, messages=MSGS)
     assert resp.choices[0].message.content == "hi" and len(fake.calls) == 1

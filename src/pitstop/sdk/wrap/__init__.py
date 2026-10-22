@@ -1,0 +1,68 @@
+"""`pitstop.wrap(client)`: meter an OpenAI-compatible client's model calls against hard budgets.
+
+The wrapper proxies the client (no global monkeypatching). A per-client method table names the metered methods
+by attribute path; today, for OpenAI-compatible clients, `chat.completions.create` and `chat.completions.parse`.
+Each path routes to a `Shape` (shapes.py), which knows that API's request and response format. Every other
+attribute is delegated unchanged, and `with_options`/`copy` return wrapped clients so derived clients stay
+metered. `with_raw_response` and `with_streaming_response`, on the client or on any resource on the way to a
+metered method, stay metered too. Each metered call:
+
+  1. raises a pending `Halted` (check_halt) before anything else;
+  2. estimates its worst-case cost (ceil(chars/4) prompt tokens + max completion tokens, default 4096)
+     and reserves it in the ledger, which raises `BudgetExceeded` before the client is called;
+  3. calls the real method, then settles the reservation from `usage` (or from a character estimate
+     when usage is missing), records an `llm_call` event (its payload names the ledger meter) and, for
+     calls on the "agent" meter only, runs the post-call L0 checks and sets the run's first-call tags.
+     Judge, supervisor and other internal calls inside a run never feed detection or the run's model tag.
+
+Streams are returned as proxies that yield every chunk unchanged (and still pass `isinstance` checks against
+the SDK's stream class) and settle when the stream ends, fails, is closed, or is dropped after an early
+`break`. To read a stream's usage, chat streams are sent with `stream_options={"include_usage": True}` unless
+the caller set `stream_options`; the extra usage chunk is hidden from the caller. If an endpoint rejects that
+injection with a 400, the call is retried once without it, and once a retry succeeds, later stream calls to
+the same base_url skip the injection (they settle by estimate).
+
+Raw responses: a non-stream `with_raw_response` call is settled from `result.parse()`. Responses that can't be
+read without consuming them for the caller, `with_streaming_response` and `with_raw_response` with
+`stream=True`, are charged their full reservation at return (`usage_estimated: "worst_case"`) and feed no
+detection: over-counted, never under-counted.
+
+A reservation is always settled or released, including on KeyboardInterrupt and asyncio cancellation. Store or
+ledger failures never reach user code: the call proceeds unmetered and its event carries `unmetered: true`. An
+invalid config.toml is different: the call fails closed with `Halted("pitstop config invalid: ...")` before the
+client is called. The only exceptions raised on purpose are `Halted` and `BudgetExceeded`.
+"""
+from __future__ import annotations
+
+import contextlib
+from typing import Any, TypeVar
+
+from .call import _meter
+from .proxy import Table, _Wrapped
+from .shapes import CHAT, METHODS, Observed, Shape
+
+__all__ = ["wrap", "meter", "Observed", "Shape", "CHAT", "METHODS"]
+
+T = TypeVar("T")
+
+
+@contextlib.contextmanager
+def meter(name: str):
+    """Tag every metered call made inside the block with ledger meter `name` (default "agent")."""
+    token = _meter.set(name)
+    try:
+        yield
+    finally:
+        _meter.reset(token)
+
+
+def _table_for(client: Any) -> Table:
+    """The method table for this client's type."""
+    return METHODS
+
+
+def wrap(client: T) -> T:
+    """Return a metered proxy of `client`. Wrapping an already wrapped client returns it unchanged."""
+    if type(client) is _Wrapped:
+        return client
+    return _Wrapped(client, _table_for(client))  # type: ignore[return-value]
