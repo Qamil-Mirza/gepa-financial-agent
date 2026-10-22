@@ -5,6 +5,10 @@ attribute only while the path is a prefix of a metered method in the client's ta
 client's own object, returned unchanged. `with_raw_response` / `with_streaming_response`, at any level, keep the
 path and switch the mode, so `client.with_raw_response.chat.completions.create` and
 `client.chat.completions.with_raw_response.create` are both metered.
+
+A "manager" kind method (the SDK's stream helpers, `chat.completions.stream` and `responses.stream`) reserves when
+it is called and returns a manager proxy; entering it sends the request and yields a stream proxy that passes
+every event through unchanged, and the call settles when the manager exits.
 """
 from __future__ import annotations
 
@@ -15,7 +19,7 @@ from typing import Any
 
 from ..context import _safe
 from .call import Mode, _Call
-from .shapes import Kind, Shape, _g
+from .shapes import Kind, Observed, Shape, _g
 
 log = logging.getLogger("pitstop")
 
@@ -34,7 +38,7 @@ def _route(client: Any, inner: Any, path: tuple[str, ...], mode: Mode, table: Ta
     entry = table.get(sub)
     if entry is not None:
         shape, kind = entry
-        return _metered(client, attr, shape, mode) if kind == "call" else attr
+        return _metered(client, attr, shape, mode) if kind == "call" else _managed(client, attr, shape, mode)
     if name in _MODES:
         sub, mode = path, _MODES[name]
     elif not any(k[:len(sub)] == sub for k in table):
@@ -287,6 +291,24 @@ def _deliver(call: _Call, result: Any, parsed: Any = _UNSET) -> Any:
 # -- streams --------------------------------------------------------------------------------------------
 
 
+def _billed_stream_error(call: _Call, exc: BaseException) -> None:
+    """An error raised mid-stream that carries the billed `completion` (the chat stream helper raises
+    LengthFinishReasonError at the finish chunk, before the usage chunk arrives): settled from the completion's
+    usage, or at the full reservation when neither it nor the stream showed any."""
+    if not isinstance(exc, Exception) or not hasattr(exc, "completion") or call.obs.prompt_tokens is not None:
+        return
+    probe = Observed()
+    completion = _g(exc, "completion")
+    if completion is not None:
+        call.shape.read(completion, probe)
+    if probe.prompt_tokens is not None and probe.completion_tokens is not None:
+        obs = call.obs
+        obs.prompt_tokens, obs.completion_tokens, obs.cached_tokens = (
+            probe.prompt_tokens, probe.completion_tokens, probe.cached_tokens)
+    else:
+        call.worst_case = True
+
+
 def _wrap_stream(result: Any, call: _Call) -> Any:
     if hasattr(result, "__aiter__"):
         return _AsyncStream(result, call)
@@ -315,11 +337,15 @@ class _SyncStream:
         while True:
             try:
                 chunk = next(self._pitstop_it)
-            except BaseException:  # StopIteration, provider errors, KeyboardInterrupt
+            except BaseException as e:  # StopIteration, provider errors, KeyboardInterrupt
+                _safe(functools.partial(_billed_stream_error, call, e))
                 call.close()
                 raise
-            if call.observe(chunk):
+            if self._pitstop_feed(chunk):
                 return chunk
+
+    def _pitstop_feed(self, chunk: Any) -> bool:
+        return self._pitstop_call.observe(chunk)
 
     def close(self) -> None:
         try:
@@ -374,11 +400,15 @@ class _AsyncStream:
         while True:
             try:
                 chunk = await self._pitstop_it.__anext__()
-            except BaseException:  # StopAsyncIteration, provider errors, CancelledError
+            except BaseException as e:  # StopAsyncIteration, provider errors, CancelledError
+                _safe(functools.partial(_billed_stream_error, call, e))
                 call.close()
                 raise
-            if call.observe(chunk):
+            if self._pitstop_feed(chunk):
                 return chunk
+
+    def _pitstop_feed(self, chunk: Any) -> bool:
+        return self._pitstop_call.observe(chunk)
 
     async def close(self) -> None:
         await self._pitstop_finish_with("close")
@@ -419,3 +449,168 @@ class _AsyncStream:
             self._pitstop_call.close()
         except Exception:
             pass
+
+
+# -- stream helpers ("manager" kind) ----------------------------------------------------------------------------
+
+# Stream methods that consume the stream inside the SDK; the proxy drives the stream through itself first, so
+# every event is observed.
+_FINAL = frozenset({"get_final_completion", "get_final_response"})
+
+
+def _managed(client: Any, fn: Any, shape: Shape, mode: Mode) -> Any:
+    """`fn` (a stream helper) metered with `shape`. The helper returns its manager synchronously on both clients;
+    the request goes out when the manager is entered."""
+    def method(*args, **kwargs):
+        call = _Call.begin(client, shape, kwargs, mode, stream=True)
+        try:
+            inner = fn(*args, **call.kwargs)
+        except BaseException:  # bad arguments: nothing was sent
+            call.close()
+            raise
+        def retry():  # a fresh manager with the kwargs left after the injection is dropped
+            return fn(*args, **call.kwargs)
+        return (_AsyncManager if hasattr(inner, "__aenter__") else _SyncManager)(inner, call, retry)
+    try:
+        functools.update_wrapper(method, fn)
+    except Exception:
+        pass
+    return method
+
+
+def _feed_event(call: _Call, event: Any) -> bool:
+    """Feed one helper event to the shape. A chat helper's `chunk` events carry the raw chunk (its other events
+    are derived from it and not fed); Responses helper events are the raw events. False hides the event."""
+    if call.shape.name == "chat":
+        return call.observe(_g(event, "chunk")) if _g(event, "type") == "chunk" else True
+    return call.observe(event)
+
+
+def _entered(call: _Call) -> None:
+    call.got_result = True
+    if call.retried:
+        call.retry_succeeded()
+
+
+class _ManagerBase:
+    def __init__(self, inner: Any, call: _Call, retry: Any):
+        self._pitstop_inner, self._pitstop_call, self._pitstop_retry = inner, call, retry
+        self._pitstop_stream: Any = None
+
+    @property
+    def __class__(self):  # isinstance(manager, ChatCompletionStreamManager) stays True
+        return type(self._pitstop_inner)
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_pitstop"):
+            raise AttributeError(name)
+        return getattr(self._pitstop_inner, name)
+
+    def __del__(self):
+        # Never entered: release. Once entered, the stream proxy owns closing the call.
+        try:
+            if self._pitstop_stream is None:
+                self._pitstop_call.close()
+        except Exception:
+            pass
+
+
+class _SyncManager(_ManagerBase):
+    def __enter__(self):
+        call = self._pitstop_call
+        try:
+            try:
+                stream = self._pitstop_inner.__enter__()
+            except Exception as e:
+                if not call.retryable(e):
+                    raise
+                call.drop_injection()
+                self._pitstop_inner = self._pitstop_retry()
+                stream = self._pitstop_inner.__enter__()
+        except BaseException as e:
+            _safe(functools.partial(_billed_error, call, e))
+            call.close()
+            raise
+        _entered(call)
+        self._pitstop_stream = _SyncHelperStream(stream, call)
+        return self._pitstop_stream
+
+    def __exit__(self, *exc):
+        try:
+            return self._pitstop_inner.__exit__(*exc)
+        finally:
+            self._pitstop_call.close()
+
+
+class _AsyncManager(_ManagerBase):
+    async def __aenter__(self):
+        call = self._pitstop_call
+        try:
+            try:
+                stream = await self._pitstop_inner.__aenter__()
+            except Exception as e:
+                if not call.retryable(e):
+                    raise
+                call.drop_injection()
+                self._pitstop_inner = self._pitstop_retry()
+                stream = await self._pitstop_inner.__aenter__()
+        except BaseException as e:
+            _safe(functools.partial(_billed_error, call, e))
+            call.close()
+            raise
+        _entered(call)
+        self._pitstop_stream = _AsyncHelperStream(stream, call)
+        return self._pitstop_stream
+
+    async def __aexit__(self, *exc):
+        try:
+            return await self._pitstop_inner.__aexit__(*exc)
+        finally:
+            self._pitstop_call.close()
+
+
+class _SyncHelperStream(_SyncStream):
+    """A helper's stream (ChatCompletionStream, ResponseStream): events pass through unchanged."""
+
+    def _pitstop_feed(self, event: Any) -> bool:
+        return _feed_event(self._pitstop_call, event)
+
+    def until_done(self):
+        for _ in self:
+            pass
+        return self
+
+    def __getattr__(self, name: str) -> Any:
+        attr = super().__getattr__(name)
+        if name not in _FINAL:
+            return attr
+
+        @functools.wraps(attr)
+        def final(*args, **kwargs):
+            self.until_done()
+            return attr(*args, **kwargs)
+        return final
+
+
+class _AsyncHelperStream(_AsyncStream):
+    """Async counterpart of _SyncHelperStream."""
+
+    def _pitstop_feed(self, event: Any) -> bool:
+        return _feed_event(self._pitstop_call, event)
+
+    async def until_done(self):
+        async for _ in self:
+            pass
+        return self
+
+    def __getattr__(self, name: str) -> Any:
+        attr = super().__getattr__(name)
+        if name not in _FINAL:
+            return attr
+
+        @functools.wraps(attr)
+        async def final(*args, **kwargs):
+            await self.until_done()
+            r = attr(*args, **kwargs)
+            return await r if inspect.isawaitable(r) else r
+        return final

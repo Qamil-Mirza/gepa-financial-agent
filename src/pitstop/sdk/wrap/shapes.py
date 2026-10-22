@@ -34,6 +34,43 @@ def _text_len(v: Any) -> int:
     return len(v) if isinstance(v, str) else 0
 
 
+def _content_chars(content: Any) -> int:
+    """Characters of a message's content: a string, or a list of parts (strings or parts with `text`)."""
+    if isinstance(content, str):
+        return len(content)
+    if isinstance(content, (list, tuple)):  # never iterate a caller's one-shot iterable
+        return sum(_text_len(p if isinstance(p, str) else _g(p, "text")) for p in content)
+    return 0
+
+
+def _tools_chars(kwargs: dict) -> int:
+    tools = kwargs.get("tools")
+    return len(json.dumps(tools, default=str)) if isinstance(tools, (list, tuple)) and tools else 0
+
+
+def _max_tokens(kwargs: dict, *keys: str) -> int:
+    for key in keys:
+        v = _int(kwargs.get(key))
+        if v is not None and v >= 0:
+            return v
+    return DEFAULT_MAX_COMPLETION_TOKENS
+
+
+def _inject_usage(kwargs: dict, stream: bool) -> tuple[dict, bool]:
+    """Chat and legacy completions streams: ask for the usage chunk unless the caller set stream_options."""
+    kwargs = dict(kwargs)
+    inject = stream and "stream_options" not in kwargs
+    if inject:
+        kwargs["stream_options"] = {"include_usage": True}
+    return kwargs, inject
+
+
+def _drop_usage(kwargs: dict) -> dict:
+    kwargs = dict(kwargs)
+    kwargs.pop("stream_options", None)
+    return kwargs
+
+
 @dataclass
 class Observed:
     """Everything one response or stream showed."""
@@ -79,7 +116,8 @@ class Observed:
 class Shape(Protocol):
     name: str  # "chat" | "responses" | "completions" | "anthropic"
 
-    def prepare(self, kwargs: dict) -> tuple[dict, bool]: ...  # (kwargs to send, injected_usage)
+    # (kwargs to send, injected_usage). `stream`: the call streams (stream=True, or a stream helper)
+    def prepare(self, kwargs: dict, stream: bool) -> tuple[dict, bool]: ...
 
     def unprepare(self, kwargs: dict) -> dict: ...  # kwargs without PitStop's injection (retry)
 
@@ -95,55 +133,38 @@ class Shape(Protocol):
 # -- OpenAI chat completions ------------------------------------------------------------------------------------
 
 
+def _openai_usage(u: Any, obs: Observed) -> None:
+    """`usage` of a chat or legacy completion (or of a stream's include_usage chunk)."""
+    prompt, completion = _int(_g(u, "prompt_tokens")), _int(_g(u, "completion_tokens"))
+    if prompt is not None and completion is not None:
+        obs.prompt_tokens, obs.completion_tokens = prompt, completion
+        obs.cached_tokens = _int(_g(_g(u, "prompt_tokens_details"), "cached_tokens")) or 0
+
+
 class _ChatShape:
-    """`chat.completions.create` / `parse`: messages in, choices out; stream usage via stream_options."""
+    """`chat.completions.create` / `parse` / `stream`: messages in, choices out; stream usage via stream_options."""
 
     name = "chat"
 
-    def prepare(self, kwargs: dict) -> tuple[dict, bool]:
-        kwargs = dict(kwargs)
-        inject = kwargs.get("stream") is True and "stream_options" not in kwargs
-        if inject:
-            kwargs["stream_options"] = {"include_usage": True}
-        return kwargs, inject
+    def prepare(self, kwargs: dict, stream: bool) -> tuple[dict, bool]:
+        return _inject_usage(kwargs, stream)
 
     def unprepare(self, kwargs: dict) -> dict:
-        kwargs = dict(kwargs)
-        kwargs.pop("stream_options", None)
-        return kwargs
+        return _drop_usage(kwargs)
 
     def estimate_prompt_tokens(self, kwargs: dict) -> int:
         total = 0
         messages = kwargs.get("messages")
         if isinstance(messages, (list, tuple)):  # never iterate a caller's one-shot iterable
             for m in messages:
-                content = _g(m, "content")
-                if isinstance(content, str):
-                    total += len(content)
-                elif isinstance(content, (list, tuple)):
-                    for part in content:
-                        total += _text_len(part if isinstance(part, str) else _g(part, "text"))
-        tools = kwargs.get("tools")
-        if isinstance(tools, (list, tuple)) and tools:
-            total += len(json.dumps(tools, default=str))
-        return math.ceil(total / 4)
+                total += _content_chars(_g(m, "content"))
+        return math.ceil((total + _tools_chars(kwargs)) / 4)
 
     def max_output_tokens(self, kwargs: dict) -> int:
-        for key in ("max_tokens", "max_completion_tokens"):
-            v = _int(kwargs.get(key))
-            if v is not None and v >= 0:
-                return v
-        return DEFAULT_MAX_COMPLETION_TOKENS
-
-    @staticmethod
-    def _usage(u: Any, obs: Observed) -> None:
-        prompt, completion = _int(_g(u, "prompt_tokens")), _int(_g(u, "completion_tokens"))
-        if prompt is not None and completion is not None:
-            obs.prompt_tokens, obs.completion_tokens = prompt, completion
-            obs.cached_tokens = _int(_g(_g(u, "prompt_tokens_details"), "cached_tokens")) or 0
+        return _max_tokens(kwargs, "max_tokens", "max_completion_tokens")
 
     def read(self, resp: Any, obs: Observed) -> None:
-        self._usage(_g(resp, "usage"), obs)
+        _openai_usage(_g(resp, "usage"), obs)
         choices = _g(resp, "choices") or []
         choices = list(choices) if isinstance(choices, (list, tuple)) else []
         for i, ch in enumerate(choices):
@@ -163,7 +184,7 @@ class _ChatShape:
     def observe(self, chunk: Any, obs: Observed, injected: bool) -> bool:
         usage = _g(chunk, "usage")
         if usage is not None:
-            self._usage(usage, obs)
+            _openai_usage(usage, obs)
         choices = _g(chunk, "choices") or []
         for ch in choices:
             first = (_g(ch, "index", 0) or 0) == 0
@@ -195,11 +216,166 @@ class _ChatShape:
 
 CHAT: Shape = _ChatShape()
 
+
+# -- OpenAI Responses API ---------------------------------------------------------------------------------------
+
+_TERMINAL = frozenset({"response.completed", "response.incomplete", "response.failed"})
+
+
+class _ResponsesShape:
+    """`responses.create` / `parse` / `stream`: instructions + input in, output items out. Streams always end in a
+    terminal event (`response.completed`) that carries usage, so nothing is injected."""
+
+    name = "responses"
+
+    def prepare(self, kwargs: dict, stream: bool) -> tuple[dict, bool]:
+        return dict(kwargs), False
+
+    def unprepare(self, kwargs: dict) -> dict:
+        return dict(kwargs)
+
+    def estimate_prompt_tokens(self, kwargs: dict) -> int:
+        total = _text_len(kwargs.get("instructions"))
+        items = kwargs.get("input")
+        if isinstance(items, str):
+            total += len(items)
+        elif isinstance(items, (list, tuple)):
+            for item in items:
+                total += _content_chars(_g(item, "content"))
+                # function_call / function_call_output items carry text outside `content`
+                total += _text_len(_g(item, "arguments")) + _text_len(_g(item, "output"))
+        return math.ceil((total + _tools_chars(kwargs)) / 4)
+
+    def max_output_tokens(self, kwargs: dict) -> int:
+        return _max_tokens(kwargs, "max_output_tokens")
+
+    @staticmethod
+    def _usage(u: Any, obs: Observed) -> None:
+        prompt, completion = _int(_g(u, "input_tokens")), _int(_g(u, "output_tokens"))
+        if prompt is not None and completion is not None:
+            obs.prompt_tokens, obs.completion_tokens = prompt, completion
+            obs.cached_tokens = _int(_g(_g(u, "input_tokens_details"), "cached_tokens")) or 0
+
+    def read(self, resp: Any, obs: Observed) -> None:
+        self._usage(_g(resp, "usage"), obs)
+        output = _g(resp, "output") or []
+        texts: list[str] = []
+        calls = []
+        for item in output if isinstance(output, (list, tuple)) else []:
+            kind = _g(item, "type")
+            if kind == "function_call":
+                name, args = _g(item, "name"), _g(item, "arguments")
+                obs.chars += _text_len(name) + _text_len(args)
+                calls.append({"name": name, "arguments": args})
+            elif kind == "message":
+                for part in _g(item, "content") or []:
+                    text = _g(part, "text")
+                    if _g(part, "type") == "output_text" and isinstance(text, str):
+                        obs.chars += len(text)
+                        texts.append(text)
+        obs.content = "".join(texts) if texts else None
+        obs.tool_calls, obs.finish_reason = calls, _g(resp, "status")
+
+    def observe(self, event: Any, obs: Observed, injected: bool) -> bool:
+        kind = _g(event, "type")
+        if kind == "response.output_text.delta":
+            text = _g(event, "delta")
+            if isinstance(text, str):
+                obs.chars += len(text)
+                obs.stream_text(text)
+        elif kind == "response.output_item.added":
+            item = _g(event, "item")
+            if _g(item, "type") == "function_call":
+                entry = obs.stream_tool(_g(event, "output_index", 0))
+                name, args = _g(item, "name"), _g(item, "arguments")
+                if isinstance(name, str) and not entry["name"]:
+                    obs.chars += len(name)
+                    entry["name"] = name
+                if isinstance(args, str) and args:
+                    obs.chars += len(args)
+                    entry["arguments"] += args
+        elif kind == "response.function_call_arguments.delta":
+            args = _g(event, "delta")
+            if isinstance(args, str):
+                obs.chars += len(args)
+                obs.stream_tool(_g(event, "output_index", 0))["arguments"] += args
+        elif kind in _TERMINAL:
+            resp = _g(event, "response")
+            self._usage(_g(resp, "usage"), obs)
+            obs.finish_reason = _g(resp, "status")
+        return True
+
+
+RESPONSES: Shape = _ResponsesShape()
+
+
+# -- OpenAI legacy completions ------------------------------------------------------------------------------------
+
+
+class _CompletionsShape:
+    """`completions.create`: a prompt in, `choices[].text` out; stream usage via stream_options, as for chat."""
+
+    name = "completions"
+
+    def prepare(self, kwargs: dict, stream: bool) -> tuple[dict, bool]:
+        return _inject_usage(kwargs, stream)
+
+    def unprepare(self, kwargs: dict) -> dict:
+        return _drop_usage(kwargs)
+
+    def estimate_prompt_tokens(self, kwargs: dict) -> int:
+        prompt = kwargs.get("prompt")
+        if isinstance(prompt, str):
+            return math.ceil(len(prompt) / 4)
+        if isinstance(prompt, (list, tuple)):
+            return math.ceil(sum(_text_len(p) for p in prompt) / 4)
+        return 0
+
+    def max_output_tokens(self, kwargs: dict) -> int:
+        # The API's own default is 16 tokens; PitStop reserves conservatively.
+        return _max_tokens(kwargs, "max_tokens")
+
+    def read(self, resp: Any, obs: Observed) -> None:
+        _openai_usage(_g(resp, "usage"), obs)
+        choices = _g(resp, "choices") or []
+        for i, ch in enumerate(choices if isinstance(choices, (list, tuple)) else []):
+            text = _g(ch, "text")
+            obs.chars += _text_len(text)
+            if i == 0:
+                obs.content = text if isinstance(text, str) else None
+                obs.finish_reason = _g(ch, "finish_reason")
+
+    def observe(self, chunk: Any, obs: Observed, injected: bool) -> bool:
+        usage = _g(chunk, "usage")
+        if usage is not None:
+            _openai_usage(usage, obs)
+        choices = _g(chunk, "choices") or []
+        for ch in choices:
+            first = (_g(ch, "index", 0) or 0) == 0
+            text = _g(ch, "text")
+            if isinstance(text, str):
+                obs.chars += len(text)
+                if first:
+                    obs.stream_text(text)
+            reason = _g(ch, "finish_reason")
+            if first and reason:
+                obs.finish_reason = reason
+        return not (injected and not choices and usage is not None)  # hide PitStop's own usage chunk
+
+
+COMPLETIONS: Shape = _CompletionsShape()
+
 Kind = Literal["call", "manager"]
 
 # The OpenAI client's metered methods, by attribute path from the client. Every other attribute is delegated
-# unchanged. "call": the method returns the response (or a stream). "manager": it returns a stream manager.
+# unchanged. "call": the method returns the response (or a stream). "manager": it returns a stream manager (the
+# SDK's stream helpers), which sends the request when it is entered.
 METHODS: dict[tuple[str, ...], tuple[Shape, Kind]] = {
     ("chat", "completions", "create"): (CHAT, "call"),
     ("chat", "completions", "parse"): (CHAT, "call"),
+    ("chat", "completions", "stream"): (CHAT, "manager"),
+    ("responses", "create"): (RESPONSES, "call"),
+    ("responses", "parse"): (RESPONSES, "call"),
+    ("responses", "stream"): (RESPONSES, "manager"),
+    ("completions", "create"): (COMPLETIONS, "call"),
 }

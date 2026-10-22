@@ -1,8 +1,9 @@
 """`pitstop.wrap(client)`: meter an OpenAI-compatible client's model calls against hard budgets.
 
 The wrapper proxies the client (no global monkeypatching). A per-client method table names the metered methods
-by attribute path; today, for OpenAI-compatible clients, `chat.completions.create` and `chat.completions.parse`.
-Each path routes to a `Shape` (shapes.py), which knows that API's request and response format. Every other
+by attribute path; for OpenAI-compatible clients, `chat.completions.create` / `parse` / `stream`,
+`responses.create` / `parse` / `stream` and legacy `completions.create`. Each path routes to a `Shape`
+(shapes.py), which knows that API's request and response format. Every other
 attribute is delegated unchanged, and `with_options`/`copy` return wrapped clients so derived clients stay
 metered. `with_raw_response` and `with_streaming_response`, on the client or on any resource on the way to a
 metered method, stay metered too. Each metered call:
@@ -20,7 +21,15 @@ the SDK's stream class) and settle when the stream ends, fails, is closed, or is
 `break`. To read a stream's usage, chat streams are sent with `stream_options={"include_usage": True}` unless
 the caller set `stream_options`; the extra usage chunk is hidden from the caller. If an endpoint rejects that
 injection with a 400, the call is retried once without it, and once a retry succeeds, later stream calls to
-the same base_url skip the injection (they settle by estimate).
+the same base_url skip the injection (they settle by estimate). Legacy completions streams are handled the same
+way; Responses streams carry usage on their `response.completed` event, so nothing is injected into them.
+
+Stream helpers (`chat.completions.stream`, `responses.stream`) reserve when called. Entering the manager sends the
+request and yields the SDK's own stream class (proxied: every event passes through unchanged, and
+`get_final_completion()` / `get_final_response()` / `until_done()` read the stream through the proxy). The call
+settles when the manager exits; a manager that is never entered releases its reservation when it is garbage
+collected. An error raised mid-stream that carries the billed `completion` (LengthFinishReasonError) settles from
+its usage, or at the full reservation when no usage was seen.
 
 Raw responses: a non-stream `with_raw_response` call is settled from `result.parse()`. Responses that can't be
 read without consuming them for the caller, `with_streaming_response` and `with_raw_response` with
@@ -39,9 +48,9 @@ from typing import Any, TypeVar
 
 from .call import _meter
 from .proxy import Table, _Wrapped
-from .shapes import CHAT, METHODS, Observed, Shape
+from .shapes import CHAT, COMPLETIONS, METHODS, RESPONSES, Observed, Shape
 
-__all__ = ["wrap", "meter", "Observed", "Shape", "CHAT", "METHODS"]
+__all__ = ["wrap", "meter", "Observed", "Shape", "CHAT", "RESPONSES", "COMPLETIONS", "METHODS"]
 
 T = TypeVar("T")
 

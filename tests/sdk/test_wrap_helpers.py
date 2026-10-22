@@ -420,3 +420,143 @@ async def test_async_raw_parse_cancelled_charged_worst_case(tmp_path):
         await w.chat.completions.with_raw_response.create(model=MODEL, messages=MSGS)
     [row] = _ledger_rows()
     assert row["state"] == "settled" and row["usd"] == pytest.approx(WORST)
+
+
+# -- chat stream helper (`chat.completions.stream`) -------------------------------------------------------------
+
+
+def test_chat_stream_helper_matches_unwrapped(tmp_path):
+    from openai.lib.streaming.chat import ChatCompletionStream, ChatCompletionStreamManager
+
+    _init(tmp_path)
+    seen = []
+    raw_client = openai_client(_chat_handler(seen))  # same SSE script for both: usage only when asked for
+    results = []
+    for c in (raw_client, pitstop.wrap(raw_client)):
+        manager = c.chat.completions.stream(model=MODEL, messages=MSGS)
+        assert isinstance(manager, ChatCompletionStreamManager)
+        with manager as s:
+            assert isinstance(s, ChatCompletionStream)
+            kinds = [e.type for e in s]
+            final = s.get_final_completion()
+        results.append((kinds, final.choices[0].message.content))
+    assert results[0] == results[1]
+    assert "stream_options" not in seen[0][1] and seen[1][1]["stream_options"] == {"include_usage": True}
+    [row] = _ledger_rows()
+    assert row["state"] == "settled" and (row["prompt_tokens"], row["completion_tokens"]) == (21, 2)
+    [ev] = _events()
+    assert ev["payload"]["content_chars"] == 5 and "usage_estimated" not in ev["payload"]
+
+
+def test_chat_stream_helper_final_completion_without_iterating(tmp_path):
+    _init(tmp_path)
+    w = pitstop.wrap(openai_client(_chat_handler([])))
+    with w.chat.completions.stream(model=MODEL, messages=MSGS) as s:
+        assert s.get_final_completion().choices[0].message.content == "Hello"
+        assert s.until_done() is s
+    [row] = _ledger_rows()
+    assert row["state"] == "settled" and (row["prompt_tokens"], row["completion_tokens"]) == (21, 2)
+
+
+async def test_async_chat_stream_helper_metered(tmp_path):
+    from openai.lib.streaming.chat import AsyncChatCompletionStream
+
+    _init(tmp_path)
+    seen = []
+    w = pitstop.wrap(openai_client(_chat_handler(seen), async_=True))
+    async with w.chat.completions.stream(model=MODEL, messages=MSGS) as s:
+        assert isinstance(s, AsyncChatCompletionStream)
+        kinds = [e.type async for e in s]
+        final = await s.get_final_completion()
+    assert final.choices[0].message.content == "Hello"
+    assert "chunk" in kinds and kinds.count("chunk") == 3  # the injected usage chunk's event is hidden
+    assert seen[0][1]["stream_options"] == {"include_usage": True}
+    async with w.chat.completions.stream(model=MODEL, messages=MSGS) as s:
+        assert (await s.get_final_completion()).choices[0].message.content == "Hello"
+    rows = _ledger_rows()
+    assert [r["state"] for r in rows] == ["settled"] * 2
+    assert [(r["prompt_tokens"], r["completion_tokens"]) for r in rows] == [(21, 2)] * 2
+
+
+def test_stream_helper_never_entered_releases(tmp_path):
+    import gc
+
+    _init(tmp_path)
+    seen = []
+    w = pitstop.wrap(openai_client(_chat_handler(seen)))
+    manager = w.chat.completions.stream(model=MODEL, messages=MSGS)
+    [row] = _ledger_rows()
+    assert row["state"] == "reserved" and (row["prompt_tokens"], row["completion_tokens"]) == (100, 4096)
+    del manager
+    gc.collect()
+    assert [r["state"] for r in _ledger_rows()] == ["released"]
+    assert seen == [] and _events() == []
+
+
+def test_chat_stream_helper_early_exit_settles(tmp_path):
+    _init(tmp_path)
+    w = pitstop.wrap(openai_client(_chat_handler([])))
+    with w.chat.completions.stream(model=MODEL, messages=MSGS) as s:
+        next(iter(s))
+    [row] = _ledger_rows()
+    assert row["state"] == "settled"  # on manager exit, by estimate: the usage chunk never arrived
+    assert _events()[0]["payload"]["usage_estimated"] is True
+
+
+def test_chat_stream_helper_length_error_not_lost(tmp_path):
+    """The helper raises LengthFinishReasonError mid-stream, before the usage chunk: charged the reservation."""
+    import openai
+
+    _init(tmp_path)
+    events = [chat_chunk('{"ans'), chat_chunk(finish_reason="length"), chat_chunk(choices=False, usage=(21, 50))]
+    w = pitstop.wrap(openai_client(_recording([], lambda body: sse_response(events))))
+    with pytest.raises(openai.LengthFinishReasonError):
+        with w.chat.completions.stream(model=MODEL, messages=MSGS, response_format=_answer_model(),
+                                       max_tokens=50) as s:
+            for _ in s:
+                pass
+    [row] = _ledger_rows()
+    assert row["state"] == "settled" and row["usd"] == pytest.approx(cost_usd(PRICE, 100, 50))
+    assert _events()[0]["payload"]["usage_estimated"] == "worst_case"
+
+
+def test_chat_stream_helper_stream_options_400_retries_once(tmp_path):
+    _init(tmp_path)
+    seen = []
+    w = pitstop.wrap(openai_client(_rejects_stream_options(seen)))
+    with w.chat.completions.stream(model=MODEL, messages=MSGS) as s:
+        assert s.get_final_completion().choices[0].message.content == "Hello"
+    assert len(seen) == 2 and "stream_options" in seen[0][1] and "stream_options" not in seen[1][1]
+    assert [r["state"] for r in _ledger_rows()] == ["settled"]
+    from pitstop.sdk.wrap.call import _NO_STREAM_OPTIONS
+
+    assert BASE_URL in _NO_STREAM_OPTIONS
+
+
+def test_chat_stream_helper_enter_error_releases(tmp_path):
+    import openai
+
+    _init(tmp_path)
+    handler = _recording([], lambda body: json_response({"error": {"message": "nope"}}, status=500))
+    w = pitstop.wrap(openai_client(handler))
+    with pytest.raises(openai.InternalServerError):
+        with w.chat.completions.stream(model=MODEL, messages=MSGS):
+            pass
+    assert [r["state"] for r in _ledger_rows()] == ["released"]
+
+
+async def test_async_stream_helper_never_entered_releases(tmp_path):
+    import gc
+    import warnings
+
+    _init(tmp_path)
+    seen = []
+    w = pitstop.wrap(openai_client(_chat_handler(seen), async_=True))
+    manager = w.chat.completions.stream(model=MODEL, messages=MSGS)
+    assert [r["state"] for r in _ledger_rows()] == ["reserved"]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)  # the SDK's own never-awaited request coroutine
+        del manager
+        gc.collect()
+    assert [r["state"] for r in _ledger_rows()] == ["released"]
+    assert seen == []

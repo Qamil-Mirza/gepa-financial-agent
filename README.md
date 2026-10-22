@@ -75,6 +75,8 @@ Steering is counted per run, not per agent: parallel agents in one workflow (for
 
 `pitstop.workflow(...)` (and `pitstop.agent(...)`) can also decorate a generator or async generator function: the run opens on the first step and ends when the generator finishes, raises or is closed. Code that consumes the generator between yields runs outside the run. Each step runs in the consumer's own task, so an `asyncio.timeout` or task group that spans a `yield` inside the generator keeps working.
 
+Metered methods (on the client, on `with_options(...)`/`copy()` clients, and under `with_raw_response` / `with_streaming_response` where the SDK offers them): `chat.completions.create`, `chat.completions.parse` and `chat.completions.stream`; `responses.create`, `responses.parse` and `responses.stream`; and legacy `completions.create`, sync and async. A stream helper (`.stream(...)`) reserves when it is called, settles when its `with` block exits, and releases its reservation if the manager is never entered. Not metered yet: the Assistants, Realtime and Batch APIs, and `client.beta.*` of either SDK (OpenAI or Anthropic). Every other method is passed through unchanged, so calls through those APIs are neither budgeted nor recorded.
+
 Only calls on the default `agent` meter feed drift detection and set the run's model. PitStop's own judge, supervisor and GEPA calls inside a run are metered against the budget but never counted as the agent's behavior; each `llm_call` event records its `meter`.
 
 Try it without keys: `uv run python examples/quickstart/agent.py --offline --inject-loop` (see [examples/quickstart](examples/quickstart/README.md)). Then inspect the local state:

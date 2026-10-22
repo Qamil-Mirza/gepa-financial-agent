@@ -106,13 +106,15 @@ class _Call:
         self.obs = Observed()
 
     @classmethod
-    def begin(cls, client: Any, shape: Shape, kwargs: dict, mode: Mode = "normal") -> _Call:
+    def begin(cls, client: Any, shape: Shape, kwargs: dict, mode: Mode = "normal",
+              stream: bool | None = None) -> _Call:
+        """`stream`: None reads `stream=True` from kwargs; a stream helper (which streams without it) passes True."""
         check_halt()
         ctx = current_run()
-        stream = kwargs.get("stream") is True
+        stream = kwargs.get("stream") is True if stream is None else stream
         base_url = _base_url(client)
         if mode == "normal" and normalize_base_url(base_url) not in _NO_STREAM_OPTIONS:
-            send, injected = shape.prepare(kwargs)
+            send, injected = shape.prepare(kwargs, stream)
         else:  # raw and streaming responses reach the caller as bytes: nothing is injected into them
             send, injected = dict(kwargs), False
         model = kwargs.get("model")
