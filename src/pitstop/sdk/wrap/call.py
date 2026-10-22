@@ -80,6 +80,20 @@ def _base_url(client: Any) -> str | None:
         return None
 
 
+def _fallback_from(ctx: RunContext | None, meter: str, kwargs: dict) -> str | None:
+    """The requested model when this call goes to the workflow's pinned fallback instead, else None. Only the
+    agent's own calls are swapped. A store that cannot be read keeps the requested model (fail open)."""
+    if meter != "agent" or ctx is None or not ctx.spec.fallback_model:
+        return None
+    from .. import fallback
+
+    target = ctx.spec.fallback_model
+    requested = kwargs.get("model")
+    if requested == target or _safe(lambda: fallback.active(get_runtime().store, ctx.spec.name)) is None:
+        return None
+    return requested if isinstance(requested, str) else str(requested)
+
+
 class _Call:
     """State of one intercepted call: its reservation, what the response showed, and whether it is closed."""
 
@@ -97,6 +111,7 @@ class _Call:
         # with_streaming_response, and with_raw_response streams, can't be read: charged the full reservation
         self.worst_case = mode == "streaming" or (mode == "raw" and stream)
         self.meter = "agent"  # the ledger meter, read once at begin
+        self.fallback_from: str | None = None  # the requested model, when the workflow's fallback replaced it
         self.est_prompt = 0
         self.max_output = 0
         self.rt: Runtime | None = None
@@ -113,6 +128,10 @@ class _Call:
         """`stream`: None reads `stream=True` from kwargs; a stream helper (which streams without it) passes True."""
         check_halt()
         ctx = current_run()
+        meter = _meter.get()
+        fallback_from = _fallback_from(ctx, meter, kwargs)
+        if fallback_from is not None:  # before the estimate and reservation: the pinned model is what is billed
+            kwargs = {**kwargs, "model": ctx.spec.fallback_model}
         stream = kwargs.get("stream") is True if stream is None else stream
         base_url = _base_url(client)
         if mode == "normal" and normalize_base_url(base_url) not in _NO_STREAM_OPTIONS:
@@ -122,7 +141,8 @@ class _Call:
         model = kwargs.get("model")
         model = model if isinstance(model, str) else "unknown" if model is None else str(model)
         call = cls(ctx, shape, send, model, base_url, stream, injected, mode)
-        call.meter = _meter.get()
+        call.meter = meter
+        call.fallback_from = fallback_from
         call.obs.pending = _safe(lambda: shape.pending(kwargs)) is True
         try:
             call.est_prompt = shape.estimate_prompt_tokens(kwargs)
@@ -251,6 +271,8 @@ class _Call:
             payload["usage_estimated"] = estimated  # True (character estimate) or "worst_case"
         if self.unmetered:
             payload["unmetered"] = True
+        if self.fallback_from is not None:
+            payload["fallback_from"] = self.fallback_from
         ctx = self.ctx
         first = False
         if ctx is not None and self.meter == "agent":  # judge/supervisor calls never set the run's tags

@@ -34,6 +34,9 @@ def classify(drift_type: str, criticality: Criticality, side_effects: bool) -> L
 
 
 def action_for(finding: Finding, level: Level, criticality: Criticality) -> Literal["block", "steer", "halt", "record"]:
+    """The in-the-moment action for a finding. "fallback" is never chosen here: `pitstop.sdk.actions` upgrades a
+    P1 "record" to "fallback" afterwards, when the workflow pins a fallback model and the run follows a model or
+    provider change (it needs the store, which this table does not read)."""
     if finding.drift_type == "budget_exhausted":
         return "halt"
     if finding.kind == "off_task":

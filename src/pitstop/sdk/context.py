@@ -51,6 +51,7 @@ class WorkflowSpec:
     fix_mode: Literal["manual", "auto"] | None = None
     tools: tuple[str, ...] | None = None
     on_gate_error: Literal["block", "allow"] | None = None
+    fallback_model: str | None = None  # pinned model a P1 breakage after a model/provider change falls back to
 
     def __post_init__(self) -> None:
         # Checked when the workflow is defined: a typo (criticality="High", on_gate_error="deny") must never
@@ -62,6 +63,9 @@ class WorkflowSpec:
             if value not in allowed:
                 raise ValueError(f"pitstop.workflow {self.name!r}: invalid {what} {value!r} "
                                  f"(expected one of {allowed})")
+        if self.fallback_model is not None and not (isinstance(self.fallback_model, str) and self.fallback_model):
+            raise ValueError(f"pitstop.workflow {self.name!r}: invalid fallback_model {self.fallback_model!r} "
+                             f"(expected a model id or None)")
 
     @property
     def effective_fix_mode(self) -> str:
@@ -389,9 +393,10 @@ def workflow(name: str, *, goal: str | None = None, criticality: Criticality = "
              budget_usd: float | None = None, sensitivity: Sensitivity = "normal",
              fix_mode: Literal["manual", "auto"] | None = None,
              tools: tuple[str, ...] | list[str] | None = None,
-             on_gate_error: Literal["block", "allow"] | None = None) -> _Workflow:
+             on_gate_error: Literal["block", "allow"] | None = None,
+             fallback_model: str | None = None) -> _Workflow:
     return _Workflow(WorkflowSpec(name, goal, criticality, budget_usd, sensitivity, fix_mode,
-                                  tuple(tools) if tools is not None else None, on_gate_error))
+                                  tuple(tools) if tools is not None else None, on_gate_error, fallback_model))
 
 
 def agent(name: str, *, goal: str | None = None) -> _Agent:

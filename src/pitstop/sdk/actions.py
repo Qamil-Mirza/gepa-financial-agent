@@ -22,11 +22,14 @@ class Applied(NamedTuple):
 
 def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None = None) -> list[Applied]:
     """Classify each finding (level, action), then record it. A P0 on a high workflow sets a pending halt that
-    the next boundary raises, and records a `halt` event marked `pending`. Outside a workflow: workflow=None,
-    criticality medium, sensitivity normal.
+    the next boundary raises, and records a `halt` event marked `pending`. A P1 breakage or refusal spike on a
+    workflow that pins a `fallback_model`, in a run whose model or base_url changed since the workflow's previous
+    run, engages the fallback (sticky until cleared): the drift's action is "fallback" and a `fallback` event is
+    recorded. Outside a workflow: workflow=None, criticality medium, sensitivity normal.
 
-    The decision never depends on the store: a failed drift or event write is logged, leaves drift_id None,
-    and the block/steer/halt still applies."""
+    The block/steer/halt decision never depends on the store: a failed drift or event write is logged, leaves
+    drift_id None, and the action still applies. The fallback does need the store (the run's model, the previous
+    run, the shared state); when it cannot be read the call keeps its model (fail open)."""
     from ..detect import drifts
     from ..detect.urgency import Level, action_for, classify
 
@@ -37,6 +40,9 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
     for f in findings:
         level = classify(f.drift_type, criticality, f.side_effects)
         action = action_for(f, level, criticality)
+        engage = _safe(lambda: _fallback_change(ctx, f.drift_type, level)) if ctx is not None else None
+        if engage is not None:
+            action = "fallback"
         try:
             drift_id = drifts.record_drift(get_runtime().store, run_id=run_id, workflow=workflow, finding=f,
                                            level=level, action=action)
@@ -44,6 +50,8 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
             log.warning("pitstop: could not record a %s drift; its action still applies", f.drift_type,
                         exc_info=True)
             drift_id = None
+        if engage is not None:
+            _safe(lambda: _engage_fallback(ctx, f.drift_type, drift_id, *engage))
         if ctx is not None and level is Level.P0 and criticality == "high":
             reason = None
             with ctx.lock:  # one check-and-set per run, shared with the tool's steer-limit halt
@@ -55,6 +63,39 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
                 _safe(lambda: _halt_event(ctx, f.drift_type, payload))
         applied.append(Applied(f, level, action, drift_id))
     return applied
+
+
+def _fallback_change(ctx: RunContext, drift_type: str, level: Any) -> tuple[str, Any] | None:
+    """(the run's model, the Change) when this finding engages the workflow's fallback, else None."""
+    from ..detect.changes import recent_change
+    from ..detect.urgency import Level
+    from .fallback import FALLBACK_TRIGGERS
+
+    target = ctx.spec.fallback_model
+    if level is not Level.P1 or drift_type not in FALLBACK_TRIGGERS or not target:
+        return None
+    store = get_runtime().store
+    row = store.connect().execute("SELECT model FROM runs WHERE id=?", (ctx.run_id,)).fetchone()
+    if row is None or row["model"] is None or row["model"] == target:  # already on the pinned model
+        return None
+    change = recent_change(store, ctx.spec.name, ctx.run_id)
+    return (row["model"], change) if change is not None else None
+
+
+def _engage_fallback(ctx: RunContext, name: str, drift_id: int | None, model: str, change: Any) -> None:
+    from dataclasses import asdict
+
+    from . import fallback
+
+    store, target = get_runtime().store, ctx.spec.fallback_model
+    if not fallback.activate(store, ctx.spec.name, model=target, drift_id=drift_id, change=change):
+        return  # already engaged (an earlier finding, or another process)
+    log.warning("pitstop: workflow %r falls back to %r after %s on %r (%s changed)", ctx.spec.name, target, name,
+                model, change.field)
+    payload = {"from": model, "to": target, "change": asdict(change)}
+    with store.transaction() as c:
+        c.execute("INSERT INTO events(run_id, ts, agent, kind, name, payload, cost_usd) VALUES (?,?,?,?,?,?,?)",
+                  (ctx.run_id, time.time(), ctx.agent, "fallback", name, json.dumps(payload, default=str), None))
 
 
 def _halt_event(ctx: RunContext, name: str, payload: dict) -> None:

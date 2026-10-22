@@ -9,6 +9,7 @@
   pitstop demo --port 8770                # GEPA demo page (pitstop.demo)
   pitstop status | drifts [--workflow W] [--all] | budget   # SDK runs, drifts and budgets (local DB)
   pitstop budget reconcile [--older-than-min 60] [--release]  # list / free old reservations (dead processes)
+  pitstop fallback status | clear <workflow>   # workflows pinned to their fallback model
 
 Runs and the You.com cache live under $PITSTOP_HOME (default ~/.pitstop); see pitstop.config.
 """
@@ -257,6 +258,36 @@ def cmd_budget_reconcile(args) -> None:
         console.print(f"{len(rows)} stale reservation(s); re-run with --release to free them.")
 
 
+def _change_text(change) -> str:
+    if not isinstance(change, dict):
+        return "-"
+    return f"{change.get('field')}: {change.get('before')} -> {change.get('after')}"
+
+
+def cmd_fallback(args) -> None:
+    """`status` (the default) lists the workflows whose agent calls go to their pinned fallback model; `clear`
+    disengages one (its calls go back to the requested model at the next call)."""
+    from .sdk import fallback
+
+    rt = _runtime()
+    if getattr(args, "fallback_cmd", None) == "clear":
+        cleared = fallback.clear(rt.store, args.workflow)
+        console.print("cleared" if cleared else "no active fallback")
+        return
+    rows = fallback.list_active(rt.store)
+    if not rows:
+        console.print("No active fallbacks.")
+        return
+    t = Table(title="Active fallbacks")
+    for col in ("workflow", "model", "since", "change"):
+        t.add_column(col)
+    for r in rows:
+        since = r.get("since")
+        t.add_row(escape(r["workflow"]), escape(r["model"]),
+                  _fmt_ts(since) if isinstance(since, (int, float)) else "-", escape(_change_text(r.get("change"))))
+    console.print(t)
+
+
 def _minutes(v: str) -> float:
     m = float(v)
     if not m >= 0:  # also rejects nan
@@ -306,10 +337,15 @@ def main() -> None:
     rc.add_argument("--older-than-min", type=_minutes, default=60.0,
                     help="only reservations older than this many minutes (default 60)")
     rc.add_argument("--release", action="store_true", help="release them (default: only list them)")
+    f = sub.add_parser("fallback")
+    fsub = f.add_subparsers(dest="fallback_cmd")  # optional: bare `pitstop fallback` shows the status
+    fsub.add_parser("status", help="workflows whose agent calls go to their pinned fallback model")
+    fc = fsub.add_parser("clear", help="send the workflow's calls back to the requested model")
+    fc.add_argument("workflow")
     args = p.parse_args()
     handler = {"check": cmd_check, "run": cmd_run, "compare": cmd_compare, "timeline": cmd_timeline,
                "serve": cmd_serve, "demo": cmd_demo, "status": cmd_status, "drifts": cmd_drifts,
-               "budget": cmd_budget}[args.cmd]
+               "budget": cmd_budget, "fallback": cmd_fallback}[args.cmd]
     if inspect.iscoroutinefunction(handler):
         asyncio.run(handler(args))
     else:

@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `wrap` supports the Anthropic SDK (`Anthropic` / `AsyncAnthropic`, install `pitstop[anthropic]`): `messages.create` (and `stream=True`), `messages.parse`, `messages.stream` (with `text_stream`, `get_final_message()` and `get_final_text()`), the same under `beta.messages`, `beta.messages.tool_runner` (each of the runner's model calls is metered), and raw / streaming responses; `messages.batches` is not metered. Cache writes are charged at their write premium (1.25x input for 5-minute writes, 2x for 1-hour writes and for writes without a breakdown), a `stop_reason` of `"refusal"` counts as a refusal for L0, and an unpriced `claude-*` model (or Bedrock-style `…anthropic.claude-*` id) falls back to a conservative $15 / $75 per million tokens (`known=False`).
 - L1 pre-action gate: a `side_effects=True` tool on a `high` or `medium` workflow is checked by a judge model (prompt `l1_gate_v1`, `watch` meter) before it runs; a rejection is a P0 `out_of_scope_action` drift and blocks the call. Configure the judge in `[judge]` (`model`, `base_url`, `api_key_env`, `timeout_s`; defaults to `openai/gpt-oss-120b` on Crusoe via `CRUSOE_API_KEY`) or pass `pitstop.init(judge_client=..., judge_model=...)`. When the judge is missing or cannot decide, `pitstop.workflow(on_gate_error=...)` decides: `high` blocks, `medium` runs by default. Verdicts are `gate` events, failures `gate_error` events.
 - `pitstop.workflow(...)` rejects an invalid `criticality`, `sensitivity`, `fix_mode` or `on_gate_error` with a `ValueError` when the workflow is defined.
+- Fallback action: `pitstop.workflow(..., fallback_model="...")` pins a model. A P1 `tool_call_breakage` or `refusal_spike` in a run whose model or `base_url` changed since the workflow's previous run engages it: later agent-meter calls of the workflow go to the pinned model (`llm_call` events carry `fallback_from`), the drift's action is `fallback` and a `fallback` event is recorded. It stays on until `pitstop fallback clear <workflow>`; `pitstop fallback status` lists active fallbacks.
 
 ### Changed
 - `pitstop` is now an installable `src/` layout package with packaged assets.
@@ -36,6 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The steer limit (2 per run) holds when several threads share a run.
 - `pitstop.sdk.wrap` is a package; wrapped streams pass `isinstance` checks against the SDK's stream classes.
 - A pending P0 halt on a high-criticality workflow is recorded as a `halt` event (`pending: true`) when it is set.
+- Drift actions escalate on dedup in the order record < fallback < steer < block < halt.
 - With no judge configured (no `CRUSOE_API_KEY`, no `[judge]` key, no `judge_client`), `side_effects=True` tools on `high` workflows are now blocked by the pre-action gate's failure policy; set `on_gate_error="allow"` on the workflow to run them anyway. The offline quickstart uses a scripted judge.
 
 ### Removed

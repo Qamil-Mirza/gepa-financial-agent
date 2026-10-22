@@ -9,7 +9,7 @@ from .urgency import Level
 
 MAX_EVIDENCE = 20  # evidence entries kept per drift (newest); `occurrences` keeps the full count
 _LEVEL_RANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}  # lower is more urgent
-_ACTION_RANK = {"record": 0, "steer": 1, "block": 2, "halt": 3}  # higher is stricter
+_ACTION_RANK = {"record": 0, "fallback": 1, "steer": 2, "block": 3, "halt": 4}  # higher is stricter
 
 
 def _more_urgent(a: str, b: str) -> str:
@@ -27,7 +27,7 @@ def record_drift(store, *, run_id: str | None, workflow: str | None, finding: Fi
     Each occurrence appends an evidence entry `{"run_id", "ts", "detail"}` (detail is the finding's evidence);
     only the newest MAX_EVIDENCE entries are kept, while `occurrences` and `last_seen` track every one.
     On dedup the open drift escalates, never downgrades: it keeps the more urgent level (P0 < P1 < P2 < P3)
-    and the stricter action (halt > block > steer > record)."""
+    and the stricter action (halt > block > steer > fallback > record)."""
     level_s = level.value if isinstance(level, Level) else str(level)
     now = time.time()
     entry = {"run_id": run_id, "ts": now, "detail": finding.evidence}

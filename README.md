@@ -102,6 +102,23 @@ $ uv run pitstop budget      # configured budgets: spent, limit, remaining
 
 The `evidence` column counts every occurrence of the drift; the DB keeps the newest 20 evidence entries per drift.
 
+### Fallback
+
+Pin a known-good model on a workflow with `pitstop.workflow(..., fallback_model="...")`. The fallback engages when all of these hold:
+
+- a P1 `tool_call_breakage` or `refusal_spike` drift is detected in a run (a `low` workflow's P2 never engages it);
+- the run's model or provider `base_url` differs from the workflow's previous run (a breakage with no recent change is only recorded);
+- the run is not already on the pinned model.
+
+From the next call on, every agent-meter call in that workflow is sent to the pinned model instead of the one your code asked for; the agent sees no other difference. The reservation, cost and `llm_call` event use the pinned model, and the event records the requested one as `fallback_from`. The drift's action is `fallback`, and a `fallback` event records `{"from", "to", "change"}`. Judge and supervisor calls (other meters) and calls outside the workflow are never swapped. If PitStop cannot read its state, the call keeps its own model.
+
+The fallback is sticky: it stays on across runs and processes until you clear it, since only you can tell when the new model or provider is fixed:
+
+```text
+$ uv run pitstop fallback status        # workflow, pinned model, since, the change that engaged it
+$ uv run pitstop fallback clear support # the next call goes back to the requested model
+```
+
 ## Set a hard budget
 
 Copy [docs/config.example.toml](docs/config.example.toml) to `~/.pitstop/config.toml`. Each `[budgets.<name>]` entry sets a dollar limit for a provider `base_url` and period. Every model call reserves its worst-case cost first, and once the limit would be crossed the call raises `BudgetExceeded` before it reaches the provider. PitStop's own calls (supervisor, judge, GEPA) count against the same budget. A per-workflow cap is the `budget_usd` argument of `pitstop.workflow`. An invalid `config.toml` (a bad period, limit or timezone) never silently removes a budget: `pitstop.init()` raises a `ValueError`, every metered call, `pitstop.prompt` and `pitstop.workflow` (and any guarded tool inside a workflow) raises `pitstop.Halted("pitstop config invalid: ...")` before reaching the provider, and `pitstop status`/`drifts`/`budget` print the error and exit 2. A `pitstop.db` written by a newer PitStop is refused the same way, so a downgrade never runs without its budgets.
