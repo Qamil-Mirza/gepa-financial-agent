@@ -123,6 +123,9 @@ _current: ContextVar[RunContext | None] = ContextVar("pitstop_run", default=None
 # Innermost agent() scope of the calling task. Scope objects keep no per-instance state, so one agent() or
 # workflow() object can be entered concurrently from several tasks or threads.
 _agent_var: ContextVar[_AgentFrame | None] = ContextVar("pitstop_agent", default=None)
+# The ledger meter `pitstop.meter()` tags calls with. Lives here (re-exported by pitstop.sdk.wrap) so a decorated
+# generator scopes it per step like the run and agent: a meter() block spanning a yield never leaks to the consumer.
+_meter: ContextVar[str] = ContextVar("pitstop_meter", default="agent")
 
 
 def current_run() -> RunContext | None:
@@ -262,11 +265,11 @@ def _unhooked(make: Callable, arg: Any) -> Any:
 
 
 class _GenRun:
-    """The run and agent ContextVar values a decorated generator sees. Each step sets them in the consumer's
+    """The run, agent and meter ContextVar values a decorated generator sees. Each step sets them in the consumer's
     own context and resets them right after, so the run is visible only while the generator runs, and
     asyncio.timeout, TaskGroup or anyio scopes that span a yield keep working (same task, same context)."""
 
-    _VARS = (_current, _agent_var)
+    _VARS = (_current, _agent_var, _meter)
 
     def __init__(self, scope: _Scope):
         self.scope = scope

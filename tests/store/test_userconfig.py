@@ -105,6 +105,15 @@ def test_judge_config_validation(tmp_path, body):
         load_user_config(p)
 
 
+@pytest.mark.parametrize("key", ["api_key_evn", "modle"])
+def test_judge_rejects_unknown_keys(tmp_path, key):
+    p = tmp_path / "config.toml"
+    p.write_text(f'[judge]\n{key} = "sk-secret-value"\n')
+    with pytest.raises(ConfigInvalid, match=f"judge: unknown key.*{key}") as exc:
+        load_user_config(p)
+    assert "sk-secret-value" not in str(exc.value)
+
+
 def test_alerts_empty_when_absent(tmp_path):
     from pitstop.userconfig import AlertsSpec
 

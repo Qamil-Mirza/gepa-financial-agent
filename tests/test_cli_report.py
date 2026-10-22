@@ -130,6 +130,27 @@ def test_drift_rows_use_occurrences_and_last_seen(tmp_path):
     assert (row["count"], row["first_seen"], row["last_seen"]) == (42, 100.0, 200.0)
 
 
+def test_cli_drifts_shows_occurrences_column(tmp_path, monkeypatch):
+    import io
+
+    from rich.console import Console
+
+    import pitstop
+    from pitstop import cli
+
+    rt = pitstop.init(home=tmp_path)
+    _run(rt.store, "r1", "wf")
+    for _ in range(3):
+        record_drift(rt.store, run_id="r1", workflow="wf", finding=Finding("loop", "off_task", False, {}),
+                     level="P1", action="steer")
+    out = io.StringIO()
+    monkeypatch.setattr(cli, "console", Console(file=out, width=200))
+    _main(monkeypatch, "drifts")
+    header, row = [line.split() for line in out.getvalue().splitlines() if "action" in line or " loop " in line]
+    assert "occurrences" in header and "evidence" not in header
+    assert row[header.index("occurrences")] == "3"
+
+
 def _main(monkeypatch, *argv):
     from pitstop import cli
 

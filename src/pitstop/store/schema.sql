@@ -24,4 +24,4 @@ CREATE INDEX IF NOT EXISTS idx_events_run ON events(run_id);
 CREATE INDEX IF NOT EXISTS idx_drifts_wf_status ON drifts(workflow, status);
 CREATE INDEX IF NOT EXISTS idx_ledger_ts ON ledger(ts);
 CREATE INDEX IF NOT EXISTS idx_alerts_drift ON alerts(drift_id, channel);
-INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '4');
+-- schema_version is written by Store._migrate: the latest version on a fresh DB, else after the migration steps.

@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import smtplib
 import subprocess
 import sys
 import textwrap
@@ -84,6 +85,29 @@ def test_p0_drift_alerts_routed_channels_once(tmp_path, monkeypatch):
     assert {(r["kind"], r["status"], r["level"], r["error"]) for r in rows} == {("immediate", "sent", "P0", None)}
     _apply(_p0())  # a later occurrence of the same open drift does not alert again
     assert dispatch.wait_idle() and len(seen) == 3
+
+
+def test_repeat_occurrence_of_alerted_drift_takes_no_write_lock(tmp_path, monkeypatch):
+    from pitstop.store import Store
+
+    _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    seen = _capture(monkeypatch)
+    _apply(_p0())
+    assert dispatch.wait_idle() and len(seen) == 1
+    real, flags, delivered = Store.transaction, [], []
+
+    def spy(self, immediate=False):
+        if threading.current_thread().name.startswith("pitstop-alerts"):
+            flags.append(immediate)
+        return real(self, immediate)
+
+    deliver = dispatch._deliver
+    monkeypatch.setattr(Store, "transaction", spy)
+    monkeypatch.setattr(dispatch, "_deliver", lambda *a: delivered.append(a[2]) or deliver(*a))
+    _apply(_p0(), _p0())  # the drift is already alerted on this channel: a plain read decides that
+    assert dispatch.wait_idle()
+    assert len(delivered) == 2 and len(seen) == 1 and len(_rows()) == 1
+    assert True not in flags  # no BEGIN IMMEDIATE on the alerts thread
 
 
 def test_p1_routes_to_slack_email_webhook(tmp_path, monkeypatch):
@@ -368,6 +392,43 @@ def test_client_error_not_retried(tmp_path, monkeypatch):
     _apply(_p0())
     assert dispatch.wait_idle()
     assert len(seen) == 1 and _rows()[0]["error"] == "HTTP 404"
+
+
+EMAIL_CONFIG = ('[alerts.email]\nsmtp_host = "smtp.example.com"\nfrom_addr = "pitstop@example.com"\n'
+                'to = ["oncall@example.com"]\nstarttls = false\n')
+
+
+@pytest.mark.parametrize("error,attempts", [
+    (smtplib.SMTPAuthenticationError(535, b"auth failed"), 1),
+    (smtplib.SMTPRecipientsRefused({"oncall@example.com": (550, b"no such user")}), 1),
+    (smtplib.SMTPSenderRefused(553, b"bad sender", "pitstop@example.com"), 1),
+    (smtplib.SMTPDataError(554, b"rejected"), 1),
+    (smtplib.SMTPServerDisconnected("gone"), 3),
+    (TimeoutError("timed out"), 3),
+], ids=["auth", "recipients", "sender", "data", "disconnected", "timeout"])
+def test_smtp_retries_only_transient_errors(tmp_path, monkeypatch, error, attempts):
+    _init(tmp_path, monkeypatch, EMAIL_CONFIG, env=())
+    _no_backoff(monkeypatch)
+    tries = []
+
+    class Failing:
+        def __init__(self, host, port):
+            tries.append(host)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def send_message(self, msg):
+            raise error
+
+    monkeypatch.setattr(channels, "_smtp", Failing)
+    _apply(Finding("tool_call_breakage", "degraded", False, {}))  # P1: routed to email
+    assert dispatch.wait_idle()
+    assert len(tries) == attempts
+    assert [r["status"] for r in _rows()] == ["failed"]
 
 
 def test_digest_counts_only_sent_drifts(tmp_path, monkeypatch):

@@ -53,7 +53,7 @@ import contextlib
 from typing import Any, TypeVar
 
 from .anthropic import ANTHROPIC, ANTHROPIC_METHODS
-from .call import _meter
+from ..context import _meter  # re-exported: the ContextVar lives with the run and agent vars
 from .proxy import Table, _Wrapped
 from .shapes import CHAT, COMPLETIONS, METHODS, RESPONSES, Observed, Shape
 

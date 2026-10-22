@@ -183,6 +183,19 @@ def test_non_stream_without_usage_settles_by_estimate(tmp_path):
     assert ev["payload"]["usage_estimated"] is True
 
 
+def test_stream_result_of_unknown_shape_is_charged_the_reservation(tmp_path):
+    """stream=True returning something neither iterable nor async-iterable: it is returned as is, and settled at the
+    full reservation (never 0 completion tokens)."""
+    _init(tmp_path)
+    odd = SimpleNamespace(note="not a stream")
+    w = pitstop.wrap(FakeOpenAI([odd]))
+    assert w.chat.completions.create(model=MODEL, messages=MSGS, stream=True, max_tokens=50) is odd
+    [row] = _ledger_rows()
+    assert row["state"] == "settled"
+    assert (row["prompt_tokens"], row["completion_tokens"]) == (100, 50)
+    assert _events()[0]["payload"]["usage_estimated"] == "worst_case"
+
+
 def test_coroutine_returned_from_undetected_sync_create_is_still_metered(tmp_path):
     _init(tmp_path)
     resp = make_response("hi", prompt_tokens=7, completion_tokens=3)

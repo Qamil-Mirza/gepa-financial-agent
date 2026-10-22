@@ -173,6 +173,26 @@ def test_fresh_db_matches_migrated_db(tmp_path):
     assert Store(old).schema_version() == SCHEMA_VERSION == 4
 
 
+@pytest.mark.parametrize("strip", [["    INSERT INTO meta VALUES ('schema_version', '1');\n"],
+                                   ["    INSERT INTO meta VALUES ('schema_version', '1');\n",
+                                    "    CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);\n"]])
+def test_v1_shaped_db_without_schema_version_is_migrated(tmp_path, strip):
+    """Tables but no schema_version row (or no meta table): migrated from v1, not stamped as the latest."""
+    script = V1_SCHEMA
+    for line in strip:
+        assert line in script
+        script = script.replace(line, "")
+    path = tmp_path / "old.db"
+    conn = sqlite3.connect(path)
+    conn.executescript(script)
+    conn.close()
+    store = Store(path)
+    assert store.schema_version() == SCHEMA_VERSION
+    assert _columns(store) == _columns(Store(tmp_path / "new.db"))
+    row = store.connect().execute("SELECT occurrences, last_seen FROM drifts").fetchone()
+    assert (row["occurrences"], row["last_seen"]) == (2, 123.0)
+
+
 def _indexes(store) -> set:
     rows = store.connect().execute("SELECT name, tbl_name, sql FROM sqlite_master WHERE type='index'"
                                    " AND sql IS NOT NULL")

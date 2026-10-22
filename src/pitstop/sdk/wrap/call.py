@@ -4,7 +4,6 @@ See the package docstring (`pitstop.sdk.wrap`) for the behavior contract.
 """
 from __future__ import annotations
 
-import contextvars
 import functools
 import json
 import logging
@@ -17,14 +16,12 @@ from ...budget.ledger import Reservation
 from ...budget.prices import cost_usd, price_for
 from ...store.urls import normalize_base_url
 from ..actions import apply_findings
-from ..context import RunContext, _safe, check_halt, current_run
+from ..context import RunContext, _meter, _safe, check_halt, current_run
 from ..errors import BudgetExceeded
 from ..runtime import Runtime, config_halt, get_runtime
 from .shapes import Observed, Shape, _g
 
 log = logging.getLogger("pitstop")
-
-_meter: contextvars.ContextVar[str] = contextvars.ContextVar("pitstop_meter", default="agent")
 
 # Normalized base_urls whose stream calls rejected PitStop's injected stream_options with a 400 and then
 # succeeded without it. Process-level: later stream calls to these endpoints are sent without the injection.

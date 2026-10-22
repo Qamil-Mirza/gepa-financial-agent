@@ -112,11 +112,15 @@ class _Resource:
     """A resource on the way to a metered method (e.g. `chat`, `chat.completions`, `with_raw_response.chat`)."""
 
     __slots__ = ("_pitstop_client", "_pitstop_inner", "_pitstop_path", "_pitstop_mode", "_pitstop_table",
-                 "_pitstop_cache")
+                 "_pitstop_cache", "__weakref__")
 
     def __init__(self, client: Any, inner: Any, path: tuple[str, ...], mode: Mode, table: Table):
         self._pitstop_client, self._pitstop_inner, self._pitstop_path = client, inner, path
         self._pitstop_mode, self._pitstop_table, self._pitstop_cache = mode, table, {}
+
+    @property
+    def __class__(self):  # isinstance(wrapped.chat, openai.resources.chat.Chat) stays True
+        return type(self._pitstop_inner)
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_pitstop"):
@@ -287,7 +291,10 @@ def _deliver(call: _Call, result: Any, parsed: Any = _UNSET) -> Any:
     if call.worst_case:
         return result  # settled at the full reservation when the caller's finally closes the call
     if call.stream:
-        return _wrap_stream(result, call)
+        out = _wrap_stream(result, call)
+        if out is result:
+            call.worst_case = True  # a stream we cannot read: charged the reservation, never under-counted
+        return out
     call.complete(result)
     return result
 
@@ -344,7 +351,7 @@ def _wrap_stream(result: Any, call: _Call) -> Any:
         return _AsyncStream(result, call)
     if hasattr(result, "__iter__"):
         return _SyncStream(result, call)
-    return result  # unknown shape: returned as is, settled by estimate in the caller's finally
+    return result  # unknown shape: returned as is, settled at the reservation in the caller's finally
 
 
 class _SyncStream:

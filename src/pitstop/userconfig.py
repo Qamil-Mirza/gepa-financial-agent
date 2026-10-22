@@ -159,6 +159,10 @@ def _parse(data: dict) -> UserConfig:
 def _parse_judge(raw: object) -> JudgeSpec:
     if not isinstance(raw, dict):
         raise ConfigInvalid("[judge] must be a table")
+    allowed = set(JudgeSpec.__dataclass_fields__)
+    unknown = set(raw) - allowed
+    if unknown:  # a typo must not silently fall back to defaults; values are never echoed
+        raise ConfigInvalid(f"judge: unknown key(s) {sorted(unknown)} (expected {sorted(allowed)})")
     default = JudgeSpec()
     fields = {}
     for key in ("model", "base_url", "api_key_env"):

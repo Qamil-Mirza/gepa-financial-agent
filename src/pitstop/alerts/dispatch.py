@@ -115,13 +115,21 @@ _LIVE = "(status = 'sent' OR (status = 'pending' AND ts > ?))"
 
 
 def _claim(store, alert: Alert, channel: str) -> int | None:
-    """Insert the pending row unless this channel already alerted (or is alerting) at this level or above."""
+    """Insert the pending row unless this channel already alerted (or is alerting) at this level or above. A plain
+    read settles the common case (a repeat occurrence of an alerted drift) without taking the write lock; the
+    check is repeated under BEGIN IMMEDIATE before inserting."""
+    if _covered(store.connect(), alert, channel):
+        return None
     with store.transaction(immediate=True) as c:
-        rows = c.execute(f"SELECT level FROM alerts WHERE drift_id=? AND channel=? AND kind='immediate' AND {_LIVE}",
-                         (alert.drift_id, channel, time.time() - ALERT_PENDING_STALE_S)).fetchall()
-        if any(_RANK.get(r["level"], 9) <= _RANK[alert.level] for r in rows):
+        if _covered(c, alert, channel):
             return None
         return _insert(c, alert.drift_id, alert.level, channel, "immediate")
+
+
+def _covered(c, alert: Alert, channel: str) -> bool:
+    rows = c.execute(f"SELECT level FROM alerts WHERE drift_id=? AND channel=? AND kind='immediate' AND {_LIVE}",
+                     (alert.drift_id, channel, time.time() - ALERT_PENDING_STALE_S)).fetchall()
+    return any(_RANK.get(r["level"], 9) <= _RANK[alert.level] for r in rows)
 
 
 def _insert(c, drift_id: int | None, level: str, channel: str, kind: str) -> int:
@@ -129,9 +137,17 @@ def _insert(c, drift_id: int | None, level: str, channel: str, kind: str) -> int
                      (drift_id, level, channel, kind, time.time())).lastrowid
 
 
+# SMTP replies a retry will not change: the server answered and refused (smtplib.SMTPResponseException and its
+# subclasses, plus refused recipients and a missing server feature). SMTPConnectError (a refused greeting) and
+# SMTPServerDisconnected are connection errors and are retried.
+_SMTP_FINAL = frozenset({"SMTPResponseException", "SMTPAuthenticationError", "SMTPSenderRefused", "SMTPDataError",
+                         "SMTPHeloError", "SMTPRecipientsRefused", "SMTPNotSupportedError"})
+
+
 def _retryable(kind: str) -> bool:
-    """Transport errors, 5xx and 429 may pass on a retry; other HTTP statuses and a missing env var will not."""
-    if kind == channels.NOT_CONFIGURED:
+    """Transport errors, 5xx and 429 may pass on a retry; other HTTP statuses, an SMTP refusal (auth, sender,
+    recipients, data) and a missing env var will not."""
+    if kind == channels.NOT_CONFIGURED or kind in _SMTP_FINAL:
         return False
     if kind.startswith("HTTP "):
         status = kind[5:]
@@ -228,7 +244,8 @@ def _digest_alert(store, drift_ids: list[int], now: float) -> Alert:
             lines.append(f"- #{i}: could not be read ({type(e).__name__})")
             continue
         levels.append(a.level)
-        lines.append(f"- #{i} [{a.level}] {a.workflow}: {a.what}. Likely change: {a.cause} PitStop: {a.action}")
+        wf = a.workflow if a.workflow is not None else "(no workflow)"
+        lines.append(f"- #{i} [{a.level}] {wf}: {a.what}. Likely change: {a.cause} PitStop: {a.action}")
     level = min(levels, key=lambda lv: _RANK.get(lv, 9)) if levels else "P3"
     return Alert(drift_id=None, workflow="all workflows", level=level, drift_type="digest",
                  what=f"{len(drift_ids)} open P2/P3 drift(s):\n" + "\n".join(lines),

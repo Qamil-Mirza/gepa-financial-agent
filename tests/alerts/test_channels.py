@@ -31,6 +31,14 @@ def test_alert_text():
     assert ALERT.dedup_key == "pitstop:support:out_of_scope_action"
 
 
+def test_alert_text_outside_a_workflow():
+    from dataclasses import replace
+
+    a = replace(ALERT, workflow=None, drift_type="budget_exhausted")
+    assert a.title == "[P0] (no workflow): budget_exhausted"
+    assert a.dedup_key == "pitstop:-:budget_exhausted"
+
+
 @pytest.mark.parametrize("level,severity", [("P0", "critical"), ("P1", "error"), ("P2", "warning"), ("P3", "info")])
 def test_pagerduty_payload(monkeypatch, level, severity):
     monkeypatch.setenv("PAGERDUTY_ROUTING_KEY", "rk-123")

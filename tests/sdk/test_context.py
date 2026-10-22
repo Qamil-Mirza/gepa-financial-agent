@@ -277,6 +277,27 @@ def test_workflow_on_generator_records_run_and_does_not_leak(tmp_path):
     assert (row["workflow"], row["status"]) == ("g", "ok") and row["ended_at"] is not None
 
 
+def test_meter_spanning_a_yield_does_not_leak_to_the_consumer(tmp_path):
+    from pitstop.sdk.wrap import _meter, meter
+
+    pitstop.init(home=tmp_path)
+
+    @workflow("g")
+    def gen():
+        with meter("judge"):
+            yield _meter.get()
+            yield _meter.get()  # restored when the step resumes
+        yield _meter.get()
+
+    it = gen()
+    assert next(it) == "judge"
+    assert _meter.get() == "agent"  # the consumer between yields keeps the default meter
+    assert next(it) == "judge"
+    assert _meter.get() == "agent"
+    assert next(it) == "agent"
+    assert list(it) == [] and _meter.get() == "agent"
+
+
 def test_generator_workflow_passes_send_throw_and_return_value(tmp_path):
     pitstop.init(home=tmp_path)
 

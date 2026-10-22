@@ -322,3 +322,20 @@ def test_legacy_completions_estimate_and_max_tokens(tmp_path):
     assert COMPLETIONS.estimate_prompt_tokens({"prompt": [INPUT, INPUT]}) == 200
     assert COMPLETIONS.max_output_tokens({"prompt": "x"}) == 4096  # the API default is 16; reserve conservatively
     assert COMPLETIONS.max_output_tokens({"prompt": "x", "max_tokens": 9}) == 9
+
+
+def test_resource_proxies_keep_isinstance_and_weakref(tmp_path):
+    import weakref
+
+    from openai.resources.chat import Chat, Completions
+    from openai.resources.responses import Responses
+
+    _init(tmp_path)
+    raw = openai_client(lambda r: json_response({}))
+    w = pitstop.wrap(raw)
+    assert isinstance(w.chat, Chat) and isinstance(w.chat.completions, Completions)
+    assert isinstance(w.responses, Responses)
+    assert isinstance(w.with_raw_response.chat, type(raw.with_raw_response.chat))
+    chat = w.chat
+    ref = weakref.ref(chat)
+    assert ref() is chat

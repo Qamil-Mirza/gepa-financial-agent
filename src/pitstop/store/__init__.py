@@ -1,9 +1,11 @@
 """Local SQLite store (WAL) shared by the SDK, supervisor and UI.
 
 A fresh DB is created at the latest schema by `schema.sql`. An older DB is upgraded in place by the steps in
-`MIGRATIONS` (keyed by the version each step produces), all applied in one `BEGIN IMMEDIATE`. To add a schema
-version: append a step, bump `SCHEMA_VERSION` and update `schema.sql` (a fresh DB and a migrated one must
-match). A DB written by a newer PitStop is refused with `StoreVersionError` before anything touches it.
+`MIGRATIONS` (keyed by the version each step produces), all applied in one `BEGIN IMMEDIATE`. Only a DB that had
+no tables when opened is stamped with the latest version outright; one with tables but no schema_version row is
+treated as version 1 and migrated. To add a schema version: append a step, bump `SCHEMA_VERSION` and update
+`schema.sql` (a fresh DB and a migrated one must match). A DB written by a newer PitStop is refused with
+`StoreVersionError` before anything touches it.
 """
 from __future__ import annotations
 
@@ -75,10 +77,12 @@ class Store:
         self._local = threading.local()
         conn = self.connect()
         try:
-            self._check_version(self._read_version(conn))  # before schema.sql or a migration touches a newer DB
+            version = self._read_version(conn)
+            self._check_version(version)  # before schema.sql or a migration touches a newer DB
+            fresh = version == 0 and conn.execute("SELECT 1 FROM sqlite_master WHERE type='table'").fetchone() is None
             conn.execute("PRAGMA journal_mode=WAL")
             conn.executescript(_SCHEMA.read_text())
-            self._migrate()
+            self._migrate(fresh=fresh)
         except StoreVersionError:
             self._close_local()  # a refused store keeps no open handle on the DB file
             raise
@@ -130,10 +134,11 @@ class Store:
         finally:
             self._local.depth = 0
 
-    def _migrate(self) -> None:
+    def _migrate(self, fresh: bool = False) -> None:
         """Upgrade an older DB in place: every step above its version runs in one transaction, so a failing
         step leaves the DB at its old version. Safe across concurrent openers (the version is re-read under
-        the write lock)."""
+        the write lock). No schema_version row means version 1 (tables from before versioning), unless the DB
+        had no tables when this store opened it (`fresh`): schema.sql then created it at the latest shape."""
         current = self.schema_version()
         self._check_version(current)  # a newer PitStop may have migrated it since the constructor's check
         if current >= SCHEMA_VERSION:
@@ -141,9 +146,11 @@ class Store:
         with self.transaction(immediate=True) as c:
             current = self._read_version(c)
             self._check_version(current)
+            if current == 0:
+                current = SCHEMA_VERSION if fresh else 1
             for version in range(current + 1, SCHEMA_VERSION + 1):
                 MIGRATIONS[version](c)
-            c.execute("UPDATE meta SET value=? WHERE key='schema_version'", (str(SCHEMA_VERSION),))
+            c.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('schema_version', ?)", (str(SCHEMA_VERSION),))
 
     def schema_version(self) -> int:
         return self._read_version(self.connect())

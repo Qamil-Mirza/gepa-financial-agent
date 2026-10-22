@@ -28,7 +28,8 @@ class Alert:
 
     @property
     def title(self) -> str:
-        return f"[{self.level}] {self.workflow}: {self.drift_type}"
+        workflow = self.workflow if self.workflow is not None else "(no workflow)"
+        return f"[{self.level}] {workflow}: {self.drift_type}"
 
     @property
     def body(self) -> str:
@@ -36,7 +37,8 @@ class Alert:
 
     @property
     def dedup_key(self) -> str:
-        return f"pitstop:{self.workflow}:{self.drift_type}"
+        workflow = self.workflow if self.workflow is not None else "-"  # a drift recorded outside any workflow
+        return f"pitstop:{workflow}:{self.drift_type}"
 
 
 def build_alert(store, drift_id: int) -> Alert:

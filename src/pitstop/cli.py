@@ -8,7 +8,8 @@
   pitstop serve --port 8765               # timeline API + live SSE stream for the UI
   pitstop demo --port 8770                # GEPA demo page (pitstop.demo)
   pitstop status | drifts [--workflow W] [--all] | budget   # SDK runs, drifts and budgets (local DB)
-  pitstop budget reconcile [--older-than-min 60] [--release]  # list / free old reservations (dead processes)
+  pitstop budget reconcile [--older-than-min 60] [--release]  # list / free old reservations left by processes
+                                                              # that died or calls still running
   pitstop fallback status | clear <workflow>   # workflows pinned to their fallback model
   pitstop alerts test [--channel NAME] | digest [--force]   # check alert channels; send the P2/P3 digest
 
@@ -214,7 +215,7 @@ def cmd_drifts(args) -> None:
         console.print(EMPTY_MSG)
         return
     t = Table(title="Drifts" + ("" if args.all else " (open)"))
-    for col in ("id", "level", "workflow", "drift_type", "action", "evidence", "first seen", "last seen"):
+    for col in ("id", "level", "workflow", "drift_type", "action", "occurrences", "first seen", "last seen"):
         t.add_column(col)
     for r in rows:
         t.add_row(str(r["id"]), r["level"], str(r["workflow"]), r["drift_type"], r["action"], str(r["count"]),
