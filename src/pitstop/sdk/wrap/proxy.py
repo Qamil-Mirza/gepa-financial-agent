@@ -13,8 +13,9 @@ import inspect
 import logging
 from typing import Any
 
+from ..context import _safe
 from .call import Mode, _Call
-from .shapes import Kind, Shape
+from .shapes import Kind, Shape, _g
 
 log = logging.getLogger("pitstop")
 
@@ -175,10 +176,28 @@ async def _attempt_async(call: _Call, fn: Any, args: tuple, first: Any) -> Any:
     return await once()
 
 
+def _billed_error(call: _Call, exc: BaseException) -> None:
+    """An error raised after the provider answered (openai's parse helpers raise LengthFinishReasonError /
+    ContentFilterFinishReasonError carrying the billed `completion`) settles the call instead of releasing it:
+    from the completion's usage, or at the full reservation when the error carries none."""
+    if not isinstance(exc, Exception) or not hasattr(exc, "completion"):
+        return
+    call.got_result = True
+    completion = _g(exc, "completion")
+    if completion is None:
+        call.worst_case = True  # settled at the reservation by the caller's finally
+    else:
+        call.complete(completion)
+
+
 def _call(call: _Call, fn: Any, args: tuple) -> Any:
     handed_off = False
     try:
-        result = _attempt(call, fn, args)
+        try:
+            result = _attempt(call, fn, args)
+        except Exception as e:
+            _safe(functools.partial(_billed_error, call, e))
+            raise
         if call.mode != "streaming" and inspect.isawaitable(result):  # an async method we failed to detect
             handed_off = True
             return _finish_async(call, fn, args, result)
@@ -193,17 +212,21 @@ def _call(call: _Call, fn: Any, args: tuple) -> Any:
 async def _finish_async(call: _Call, fn: Any, args: tuple, first: Any) -> Any:
     handed_off = False
     try:
-        result = await _attempt_async(call, fn, args, first)
+        try:
+            result = await _attempt_async(call, fn, args, first)
+        except Exception as e:
+            _safe(functools.partial(_billed_error, call, e))
+            raise
         call.got_result = True
         parsed: Any = _UNSET
-        if call.mode == "raw" and not call.worst_case:
+        if call.mode == "raw" and not call.stream:
+            call.worst_case = True  # until parsed: an interrupted parse is charged the reservation
             try:
                 parsed = result.parse()
                 if inspect.isawaitable(parsed):
                     parsed = await parsed
-            except Exception:
-                parsed = _FAILED
-                log.warning("pitstop: could not parse a raw response; charged its reservation", exc_info=True)
+            except Exception as e:
+                parsed = _parse_failed(e)
         out = _deliver(call, result, parsed)
         handed_off = out is not result
         return out
@@ -213,6 +236,16 @@ async def _finish_async(call: _Call, fn: Any, args: tuple, first: Any) -> Any:
 
 
 _UNSET, _FAILED = object(), object()
+
+
+def _parse_failed(exc: Exception) -> Any:
+    """What a raw response's failed `parse()` still shows: the billed `completion` its error carries, if any
+    (openai's LengthFinishReasonError), else _FAILED (charged the reservation)."""
+    completion = _g(exc, "completion")
+    if completion is not None:
+        return completion
+    log.warning("pitstop: could not parse a raw response; charged its reservation", exc_info=exc)
+    return _FAILED
 
 
 def _parse_raw(result: Any) -> Any:
@@ -225,9 +258,8 @@ def _parse_raw(result: Any) -> Any:
                 close()
             raise TypeError("raw response parse() returned an awaitable on a sync call")
         return parsed
-    except Exception:
-        log.warning("pitstop: could not parse a raw response; charged its reservation", exc_info=True)
-        return _FAILED
+    except Exception as e:
+        return _parse_failed(e)
 
 
 def _deliver(call: _Call, result: Any, parsed: Any = _UNSET) -> Any:
@@ -236,16 +268,16 @@ def _deliver(call: _Call, result: Any, parsed: Any = _UNSET) -> Any:
     call.got_result = True
     if call.retried:
         call.retry_succeeded()
-    if call.worst_case:
-        return result  # settled at the full reservation when the caller's finally closes the call
-    if call.mode == "raw":
+    if call.mode == "raw" and not call.stream:
         if parsed is _UNSET:
+            call.worst_case = True  # until parsed: an interrupted parse is charged the reservation
             parsed = _parse_raw(result)
-        if parsed is _FAILED:
-            call.worst_case = True
-        else:
+        if parsed is not _FAILED:
+            call.worst_case = False
             call.complete(parsed)
         return result
+    if call.worst_case:
+        return result  # settled at the full reservation when the caller's finally closes the call
     if call.stream:
         return _wrap_stream(result, call)
     call.complete(result)

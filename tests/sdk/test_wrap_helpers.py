@@ -2,6 +2,7 @@
 
 Every test drives a real `openai` client over `httpx.MockTransport` (see http_fakes): no sockets, no network.
 """
+import inspect
 import json
 import math
 
@@ -289,3 +290,133 @@ def test_unlisted_methods_delegate_unchanged(tmp_path):
     assert w.with_raw_response.models.list().parse().data[0].id == "m1"
     assert [p for p, _ in seen] == ["/v1/models", "/v1/embeddings", "/v1/models"]
     assert _ledger_rows() == [] and _events() == []
+
+
+# -- errors raised after a billed response: over-counted, never under-counted ------------------------------------
+
+
+def _answer_model():
+    """A pydantic response_format for the parse helpers."""
+    from pydantic import BaseModel
+
+    class Answer(BaseModel):
+        answer: str
+
+    return Answer
+
+
+def _length_handler(seen):
+    return _recording(seen, lambda body: json_response(
+        chat_completion('{"ans', prompt_tokens=11, completion_tokens=50, finish_reason="length")))
+
+
+def _assert_settled(prompt, completion):
+    [row] = _ledger_rows()
+    assert row["state"] == "settled" and (row["prompt_tokens"], row["completion_tokens"]) == (prompt, completion)
+    assert row["usd"] == pytest.approx(cost_usd(PRICE, prompt, completion))
+    [ev] = _events()
+    assert ev["payload"]["finish_reason"] == "length" and "usage_estimated" not in ev["payload"]
+
+
+def test_parse_length_error_settles_from_its_completion(tmp_path):
+    import openai
+
+    _init(tmp_path)
+    seen = []
+    w = pitstop.wrap(openai_client(_length_handler(seen)))
+    with pytest.raises(openai.LengthFinishReasonError):
+        w.chat.completions.parse(model=MODEL, messages=MSGS, response_format=_answer_model(), max_tokens=50)
+    assert len(seen) == 1
+    _assert_settled(11, 50)
+
+
+async def test_async_parse_length_error_settles_from_its_completion(tmp_path):
+    import openai
+
+    _init(tmp_path)
+    w = pitstop.wrap(openai_client(_length_handler([]), async_=True))
+    with pytest.raises(openai.LengthFinishReasonError):
+        await w.chat.completions.parse(model=MODEL, messages=MSGS, response_format=_answer_model(), max_tokens=50)
+    _assert_settled(11, 50)
+
+
+def test_raw_parse_length_error_settles_from_its_completion(tmp_path):
+    import openai
+
+    _init(tmp_path)
+    w = pitstop.wrap(openai_client(_length_handler([])))
+    raw = w.chat.completions.with_raw_response.parse(model=MODEL, messages=MSGS, response_format=_answer_model(),
+                                                     max_tokens=50)
+    with pytest.raises(openai.LengthFinishReasonError):  # the caller still sees the SDK's own error
+        raw.parse()
+    _assert_settled(11, 50)
+
+
+def test_error_with_empty_completion_charged_worst_case(tmp_path):
+    import openai
+    from types import SimpleNamespace
+
+    _init(tmp_path)
+
+    def create(**kw):
+        raise openai.ContentFilterFinishReasonError()  # completion=None: billed, but nothing to read
+
+    w = pitstop.wrap(SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create))))
+    with pytest.raises(openai.ContentFilterFinishReasonError):
+        w.chat.completions.create(model=MODEL, messages=MSGS)
+    [row] = _ledger_rows()
+    assert row["state"] == "settled" and row["usd"] == pytest.approx(WORST)
+
+
+def test_raw_parse_failure_charged_worst_case(tmp_path):
+    """A raw response whose parse() fails with nothing billed attached falls back to the full reservation."""
+    _init(tmp_path)
+    handler = _recording([], lambda body: json_response(chat_completion('{"other": 1}')))
+    w = pitstop.wrap(openai_client(handler))
+    raw = w.chat.completions.with_raw_response.parse(model=MODEL, messages=MSGS, response_format=_answer_model())
+    assert raw.http_response.status_code == 200  # the caller still gets the raw response
+    [row] = _ledger_rows()
+    assert row["state"] == "settled" and row["usd"] == pytest.approx(WORST)
+    assert _events()[0]["payload"]["usage_estimated"] == "worst_case"
+
+
+def _raw_client(parse):
+    from types import SimpleNamespace
+
+    raw = SimpleNamespace(parse=parse)
+    if inspect.iscoroutinefunction(parse):
+        async def create(**kw):
+            return raw
+    else:
+        def create(**kw):
+            return raw
+    completions = SimpleNamespace(create=create, with_raw_response=SimpleNamespace(create=create))
+    return SimpleNamespace(chat=SimpleNamespace(completions=completions))
+
+
+def test_raw_parse_interrupted_charged_worst_case(tmp_path):
+    _init(tmp_path)
+
+    def parse():
+        raise KeyboardInterrupt
+
+    w = pitstop.wrap(_raw_client(parse))
+    with pytest.raises(KeyboardInterrupt):
+        w.chat.completions.with_raw_response.create(model=MODEL, messages=MSGS)
+    [row] = _ledger_rows()
+    assert row["state"] == "settled" and row["usd"] == pytest.approx(WORST)
+
+
+async def test_async_raw_parse_cancelled_charged_worst_case(tmp_path):
+    import asyncio
+
+    _init(tmp_path)
+
+    async def parse():
+        raise asyncio.CancelledError
+
+    w = pitstop.wrap(_raw_client(parse))
+    with pytest.raises(asyncio.CancelledError):
+        await w.chat.completions.with_raw_response.create(model=MODEL, messages=MSGS)
+    [row] = _ledger_rows()
+    assert row["state"] == "settled" and row["usd"] == pytest.approx(WORST)
