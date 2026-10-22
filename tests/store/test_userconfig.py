@@ -172,3 +172,27 @@ def test_alerts_config_validation(tmp_path, body):
     p.write_text(body + "\n")
     with pytest.raises(ConfigInvalid, match="alerts"):
         load_user_config(p)
+
+
+@pytest.mark.parametrize("channel,key,env_key", [("slack", "url", "webhook_url_env"),
+                                                 ("webhook", "webhook_url", "url_env"),
+                                                 ("email", "api_key", "password_env"),
+                                                 ("pagerduty", "api_key", "routing_key_env"),
+                                                 ("opsgenie", "routing_key", "api_key_env")])
+def test_inline_secret_message_names_the_channels_env_key(tmp_path, channel, key, env_key):
+    p = tmp_path / "config.toml"
+    p.write_text(f'[alerts.{channel}]\n{key} = "SECRET123"\n')
+    with pytest.raises(ConfigInvalid, match=f"use {env_key}$") as e:
+        load_user_config(p)
+    assert "SECRET123" not in str(e.value)
+
+
+@pytest.mark.parametrize("value", ["1BAD", "has space", "https://hooks.slack.test/SECRET123", "A-B", "X=Y"])
+def test_env_names_must_be_identifiers(tmp_path, value):
+    p = tmp_path / "config.toml"
+    p.write_text(f'[alerts.slack]\nwebhook_url_env = "{value}"\n')
+    with pytest.raises(ConfigInvalid, match="alerts.slack webhook_url_env") as e:
+        load_user_config(p)
+    assert value not in str(e.value)
+    p.write_text('[alerts.slack]\nwebhook_url_env = "_MY_HOOK_2"\n')
+    assert load_user_config(p).alerts.slack.webhook_url_env == "_MY_HOOK_2"

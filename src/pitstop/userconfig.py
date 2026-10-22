@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+import re
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -84,6 +85,9 @@ DEFAULT_ROUTES: dict[str, tuple[str, ...]] = {
     "digest": ("email", "slack", "webhook"),
 }
 _INLINE_SECRETS = ("routing_key", "api_key", "webhook_url", "password", "url")
+_SECRET_ENV_KEY = {"pagerduty": "routing_key_env", "opsgenie": "api_key_env", "slack": "webhook_url_env",
+                   "email": "password_env", "webhook": "url_env"}
+_ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
 @dataclass(frozen=True)
@@ -192,7 +196,7 @@ def _parse_channel(name: str, raw: object):
     for key in _INLINE_SECRETS:  # the value is never echoed: it is a secret
         if key in raw:
             raise ConfigInvalid(f"{what}: {key} is not allowed here; put secrets in environment variables; "
-                                f"use {key}_env")
+                                f"use {_SECRET_ENV_KEY[name]}")
     spec_cls = _CHANNEL_SPECS[name]
     allowed = set(spec_cls.__dataclass_fields__)
     unknown = set(raw) - allowed
@@ -203,6 +207,9 @@ def _parse_channel(name: str, raw: object):
         if key.endswith("_env") or key in ("smtp_host", "from_addr", "username"):
             if not isinstance(value, str) or not value:
                 raise ConfigInvalid(f"{what} {key} must be a non-empty string")
+        if key.endswith("_env") and not _ENV_NAME.fullmatch(value):  # the value may be a pasted secret: not echoed
+            raise ConfigInvalid(f"{what} {key} must be the NAME of an environment variable (letters, digits and _,"
+                                f" not starting with a digit)")
         fields[key] = value
     if name == "opsgenie" and fields.get("region", "us") not in ("us", "eu"):
         raise ConfigInvalid(f"{what} region must be \"us\" or \"eu\"")

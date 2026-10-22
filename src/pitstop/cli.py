@@ -292,7 +292,8 @@ def cmd_fallback(args) -> None:
 
 def cmd_alerts(args) -> None:
     """`test` sends a test alert to every channel (or `--channel`) and prints each result (exit 1 if one failed);
-    `digest` sends the daily digest of open P2/P3 drifts (at most once per 24 h unless `--force`)."""
+    `digest` sends the daily digest of open P2/P3 drifts (at most once per 24 h unless `--force`), prints each
+    failed channel and exits 1 when every channel that had something to send failed."""
     from .alerts import dispatch
 
     rt = _runtime()
@@ -307,10 +308,15 @@ def cmd_alerts(args) -> None:
         if any(r.startswith("failed") for r in results.values()):
             sys.exit(1)
         return
-    n = dispatch.digest(force=args.force)
+    n, results = dispatch.run_digest(force=args.force)
+    for name, result in results.items():
+        if result != "sent":
+            console.print(f"{name:<10} {escape(result)}", soft_wrap=True)
     if n:
         console.print(f"Sent a digest of {n} drift(s).")
         return
+    if results:  # every channel that had something to send failed
+        sys.exit(1)
     last = dispatch.last_digest_ts(rt.store)
     if not args.force and last is not None and time.time() - last < dispatch.DIGEST_INTERVAL_S:
         console.print(f"No digest sent: the last digest went out at {_fmt_ts(last)} (under 24 h ago); "

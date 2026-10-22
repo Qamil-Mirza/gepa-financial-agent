@@ -84,3 +84,18 @@ def test_alerts_cli_invalid_config_exits_2(tmp_path, capsys, monkeypatch):
     assert e.value.code == 2
     out = capsys.readouterr().out
     assert "webhook_url_env" in out and "SECRET123" not in out
+
+
+def test_alerts_digest_cli_reports_failures(tmp_path, capsys, monkeypatch):
+    _setup(tmp_path, monkeypatch, "[alerts.webhook]\n[alerts.slack]\n")  # hook.test answers 500
+    monkeypatch.setenv("PITSTOP_WEBHOOK_URL", "https://hook.test/in")
+    with workflow("wf") as ctx:
+        apply_findings(ctx, [Finding("out_of_scope_action", "off_task", False, {})])  # P2
+    with pytest.raises(SystemExit) as e:
+        _main(monkeypatch, "alerts", "digest")
+    assert e.value.code == 1  # every channel failed
+    assert "webhook failed: HTTP 500" in " ".join(capsys.readouterr().out.split())
+    monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.test/x")
+    _main(monkeypatch, "alerts", "digest")  # slack works, webhook still fails: exit 0
+    out = " ".join(capsys.readouterr().out.split())
+    assert "1 drift(s)" in out and "webhook failed: HTTP 500" in out

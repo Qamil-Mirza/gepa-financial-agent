@@ -10,6 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import httpx
+import pytest
 
 import pitstop
 from pitstop.alerts import channels, dispatch
@@ -57,6 +58,10 @@ def _rows():
 def _apply(*findings, criticality="medium"):
     with workflow("wf", criticality=criticality) as ctx:
         return apply_findings(ctx, list(findings))
+
+
+def _no_backoff(monkeypatch):
+    monkeypatch.setattr(dispatch, "RETRY_BACKOFF_S", (0.0, 0.0))
 
 
 def _p0():
@@ -144,13 +149,15 @@ def test_digest_without_channels_sends_nothing(tmp_path, monkeypatch):
 
 def test_failed_send_recorded(tmp_path, monkeypatch):
     _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    _no_backoff(monkeypatch)
     seen = _capture(monkeypatch, status=500)
     _apply(_p0())
     assert dispatch.wait_idle()
     [row] = _rows()
     assert (row["channel"], row["status"], row["error"]) == ("webhook", "failed", "HTTP 500")
+    assert len(seen) == 3  # the first try and 2 retries
     _apply(_p0())  # a failed alert does not block the next occurrence from retrying
-    assert dispatch.wait_idle() and len(seen) == 2
+    assert dispatch.wait_idle() and len(seen) == 6
 
 
 def test_hanging_channel_does_not_block_agent(tmp_path, monkeypatch):
@@ -178,6 +185,7 @@ def test_hanging_channel_does_not_block_agent(tmp_path, monkeypatch):
 def test_secret_never_stored_or_logged(tmp_path, monkeypatch, caplog):
     caplog.set_level(logging.DEBUG)
     _init(tmp_path, monkeypatch, "[alerts.slack]\n")
+    _no_backoff(monkeypatch)
     monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.test/SECRET123")
     fail = [True]
 
@@ -234,6 +242,7 @@ class _Hook(BaseHTTPRequestHandler):
     posts: list = []
 
     def do_POST(self):
+        time.sleep(0.5)  # slow: the alert is still in flight when the agent's main thread dies
         _Hook.posts.append(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
         self.send_response(200)
         self.end_headers()
@@ -278,3 +287,127 @@ def test_p0_alert_delivered_when_process_exits(tmp_path):
     [post] = _Hook.posts
     assert post["level"] == "P0" and post["workflow"] == "payments"
     assert post["drift_type"] == "out_of_scope_action" and post["title"].startswith("[P0] payments")
+
+
+def _drift(rt, finding, level, workflow_name="wf"):
+    return record_drift(rt.store, run_id=None, workflow=workflow_name, finding=finding, level=level, action="record")
+
+
+def _pending_row(rt, drift_id, kind, level, age_s):
+    with rt.store.transaction() as c:
+        c.execute("INSERT INTO alerts(drift_id, level, channel, kind, ts, status) VALUES (?,?,?,?,?,'pending')",
+                  (drift_id, level, "webhook", kind, time.time() - age_s))
+
+
+def test_stale_pending_row_does_not_block_but_fresh_one_does(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    seen = _capture(monkeypatch)
+    stale = _drift(rt, _p0(), "P0")
+    _pending_row(rt, stale, "immediate", "P0", 600)  # left by a process killed mid-send
+    dispatch.notify(stale)
+    assert dispatch.wait_idle() and len(seen) == 1
+    fresh = _drift(rt, Finding("unproductive_loop", "off_task", True, {}), "P0")
+    _pending_row(rt, fresh, "immediate", "P0", 5)  # another process is sending it right now
+    dispatch.notify(fresh)
+    assert dispatch.wait_idle() and len(seen) == 1
+    assert dispatch.ALERT_PENDING_STALE_S == 120
+
+
+def test_digest_stale_pending_row_does_not_block_but_fresh_one_does(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    seen = _capture(monkeypatch)
+    did = _drift(rt, _p2(), "P2")
+    _pending_row(rt, did, "digest", "P2", 5)
+    assert dispatch.digest(force=True) == 0 and seen == []
+    with rt.store.transaction() as c:
+        c.execute("UPDATE alerts SET ts=? WHERE drift_id=?", (time.time() - 600, did))
+    assert dispatch.digest(force=True) == 1 and len(seen) == 1
+
+
+def test_status_update_retried_once(tmp_path, monkeypatch, caplog):
+    import sqlite3
+
+    _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    seen = _capture(monkeypatch)
+    real, calls = dispatch._update, []
+
+    def flaky(store, row_ids, status, error):
+        calls.append(status)
+        if len(calls) == 1:
+            raise sqlite3.OperationalError("database is locked")
+        return real(store, row_ids, status, error)
+
+    monkeypatch.setattr(dispatch, "_update", flaky)
+    _apply(_p0())
+    assert dispatch.wait_idle()
+    assert calls == ["sent", "sent"] and len(seen) == 1
+    assert [r["status"] for r in _rows()] == ["sent"]
+
+
+def test_immediate_send_retried_after_a_failure(tmp_path, monkeypatch):
+    _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    _no_backoff(monkeypatch)
+    statuses = [503, 200]
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        return httpx.Response(statuses.pop(0))
+
+    monkeypatch.setattr(channels, "_http_client", lambda: httpx.Client(transport=httpx.MockTransport(handler)))
+    _apply(_p0())
+    assert dispatch.wait_idle()
+    assert len(seen) == 2
+    assert [(r["status"], r["error"]) for r in _rows()] == [("sent", None)]
+
+
+def test_client_error_not_retried(tmp_path, monkeypatch):
+    _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    _no_backoff(monkeypatch)
+    seen = _capture(monkeypatch, status=404)
+    _apply(_p0())
+    assert dispatch.wait_idle()
+    assert len(seen) == 1 and _rows()[0]["error"] == "HTTP 404"
+
+
+def test_digest_counts_only_sent_drifts(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    seen = _capture(monkeypatch, status=500)
+    _drift(rt, _p2(), "P2")
+    assert dispatch.digest() == 0
+    assert dispatch.last_digest_ts(rt.store) is None  # nothing went out: the next run tries again
+    assert [(r["kind"], r["status"], r["error"]) for r in _rows()] == [("digest", "failed", "HTTP 500")]
+    count, results = dispatch.run_digest()
+    assert (count, results) == (0, {"webhook": "failed: HTTP 500"})
+    monkeypatch.setattr(channels, "_http_client", lambda: httpx.Client(transport=httpx.MockTransport(
+        lambda r: seen.append(r) or httpx.Response(200))))
+    assert dispatch.run_digest() == (1, {"webhook": "sent"})
+    assert dispatch.last_digest_ts(rt.store) is not None
+
+
+@pytest.mark.skipif(not hasattr(os, "fork"), reason="needs os.fork")
+def test_forked_child_can_send(tmp_path, monkeypatch):
+    import warnings
+
+    rt = _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    _capture(monkeypatch)
+    _apply(_p0())
+    assert dispatch.wait_idle()  # the parent's pool has a live, idle worker thread
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)  # fork() of a multi-threaded process
+        pid = os.fork()
+    if pid == 0:  # child: a fresh runtime (no inherited sqlite handles), then a new drift's alert
+        code = 1
+        try:
+            from pitstop.sdk.runtime import reset_runtime
+
+            reset_runtime()
+            pitstop.init(home=tmp_path)
+            _apply(Finding("unproductive_loop", "off_task", True, {}))
+            code = 0 if dispatch.wait_idle(5) else 2
+        finally:
+            os._exit(code)
+    _, status = os.waitpid(pid, 0)
+    assert os.waitstatus_to_exitcode(status) == 0
+    assert [(r["status"], r["drift_id"]) for r in _rows()] == [("sent", 1), ("sent", 2)]
+    assert rt.store is get_runtime().store

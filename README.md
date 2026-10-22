@@ -132,9 +132,9 @@ Drifts are routed by urgency (P0-P3, see the [design spec](docs/superpowers/spec
 | **P2** | This week: quality degrading within contract | Daily digest: email, Slack, webhook |
 | **P3** | Trend: topic shift, slow token or latency creep | Daily digest: email, Slack, webhook |
 
-Every alert says what drifted, what likely changed (the run's model or provider change in the last 24 hours, or "no change detected" with the run's model and `base_url`) and what PitStop did (blocked, steered, halted, fell back or recorded). P0/P1 alerts are sent from a background thread, so a slow channel never blocks your agent, and it finishes sending before the process exits (a normal exit or an uncaught exception such as `Halted`; not a kill). Each open drift alerts once per channel (deduplicated per workflow and drift type); a drift that escalates from P1 to P0 alerts again, and a failed send is retried at the drift's next occurrence. Each attempt is a row in the `alerts` table (`sent` or `failed` with an error such as `HTTP 500`).
+Every alert says what drifted, what likely changed (the run's model or provider change in the last 24 hours, or "no change detected" with the run's model and `base_url`) and what PitStop did (blocked, steered, halted, fell back or recorded). P0/P1 alerts are sent from a background thread, so a slow channel never blocks your agent, and it finishes sending before the process exits (a normal exit or an uncaught exception such as `Halted`; not a kill). Each open drift alerts once per channel (deduplicated per workflow and drift type); a drift that escalates from P1 to P0 alerts again. A P0/P1 send that fails with a network error, a 5xx or a 429 is retried twice (after 0.5 s and 1 s); a send that still fails is retried at the drift's next occurrence, and a send left unfinished by a killed process stops blocking after 2 minutes. Each attempt is a row in the `alerts` table (`sent` or `failed` with an error such as `HTTP 500`).
 
-A channel is used only when its `[alerts.<channel>]` table is in `config.toml` **and** its env var is set. Secrets live only in environment variables: `config.toml` holds the variable's name, and an inline `routing_key`, `api_key`, `webhook_url`, `password` or `url` is rejected as an invalid config.
+A channel is used only when its `[alerts.<channel>]` table is in `config.toml` **and** its env var is set. Secrets live only in environment variables: `config.toml` holds the variable's name, and an inline `routing_key`, `api_key`, `webhook_url`, `password` or `url` is rejected as an invalid config. PitStop never stores or logs a secret (it hides httpx's own request log line while sending), but third-party HTTP instrumentation in your process can still record the full Slack or webhook URL: for example Sentry's httpx breadcrumbs or the OpenTelemetry HTTPX instrumentor. Scrub those URLs there, or keep that instrumentation off in processes that send alerts.
 
 | Channel | Table | Secret env var (default) | Notes |
 |---|---|---|---|
@@ -149,7 +149,8 @@ Change the routes with `[alerts.routes]` (`P0`, `P1` and `digest`, each a list o
 ```text
 $ uv run pitstop alerts test                  # one test alert per channel: sent, failed: <reason> or not configured
 $ uv run pitstop alerts test --channel slack
-$ uv run pitstop alerts digest                # open P2/P3 drifts not yet sent; at most once per 24 h (cron it)
+$ uv run pitstop alerts digest                # open P2/P3 drifts not yet sent; at most once per 24 h (cron it);
+                                              # exits 1 when every channel failed
 $ uv run pitstop alerts digest --force        # send now regardless of the last digest
 ```
 
