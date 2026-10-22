@@ -1,15 +1,25 @@
-"""Process-wide PitStop runtime: store, user config and budget ledger."""
+"""Process-wide PitStop runtime: store, user config, budget ledger and the L1 gate's judge."""
 from __future__ import annotations
 
+import logging
+import os
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from ..budget.ledger import Ledger
 from ..config import pitstop_home
 from ..store import Store, StoreVersionError
 from ..userconfig import ConfigInvalid, UserConfig, load_user_config
 from .errors import Halted
+
+if TYPE_CHECKING:
+    from ..detect.l1 import Gate
+
+log = logging.getLogger("pitstop")
+
+_UNBUILT = object()
 
 
 @dataclass
@@ -18,14 +28,56 @@ class Runtime:
     config: UserConfig
     ledger: Ledger
     home: Path
+    judge_client: Any = None  # from init(judge_client=...); wrapped when the gate is built
+    judge_model: str | None = None
+    _gate: Any = field(default=_UNBUILT, repr=False, compare=False)
+    _gate_lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
+
+    def gate(self) -> Gate | None:
+        """The L1 pre-action gate, built once and cached; None when no judge is available.
+
+        An `init(judge_client=...)` client is wrapped and used with `judge_model` or `[judge] model`. Otherwise, if
+        the `[judge] api_key_env` variable is set, an OpenAI client for `[judge] base_url` is built (no retries,
+        `timeout_s`). A failure to build it is logged (type name only) and leaves no gate."""
+        g = self._gate
+        if g is not _UNBUILT:
+            return g
+        with self._gate_lock:
+            if self._gate is _UNBUILT:
+                self._gate = self._build_gate()
+            return self._gate
+
+    def _build_gate(self) -> Gate | None:
+        from ..detect.l1 import Gate
+        from .wrap import wrap
+
+        spec = self.config.judge
+        try:
+            if self.judge_client is not None:
+                return Gate(wrap(self.judge_client), self.judge_model or spec.model)
+            key = os.environ.get(spec.api_key_env)
+            if not key:
+                return None
+            from openai import OpenAI
+
+            client = OpenAI(api_key=key, base_url=spec.base_url, timeout=spec.timeout_s, max_retries=0)
+            return Gate(wrap(client), self.judge_model or spec.model)
+        except Exception as e:
+            log.warning("pitstop: could not build the L1 gate judge (%s); gated tools follow on_gate_error",
+                        type(e).__name__)
+            return None
 
 
 _lock = threading.Lock()
 _runtime: Runtime | None = None
 
 
-def init(config_path: Path | None = None, home: Path | None = None) -> Runtime:
+def init(config_path: Path | None = None, home: Path | None = None, *, judge_client: Any = None,
+         judge_model: str | None = None) -> Runtime:
     """Create (or return the existing) runtime. Idempotent per home.
+
+    `judge_client` (any OpenAI-compatible client) and `judge_model` choose the L1 gate's judge; passing either
+    to an existing runtime replaces its judge and rebuilds the gate on next use.
 
     Raises ConfigInvalid (a ValueError) when config.toml is unusable or pitstop.db was written by a newer
     PitStop; no runtime is cached then, so every later call re-checks and keeps failing closed until it is fixed."""
@@ -33,6 +85,13 @@ def init(config_path: Path | None = None, home: Path | None = None) -> Runtime:
     home = Path(home).expanduser() if home is not None else pitstop_home()
     with _lock:
         if _runtime is not None and _runtime.home == home:
+            if judge_client is not None or judge_model is not None:
+                with _runtime._gate_lock:
+                    if judge_client is not None:
+                        _runtime.judge_client = judge_client
+                    if judge_model is not None:
+                        _runtime.judge_model = judge_model
+                    _runtime._gate = _UNBUILT
             return _runtime
         config = load_user_config(Path(config_path) if config_path is not None else home / "config.toml")
         try:
@@ -43,7 +102,7 @@ def init(config_path: Path | None = None, home: Path | None = None) -> Runtime:
             ledger = Ledger(store, config)
         except Exception as e:  # e.g. a timezone the zoneinfo database cannot load
             raise ConfigInvalid(f"budget ledger rejected the config: {type(e).__name__}: {e}") from e
-        _runtime = Runtime(store, config, ledger, home)
+        _runtime = Runtime(store, config, ledger, home, judge_client, judge_model)
         return _runtime
 
 

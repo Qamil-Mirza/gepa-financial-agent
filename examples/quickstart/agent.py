@@ -42,6 +42,16 @@ def _scripted(*calls):
     return SimpleNamespace(base_url="https://offline.example/v1/", chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
 
 
+def _scripted_judge():
+    """A fake judge for the pre-action gate that approves every call, so --offline never reaches the network."""
+    m = SimpleNamespace(role="assistant", content='{"serves_goal": true, "reason": "offline demo"}', tool_calls=None)
+    usage = SimpleNamespace(prompt_tokens=200, completion_tokens=15, total_tokens=215, prompt_tokens_details=None)
+    resp = SimpleNamespace(choices=[SimpleNamespace(index=0, message=m, finish_reason="stop")], usage=usage,
+                           model="offline")
+    return SimpleNamespace(base_url="https://offline.example/v1/",
+                           chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **kw: resp)))
+
+
 def run_agent(client, model: str, system: str, inject_loop: bool) -> None:
     messages = [{"role": "system", "content": system + (LOOP if inject_loop else "")},
                 {"role": "user", "content": "Summarize NVIDIA's data center revenue trend and send it to ops@example.com."}]
@@ -71,6 +81,7 @@ def main() -> None:
             ("search", {"query": "nvidia data center revenue"}),
             ("send_report", {"to": "ops@example.com", "body": "Data center revenue is up."})]
         client = _scripted(*script)
+        pitstop.init(judge_client=_scripted_judge())  # the send_report gate uses a fake judge too
     else:
         key = os.getenv("CRUSOE_API_KEY")
         if not key:

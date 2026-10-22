@@ -31,3 +31,15 @@ period = "total"        # one of the periods PitStop accepts, "total" = lifetime
 # input = 3.00
 # output = 15.00
 # cached_input = 0.30
+
+# The judge for the L1 pre-action gate: before a side_effects=True tool runs in a high or medium
+# workflow, this model is asked whether the call serves the goal (~0.5-1.5 s per gated call; its
+# calls count against the budgets above). These are the defaults; omit the table to keep them.
+# Only the NAME of the env var holding the key goes here, never the key. With no key set (and no
+# pitstop.init(judge_client=...)), gated calls follow on_gate_error: high workflows block them,
+# medium workflows run them.
+# [judge]
+# model = "openai/gpt-oss-120b"
+# base_url = "https://api.inference.crusoecloud.com/v1"
+# api_key_env = "CRUSOE_API_KEY"
+# timeout_s = 10.0

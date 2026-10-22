@@ -1,4 +1,4 @@
-"""User config (~/.pitstop/config.toml): budgets, price overrides, timezone."""
+"""User config (~/.pitstop/config.toml): budgets, price overrides, timezone and the L1 gate's judge."""
 from __future__ import annotations
 
 import math
@@ -35,10 +35,20 @@ class PriceOverride:
 
 
 @dataclass(frozen=True)
+class JudgeSpec:
+    """The L1 pre-action gate's judge. The key itself never lives in config: only the env var's name."""
+    model: str = "openai/gpt-oss-120b"
+    base_url: str = "https://api.inference.crusoecloud.com/v1"
+    api_key_env: str = "CRUSOE_API_KEY"
+    timeout_s: float = 10.0
+
+
+@dataclass(frozen=True)
 class UserConfig:
     budgets: tuple[BudgetSpec, ...]
     prices: dict[str, PriceOverride]
     timezone: str | None
+    judge: JudgeSpec = JudgeSpec()
 
 
 def load_user_config(path: Path | None = None) -> UserConfig:
@@ -83,7 +93,23 @@ def _parse(data: dict) -> UserConfig:
     timezone = data.get("timezone") or None  # "" means unset (system local time)
     if timezone is not None:
         _check_timezone(timezone)
-    return UserConfig(tuple(budgets), prices, timezone)
+    return UserConfig(tuple(budgets), prices, timezone, _parse_judge(data.get("judge", {})))
+
+
+def _parse_judge(raw: object) -> JudgeSpec:
+    if not isinstance(raw, dict):
+        raise ConfigInvalid("[judge] must be a table")
+    default = JudgeSpec()
+    fields = {}
+    for key in ("model", "base_url", "api_key_env"):
+        value = raw.get(key, getattr(default, key))
+        if not isinstance(value, str):
+            raise ConfigInvalid(f"judge {key} must be a string")
+        fields[key] = value
+    timeout = _finite_nonneg(raw.get("timeout_s", default.timeout_s), "judge timeout_s")
+    if not timeout > 0:
+        raise ConfigInvalid("judge timeout_s must be greater than 0")
+    return JudgeSpec(timeout_s=timeout, **fields)
 
 
 def _finite_nonneg(value: object, what: str) -> float:

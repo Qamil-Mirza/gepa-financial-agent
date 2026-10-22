@@ -47,3 +47,22 @@ def test_quickstart_reports_budget_exceeded_specifically(tmp_path):
                          cwd=tmp_path, env=env, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
     assert "BudgetExceeded: PitStop budget exceeded" in out.stdout
+
+
+def test_quickstart_offline_gate_uses_scripted_judge_even_with_a_key(tmp_path):
+    env = {k: v for k, v in os.environ.items() if k not in ("CRUSOE_API_KEY", "YDC_API_KEY")}
+    env["PITSTOP_HOME"] = str(tmp_path)
+    env["CRUSOE_API_KEY"] = "not-a-real-key"
+    # Were the env key used, the judge would hit this closed loopback port (no outside network either way).
+    (tmp_path / "config.toml").write_text('[judge]\nbase_url = "http://127.0.0.1:9/v1"\ntimeout_s = 1\n')
+    out = subprocess.run([sys.executable, str(REPO / "examples/quickstart/agent.py"), "--offline"],
+                         cwd=tmp_path, env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert "[send_report] to=ops@example.com" in out.stdout
+    import json
+    import sqlite3
+
+    db = sqlite3.connect(tmp_path / "pitstop.db")
+    gates = [json.loads(p) for (p,) in db.execute("SELECT payload FROM events WHERE kind='gate'")]
+    assert [(g["allow"], g["reason"]) for g in gates] == [(True, "offline demo")]
+    assert db.execute("SELECT count(*) FROM events WHERE kind='gate_error'").fetchone()[0] == 0

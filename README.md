@@ -80,6 +80,16 @@ Metered methods (on the client, on `with_options(...)`/`copy()` clients, and und
 
 Only calls on the default `agent` meter feed drift detection and set the run's model. PitStop's own judge, supervisor and GEPA calls inside a run are metered against the budget but never counted as the agent's behavior; each `llm_call` event records its `meter`.
 
+### Pre-action gate
+
+Before a `@pitstop.tool(side_effects=True)` tool runs inside a `high` or `medium` workflow, and after the L0 checks let it through, a judge model is asked whether this one call serves the workflow's goal (and the agent's goal, if set). It sees the goals, the tool name, its arguments (first 2,000 characters) and the agent's last 5 tool calls; the prompt is frozen and versioned (`l1_gate_v1`). Read-only tools and `low` workflows are never gated. A "no" is recorded as an `out_of_scope_action` drift (P0) and the tool returns the usual `{"blocked_by": "pitstop", "reason": ...}` instead of running; on a `high` workflow the run also halts at its next call boundary. Every verdict is a `gate` event.
+
+Each gated call costs one judge call and adds roughly 0.5–1.5 s of latency. Judge calls go through the `watch` meter: they count against your budgets (a budget hit raises `BudgetExceeded` from the tool call) but never feed drift detection. Async tools run the judge in a worker thread, not on the event loop.
+
+The judge is configured in `[judge]` in `config.toml` (default: `openai/gpt-oss-120b` on Crusoe, key read from `CRUSOE_API_KEY`, 10 s timeout, no retries; see [docs/config.example.toml](docs/config.example.toml)). To use your own client, pass a sync OpenAI-compatible client: `pitstop.init(judge_client=OpenAI(...), judge_model="...")` (PitStop wraps it). Pick a model from a different family than your agent where you can.
+
+When the judge is missing, times out, errors or returns no usable verdict, the workflow's failure policy decides: `high` workflows block the call (fail closed) and `medium` workflows run it (fail open). Override it per workflow with `pitstop.workflow(..., on_gate_error="block" | "allow")`. Every failure is recorded as a `gate_error` event with the policy applied; a blocked call's reason says how to fix it (configure `[judge]` or set `on_gate_error="allow"`). So with no judge configured, side-effect tools on `high` workflows do not run.
+
 Try it without keys: `uv run python examples/quickstart/agent.py --offline --inject-loop` (see [examples/quickstart](examples/quickstart/README.md)). Then inspect the local state:
 
 ```text

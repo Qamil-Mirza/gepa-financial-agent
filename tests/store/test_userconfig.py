@@ -70,3 +70,36 @@ def test_non_utf8_config_raises_config_invalid(tmp_path):
     p.write_bytes(b"\xff\xfe[budgets]")
     with pytest.raises(ConfigInvalid):
         load_user_config(p)
+
+
+def test_judge_defaults_when_table_absent(tmp_path):
+    from pitstop.userconfig import JudgeSpec
+
+    want = JudgeSpec("openai/gpt-oss-120b", "https://api.inference.crusoecloud.com/v1", "CRUSOE_API_KEY", 10.0)
+    assert load_user_config(tmp_path / "none.toml").judge == want
+    p = tmp_path / "config.toml"
+    p.write_text(TOML)
+    assert load_user_config(p).judge == want
+
+
+def test_judge_table_parses(tmp_path):
+    from pitstop.userconfig import JudgeSpec
+
+    p = tmp_path / "config.toml"
+    p.write_text('[judge]\nmodel = "acme/judge"\nbase_url = "https://j.example/v1"\napi_key_env = "J_KEY"\n'
+                 'timeout_s = 2\n')
+    assert load_user_config(p).judge == JudgeSpec("acme/judge", "https://j.example/v1", "J_KEY", 2.0)
+    p.write_text('[judge]\nmodel = "acme/judge"\n')
+    j = load_user_config(p).judge
+    assert (j.model, j.api_key_env, j.timeout_s) == ("acme/judge", "CRUSOE_API_KEY", 10.0)
+
+
+@pytest.mark.parametrize("body", [
+    "timeout_s = 0", 'timeout_s = "x"', "timeout_s = -1", "timeout_s = nan", "timeout_s = inf", "timeout_s = true",
+    "model = 3", "base_url = 1", "api_key_env = []",
+])
+def test_judge_config_validation(tmp_path, body):
+    p = tmp_path / "config.toml"
+    p.write_text(f"[judge]\n{body}\n")
+    with pytest.raises(ConfigInvalid, match="judge"):
+        load_user_config(p)

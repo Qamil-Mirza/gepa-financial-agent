@@ -6,7 +6,7 @@ A small tool-using agent (`search` plus a side-effecting `send_report`) wrapped 
 uv run python examples/quickstart/agent.py --offline --inject-loop
 ```
 
-`--offline` replaces the model with a scripted fake, so no keys or network are needed. `--inject-loop` makes the agent repeat the same search: PitStop steers it twice, then halts the run with `Halted: steer limit exceeded`. Then look at what it recorded:
+`--offline` replaces the model (and the judge of the pre-action gate on `send_report`) with scripted fakes, so no keys or network are needed. `--inject-loop` makes the agent repeat the same search: PitStop steers it twice, then halts the run with `Halted: steer limit exceeded`. Then look at what it recorded:
 
 ```sh
 uv run pitstop status

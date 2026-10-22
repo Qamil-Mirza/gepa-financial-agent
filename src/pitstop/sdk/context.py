@@ -45,10 +45,19 @@ class WorkflowSpec:
     sensitivity: Sensitivity = "normal"
     fix_mode: Literal["manual", "auto"] | None = None
     tools: tuple[str, ...] | None = None
+    on_gate_error: Literal["block", "allow"] | None = None
 
     @property
     def effective_fix_mode(self) -> str:
         return self.fix_mode or ("manual" if self.criticality == "high" else "auto")
+
+    @property
+    def effective_on_gate_error(self) -> str:
+        """What a side-effect tool does when the L1 gate cannot decide: high blocks (fail closed), else runs.
+        An unrecognized override falls back to that default."""
+        if self.on_gate_error in ("block", "allow"):
+            return self.on_gate_error
+        return "block" if self.criticality == "high" else "allow"
 
 
 @dataclass
@@ -366,9 +375,10 @@ class _Agent(_Scope):
 def workflow(name: str, *, goal: str | None = None, criticality: Criticality = "medium",
              budget_usd: float | None = None, sensitivity: Sensitivity = "normal",
              fix_mode: Literal["manual", "auto"] | None = None,
-             tools: tuple[str, ...] | list[str] | None = None) -> _Workflow:
+             tools: tuple[str, ...] | list[str] | None = None,
+             on_gate_error: Literal["block", "allow"] | None = None) -> _Workflow:
     return _Workflow(WorkflowSpec(name, goal, criticality, budget_usd, sensitivity, fix_mode,
-                                  tuple(tools) if tools is not None else None))
+                                  tuple(tools) if tools is not None else None, on_gate_error))
 
 
 def agent(name: str, *, goal: str | None = None) -> _Agent:
