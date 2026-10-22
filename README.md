@@ -73,7 +73,7 @@ State lives in `~/.pitstop` (or `$PITSTOP_HOME`). If you pass a custom home inst
 
 Steering is counted per run, not per agent: parallel agents in one workflow (for example several `pitstop.agent(...)` scopes under `asyncio.gather`) share the run's budget of 2 steers, and the next steer after that halts the whole run.
 
-`pitstop.workflow(...)` (and `pitstop.agent(...)`) can also decorate a generator or async generator function: the run opens on the first step and ends when the generator finishes, raises or is closed. Code that consumes the generator between yields runs outside the run.
+`pitstop.workflow(...)` (and `pitstop.agent(...)`) can also decorate a generator or async generator function: the run opens on the first step and ends when the generator finishes, raises or is closed. Code that consumes the generator between yields runs outside the run. Each step runs in the consumer's own task, so an `asyncio.timeout` or task group that spans a `yield` inside the generator keeps working.
 
 Only calls on the default `agent` meter feed drift detection and set the run's model. PitStop's own judge, supervisor and GEPA calls inside a run are metered against the budget but never counted as the agent's behavior; each `llm_call` event records its `meter`.
 

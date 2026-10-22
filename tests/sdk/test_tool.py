@@ -300,22 +300,31 @@ def test_histories_are_bounded(tmp_path):
     assert isinstance(ctx.llm_history, deque) and ctx.llm_history.maxlen == HISTORY_MAX
 
 
-class _SlowLimit:
-    """MAX_STEERS stand-in whose comparison yields the GIL, widening the steer check-to-increment window."""
+def _slow_steers_run():
+    """A RunContext subclass whose `steers` reads yield the GIL, widening every read-then-write window on the
+    counter however the check is written."""
+    import time
 
-    def __le__(self, steers):  # `ctx.steers >= MAX_STEERS` falls back to this reflected comparison
-        import time
+    from pitstop.sdk.context import RunContext
 
-        time.sleep(0.002)
-        return 2 <= steers
+    class SlowSteers(RunContext):
+        @property
+        def steers(self):
+            time.sleep(0.02)
+            return self.__dict__["steers"]
+
+        @steers.setter
+        def steers(self, value):
+            self.__dict__["steers"] = value
+
+    return SlowSteers
 
 
-def test_steer_limit_is_atomic_across_threads(tmp_path, monkeypatch):
+def test_steer_limit_is_atomic_across_threads(tmp_path):
     import contextvars
     import threading
 
     _init(tmp_path)
-    monkeypatch.setattr("pitstop.sdk.tool.MAX_STEERS", _SlowLimit())
 
     @pitstop.tool
     def search(q):
@@ -324,6 +333,7 @@ def test_steer_limit_is_atomic_across_threads(tmp_path, monkeypatch):
     outcomes = []
     with workflow("wf", goal="g") as ctx:
         assert isinstance(ctx.lock, type(threading.Lock()))
+        ctx.__class__ = _slow_steers_run()
         barrier = threading.Barrier(8)
 
         def worker():

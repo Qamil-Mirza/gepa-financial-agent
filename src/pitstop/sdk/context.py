@@ -3,15 +3,14 @@ isolated per thread and per asyncio task: parallel sub-agents started with async
 share the RunContext but each sees its own agent name and goal.
 
 A scope decorating a generator (or async generator) function opens on the generator's first step and closes
-when it finishes, raises or is closed. Every step runs inside one private Context per run, so code that
-consumes the generator between yields never sees the run."""
+when it finishes, raises or is closed. Each step sets the run (and agent) in the consumer's own context and
+resets it when the step yields, so code that consumes the generator between yields never sees the run."""
 from __future__ import annotations
 
-import asyncio
-import contextvars
 import functools
 import inspect
 import logging
+import sys
 import threading
 import time
 import uuid
@@ -159,23 +158,22 @@ class _Scope:
     def _wrap_gen(self, fn: Callable) -> Callable:
         @functools.wraps(fn)
         def gwrapper(*a, **k):
-            run_cv = contextvars.copy_context()  # the run's private Context: every step runs inside it
-            scope = self._fresh()
-            run_cv.run(scope.__enter__)
+            run = _GenRun(self._fresh())
+            run.enter()
             exc_info: tuple = (None, None, None)
             try:
-                gen = run_cv.run(fn, *a, **k)
+                gen = fn(*a, **k)  # creating the generator runs none of its body
                 step, arg = gen.send, None
                 while True:
                     try:
-                        value = run_cv.run(step, arg)
+                        value = run.step(step, arg)
                     except StopIteration as e:
                         return e.value
                     try:
                         arg = yield value
                         step = gen.send
                     except GeneratorExit:
-                        run_cv.run(gen.close)
+                        run.step(gen.close)  # the generator's cleanup runs inside the run
                         raise
                     except BaseException as e:  # consumer's throw(): forward it into the generator
                         step, arg = gen.throw, e
@@ -185,41 +183,109 @@ class _Scope:
                 exc_info = (type(e), e, e.__traceback__)
                 raise
             finally:
-                run_cv.run(scope.__exit__, *exc_info)
+                run.exit(*exc_info)
         return gwrapper
 
     def _wrap_asyncgen(self, fn: Callable) -> Callable:
         @functools.wraps(fn)
         async def agwrapper(*a, **k):
-            run_cv = contextvars.copy_context()
-            scope = self._fresh()
-            run_cv.run(scope.__enter__)
+            run = _GenRun(self._fresh())
+            run.enter()
             exc_info: tuple = (None, None, None)
             try:
-                agen = run_cv.run(fn, *a, **k)
-                step, arg = agen.asend, None
+                agen = fn(*a, **k)
+                # Only this wrapper is registered with the event loop's async-generator hooks; the inner
+                # generator is closed by the wrapper, never concurrently by the loop's own shutdown.
+                aw = _unhooked(agen.asend, None)
                 while True:
                     try:
-                        # asend/athrow awaitables are Coroutines; each step is a task in the run's Context
-                        value = await asyncio.create_task(step(arg), context=run_cv)
+                        value = await run.astep(aw)
                     except StopAsyncIteration:
                         return
                     try:
                         arg = yield value
-                        step = agen.asend
+                        aw = agen.asend(arg)
                     except GeneratorExit:
-                        await asyncio.create_task(agen.aclose(), context=run_cv)
+                        if agen.ag_running:  # being stepped elsewhere: closing it now would raise
+                            log.warning("pitstop: workflow async generator closed while running; its cleanup "
+                                        "was skipped")
+                        else:
+                            await run.astep(agen.aclose())
                         raise
                     except BaseException as e:
-                        step, arg = agen.athrow, e
+                        aw = agen.athrow(e)
             except GeneratorExit:
                 raise
             except BaseException as e:
                 exc_info = (type(e), e, e.__traceback__)
                 raise
             finally:
-                run_cv.run(scope.__exit__, *exc_info)
+                run.exit(*exc_info)
         return agwrapper
+
+
+def _unhooked(make: Callable, arg: Any) -> Any:
+    """Make an async generator's first awaitable with the firstiter hook disabled, so the event loop does not
+    track (and at shutdown close) that generator on its own."""
+    firstiter, finalizer = sys.get_asyncgen_hooks()
+    sys.set_asyncgen_hooks(firstiter=None, finalizer=finalizer)
+    try:
+        return make(arg)
+    finally:
+        sys.set_asyncgen_hooks(firstiter=firstiter, finalizer=finalizer)
+
+
+class _GenRun:
+    """The run and agent ContextVar values a decorated generator sees. Each step sets them in the consumer's
+    own context and resets them right after, so the run is visible only while the generator runs, and
+    asyncio.timeout, TaskGroup or anyio scopes that span a yield keep working (same task, same context)."""
+
+    _VARS = (_current, _agent_var)
+
+    def __init__(self, scope: _Scope):
+        self.scope = scope
+        self.values: tuple | None = None  # the generator's own values, saved after each step
+
+    def _push(self) -> list:
+        prev = [v.get() for v in self._VARS]
+        values = self.values if self.values is not None else prev
+        return [(v, v.set(x), p) for v, x, p in zip(self._VARS, values, prev)]
+
+    def _pop(self, tokens: list) -> None:
+        self.values = tuple(v.get() for v in self._VARS)
+        for var, token, prev in reversed(tokens):
+            try:
+                var.reset(token)
+            except ValueError:  # stepped from another Context than the one it started in
+                var.set(prev)
+
+    def enter(self) -> None:
+        tokens = self._push()
+        try:
+            self.scope.__enter__()
+        finally:
+            self._pop(tokens)
+
+    def exit(self, et, ev, tb) -> None:
+        tokens = self._push()
+        try:
+            self.scope.__exit__(et, ev, tb)
+        finally:
+            self._pop(tokens)
+
+    def step(self, fn: Callable, *args: Any) -> Any:
+        tokens = self._push()
+        try:
+            return fn(*args)
+        finally:
+            self._pop(tokens)
+
+    async def astep(self, aw: Any) -> Any:
+        tokens = self._push()
+        try:
+            return await aw
+        finally:
+            self._pop(tokens)
 
 
 class _Workflow(_Scope):

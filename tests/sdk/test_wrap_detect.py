@@ -145,3 +145,16 @@ def test_llm_event_payload_has_meter(tmp_path):
     rows = get_runtime().store.connect().execute(
         "SELECT payload FROM events WHERE kind='llm_call' ORDER BY id").fetchall()
     assert [json.loads(r["payload"])["meter"] for r in rows] == ["agent", "watch", "agent"]
+
+
+def test_unknown_priced_watch_call_marks_price_unknown_without_tagging_the_model(tmp_path):
+    _init(tmp_path)
+    w = pitstop.wrap(FakeOpenAI([make_response("verdict"), make_response("ok")]))
+    with workflow("wf") as ctx:
+        with meter("watch"):
+            w.chat.completions.create(model="acme/mystery-1", messages=MSGS)
+        run = _run_row(ctx.run_id)
+        assert (run["model"], run["price_known"]) == (None, 0)
+        w.chat.completions.create(model=MODEL, messages=MSGS)  # a known-priced agent call never raises it back
+    run = _run_row(ctx.run_id)
+    assert (run["model"], run["price_known"]) == (MODEL, 0)

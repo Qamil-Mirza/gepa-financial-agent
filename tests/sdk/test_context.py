@@ -398,3 +398,68 @@ def test_agent_on_generator_scopes_each_step(tmp_path):
         assert next(it) == "a"
         assert ctx.agent is None  # the consumer is outside the agent scope
         assert list(it) == ["ag"]
+
+
+def test_async_generator_left_open_closes_inside_the_run_at_loop_shutdown(tmp_path):
+    pitstop.init(home=tmp_path)
+    seen, keep, errors = [], [], []
+
+    @workflow("ag")
+    async def agen():
+        try:
+            while True:
+                yield current_run().run_id
+        finally:
+            await asyncio.sleep(0.05)  # cleanup that suspends while asyncio shuts its generators down
+            r = current_run()
+            seen.append(r.run_id if r else None)
+
+    async def main():
+        asyncio.get_running_loop().set_exception_handler(lambda loop, c: errors.append(c))
+        it = agen()
+        keep.append(it)  # still referenced when asyncio.run ends: closed by loop.shutdown_asyncgens()
+        keep.append(await it.__anext__())
+
+    asyncio.run(main())
+    rid = keep[1]
+    assert errors == []
+    assert seen == [rid]  # the generator's cleanup ran inside the run
+    row = _row(rid)
+    assert row["status"] == "ok" and row["ended_at"] is not None
+
+
+async def test_async_generator_timeout_spanning_a_yield_still_fires(tmp_path):
+    pitstop.init(home=tmp_path)
+
+    @workflow("t")
+    async def agen():
+        async with asyncio.timeout(0.05):
+            yield current_run().run_id
+            await asyncio.sleep(5)  # the timeout set before the yield must cancel this
+            yield "late"
+
+    it = agen()
+    rid = await it.__anext__()
+    with pytest.raises(TimeoutError):
+        await it.__anext__()
+    assert _row(rid)["status"] == "error"
+
+
+async def test_async_generator_steps_see_consumer_context_and_keep_their_own_agent(tmp_path):
+    import contextvars
+
+    pitstop.init(home=tmp_path)
+    user_var = contextvars.ContextVar("user_var", default="unset")
+
+    @workflow("w")
+    async def agen():
+        with agent("inner"):
+            yield (current_run().agent, user_var.get())
+            yield (current_run().agent, user_var.get())
+
+    it = agen()
+    assert await it.__anext__() == ("inner", "unset")
+    assert current_run() is None
+    user_var.set("set-by-consumer")  # set between steps: the next step runs in the consumer's context
+    assert await it.__anext__() == ("inner", "set-by-consumer")
+    await it.aclose()

@@ -44,11 +44,15 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
             log.warning("pitstop: could not record a %s drift; its action still applies", f.drift_type,
                         exc_info=True)
             drift_id = None
-        if ctx is not None and level is Level.P0 and criticality == "high" and ctx.halt_reason is None:
-            ctx.halt_reason = f"{f.drift_type} (P0) on high-criticality workflow {workflow!r}"
-            ctx.halt_drift_id = drift_id
-            payload = {"reason": ctx.halt_reason, "drift_id": drift_id, "pending": True}
-            _safe(lambda: _halt_event(ctx, f.drift_type, payload))
+        if ctx is not None and level is Level.P0 and criticality == "high":
+            reason = None
+            with ctx.lock:  # one check-and-set per run, shared with the tool's steer-limit halt
+                if ctx.halt_reason is None:
+                    reason = ctx.halt_reason = f"{f.drift_type} (P0) on high-criticality workflow {workflow!r}"
+                    ctx.halt_drift_id = drift_id
+            if reason is not None:
+                payload = {"reason": reason, "drift_id": drift_id, "pending": True}
+                _safe(lambda: _halt_event(ctx, f.drift_type, payload))
         applied.append(Applied(f, level, action, drift_id))
     return applied
 
