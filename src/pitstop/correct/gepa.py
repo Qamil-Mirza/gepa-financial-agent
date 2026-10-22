@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -9,6 +10,7 @@ from typing import Any, Callable
 
 from .client import ModelClient
 from .policy import Policy
+from ..sdk.errors import Halted
 
 
 log = logging.getLogger("pitstop.correct.gepa")
@@ -68,6 +70,27 @@ class OptimizationArtifacts:
     reflection_usage: dict[str, Any] | None
 
 
+class _HaltGuard:
+    """Wrap a GEPA callable so a Halted (it swallows exceptions) is stored once, re-raised, and stops later calls."""
+
+    def __init__(self, fn: Callable[..., Any], halted: list[Halted], lock: threading.Lock) -> None:
+        self._fn, self._halted, self._lock = fn, halted, lock
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        if self._halted:
+            raise self._halted[0]
+        try:
+            return self._fn(*args, **kwargs)
+        except Halted as e:
+            with self._lock:
+                if not self._halted:
+                    self._halted.append(e)
+            raise self._halted[0]
+
+    def __getattr__(self, name: str) -> Any:  # forward e.g. total_cost / client of the wrapped callable
+        return getattr(self._fn, name)
+
+
 def run_optimization(seed_policy: Policy, train: list[Any], val: list[Any],
                      supervisor_client: ModelClient, reflection_lm: Callable[..., str], cfg: OptimizeConfig, *,
                      evaluator: Callable[[str, Any], tuple[float, dict[str, Any]]],
@@ -86,6 +109,10 @@ def run_optimization(seed_policy: Policy, train: list[Any], val: list[Any],
     }, indent=2) + "\n", encoding="utf-8")
     (run_dir / "seed_policy.txt").write_text(seed_policy.text, encoding="utf-8")
 
+    halted: list[Halted] = []
+    lock = threading.Lock()
+    evaluator = _HaltGuard(evaluator, halted, lock)
+    reflection_lm = _HaltGuard(reflection_lm, halted, lock)
     config = oa.GEPAConfig(
         engine=oa.EngineConfig(max_metric_calls=cfg.max_metric_calls, run_dir=str(run_dir), seed=cfg.seed,
                                parallel=cfg.max_workers > 1, max_workers=cfg.max_workers, raise_on_exception=False,
@@ -95,11 +122,22 @@ def run_optimization(seed_policy: Policy, train: list[Any], val: list[Any],
     )
     log.info("starting GEPA: train=%d val=%d max_metric_calls=%d run_dir=%s", len(train), len(val), cfg.max_metric_calls, run_dir)
     t0 = time.time()
-    result = oa.optimize_anything(
-        seed_candidate=seed_policy.text,
-        evaluator=evaluator,
-        dataset=train, valset=val, objective=objective, background=background, config=config,
-    )
+    try:
+        result = oa.optimize_anything(
+            seed_candidate=seed_policy.text,
+            evaluator=evaluator,
+            dataset=train, valset=val, objective=objective, background=background, config=config,
+        )
+    except BaseException:
+        if not halted:
+            raise
+        result = None
+    if halted:
+        h = halted[0]
+        (run_dir / "aborted.json").write_text(json.dumps(
+            {"reason": h.reason, "drift_id": h.drift_id, "type": type(h).__name__}, indent=2) + "\n", encoding="utf-8")
+        log.warning("GEPA aborted: %s", h.reason)
+        raise h
     elapsed = time.time() - t0
     best_text = result.best_candidate if isinstance(result.best_candidate, str) else next(iter(result.best_candidate.values()))
     if result.best_idx != 0:  # the seed is kept byte-for-byte so an unchanged prompt keeps its version hash
