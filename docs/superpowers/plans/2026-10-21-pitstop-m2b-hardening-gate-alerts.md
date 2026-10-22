@@ -866,3 +866,51 @@ def test_alerts_test_cli_reports_per_channel(tmp_path, capsys): ...
 - [ ] **Step 2: Run the checks.** Run `uv run pytest -q && uv run ruff check`. Expected: all PASS, and "All checks passed!".
 - [ ] **Step 3: Check the README.** Cover the roadmap update and confirm every new section is linked from the table of contents.
 - [ ] **Step 4: Commit.** Run `git commit -m "docs: milestone 2b complete; roadmap points to 2c"`.
+
+---
+
+## Carried to milestone 2c (recorded at the end of execution)
+
+These came out of the task reviews and the final whole-branch review. The M2c plan must cover or explicitly drop them.
+
+- **From the spec, not yet built:**
+  - New runs are not refused at the start once a budget is exhausted (spec §3.2); today the first call of the run halts instead.
+  - The "spend rate above N× baseline" P0 trigger (§5) needs L2.
+- **Alerts:**
+  - A P0 whose drift write failed pages nobody (`notify` needs a drift id); add a best-effort, undeduplicated send.
+  - An alert's cause ignores fallback-tagged runs only while a fallback is active, so within 24 h of a clear it can read "model changed from <pinned>".
+  - Superseded stale `pending` rows stay `pending` in the table (cosmetic).
+  - Generic `SMTPException` and an `SMTPConnectError` carrying a permanent 5xx are still retried (bounded).
+- **Gate (L1):**
+  - The frozen prompt does not delimit args and history: ship `l1_gate_v2` with delimiters (prompt-injection hardening).
+  - `[judge] base_url = ""` is accepted and fails only at call time.
+  - Add a README privacy sentence: tool arguments are sent to the judge endpoint.
+- **Fallback:**
+  - Decide whether a fallback triggered by a `base_url` change is useful without a pinned provider (it sends the pinned model id to the new provider). This is a plan decision 3 clarification.
+  - The drift keeps action `fallback` after a clear.
+  - `fallback_from` reads `"None"` when a call has no `model` kwarg.
+- **`wrap`:**
+  - The Responses estimate is small with `previous_response_id`/`conversation`, and legacy token-id prompts estimate 0. Both settle from real usage, but one large call can overshoot the hard stop.
+  - Responses tool calls other than `function_call` (`custom_tool_call`, hosted tools) are not recorded for L0, and refusal parts are not counted.
+  - Anthropic premium billing modes (fast speed, long context, server-tool fees) are not modelled. This is documented; users need a price override.
+  - `tool_runner` metering relies on the SDK's private `runner._client`. It is pinned by a test and falls back to unmetered with a warning.
+  - Earlier chat-helper events' `event.snapshot` still show injected usage, and `current_completion_snapshot` returns a fresh copy per access. Document this.
+  - Streaming-response mode is charged worst case even if its manager is never entered (plan decision 5).
+  - Async tests are missing for enter-error release.
+  - `Mode = str` could be a `Literal`.
+- **SDK runtime:**
+  - An async-generator workflow collected inside a reference cycle can still race the inner generator's finalizer.
+  - The steer-limit halt sets `halt_reason` without `halt_drift_id`.
+  - `meter()` stepped from a different Context than the one that entered it raises ValueError on reset.
+- **GEPA:**
+  - GEPA keeps iterating (fast-fail) after a halt; a `stop_callbacks` stopper would end it at once.
+  - `except BaseException` turns KeyboardInterrupt into the stored `Halted`.
+  - `max_workers > 1` is untested.
+- **Store:**
+  - Add a `runs(workflow, started_at)` index with the next schema bump.
+  - Close per-thread connections of background pools at shutdown before 2c adds more background threads.
+- **Tests and docs:**
+  - The fork test has no `waitpid` timeout.
+  - `test_chat_stream_helper_caller_stream_options_keeps_usage` leaves a manager entered.
+  - The CHANGELOG L1 gate entry's clause order reads ambiguously.
+  - The `pitstop budget reconcile` CLI docstring wording is now fixed; no action needed.
