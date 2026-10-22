@@ -41,6 +41,18 @@ def _init(tmp_path, config: str = ""):
     return pitstop.init(home=tmp_path)
 
 
+@pytest.fixture(autouse=True)
+def _close_db():
+    """The store keeps one connection per thread; close this thread's before the runtime is reset."""
+    yield
+    from pitstop.sdk import runtime
+
+    rt = runtime._runtime
+    conn = getattr(getattr(rt.store, "_local", None), "conn", None) if rt is not None else None
+    if conn is not None:
+        conn.close()
+
+
 def _db():
     return get_runtime().store.connect()
 

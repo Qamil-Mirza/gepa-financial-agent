@@ -190,31 +190,40 @@ def anthropic_client(handler, *, async_: bool = False):
                                http_client=httpx2.Client(transport=httpx2.MockTransport(handle)))
 
 
-def _anthropic_usage(input_tokens: int, output_tokens: int, cache_creation: int = 0, cache_read: int = 0) -> dict:
-    return {"input_tokens": input_tokens, "output_tokens": output_tokens,
-            "cache_creation_input_tokens": cache_creation, "cache_read_input_tokens": cache_read}
+def _anthropic_usage(input_tokens: int, output_tokens: int, cache_creation: int = 0, cache_read: int = 0,
+                     cache_breakdown: tuple[int, int] | None = None) -> dict:
+    u: dict[str, Any] = {"input_tokens": input_tokens, "output_tokens": output_tokens,
+                         "cache_creation_input_tokens": cache_creation, "cache_read_input_tokens": cache_read}
+    if cache_breakdown is not None:
+        u["cache_creation"] = {"ephemeral_5m_input_tokens": cache_breakdown[0],
+                               "ephemeral_1h_input_tokens": cache_breakdown[1]}
+    return u
 
 
 def message_body(text: str | None = "hi", *, tool_uses: list[dict] | None = None, input_tokens: int = 13,
                  output_tokens: int = 5, cache_creation: int = 0, cache_read: int = 0,
-                 stop_reason: str | None = None, model: str = CLAUDE) -> dict:
-    """A `message` object. `tool_uses` items are `{"name", "input": dict}` (tool_use content blocks)."""
+                 cache_breakdown: tuple[int, int] | None = None, stop_reason: str | None = None,
+                 model: str = CLAUDE) -> dict:
+    """A `message` object. `tool_uses` items are `{"name", "input": dict}` (tool_use content blocks).
+    `cache_breakdown`: (ephemeral_5m, ephemeral_1h) cache-write tokens in `usage.cache_creation`."""
     content: list[dict] = [{"type": "text", "text": text}] if text is not None else []
     content += [{"type": "tool_use", "id": f"toolu_{i}", "name": t["name"], "input": t["input"]}
                 for i, t in enumerate(tool_uses or [])]
     return {"id": "msg_1", "type": "message", "role": "assistant", "model": model, "content": content,
             "stop_reason": stop_reason or ("tool_use" if tool_uses else "end_turn"), "stop_sequence": None,
-            "usage": _anthropic_usage(input_tokens, output_tokens, cache_creation, cache_read)}
+            "usage": _anthropic_usage(input_tokens, output_tokens, cache_creation, cache_read, cache_breakdown)}
 
 
 def message_events(text: str = "Hello", *, tool_use: dict | None = None, input_tokens: int = 17,
                    output_tokens: int = 6, cache_creation: int = 0, cache_read: int = 0,
+                   cache_breakdown: tuple[int, int] | None = None, delta_usage: dict | None = None,
                    stop_reason: str | None = None, model: str = CLAUDE) -> list[dict]:
     """The SSE events of a streamed message: `text` in two deltas, then optionally one tool_use block (its input
     JSON in two deltas), then `message_delta` (cumulative output_tokens, stop_reason) and `message_stop`.
-    `message_start` carries the input usage (and output_tokens 1, as the API sends it)."""
+    `message_start` carries the input usage (and output_tokens 1, as the API sends it); `delta_usage` adds
+    cumulative counts to the message_delta usage."""
     start = message_body(None, input_tokens=input_tokens, output_tokens=1, cache_creation=cache_creation,
-                         cache_read=cache_read, model=model)
+                         cache_read=cache_read, cache_breakdown=cache_breakdown, model=model)
     start["stop_reason"] = None
     events: list[dict] = [
         {"type": "message_start", "message": start},
@@ -236,7 +245,7 @@ def message_events(text: str = "Hello", *, tool_use: dict | None = None, input_t
     events += [
         {"type": "message_delta", "delta": {"stop_reason": stop_reason or ("tool_use" if tool_use else "end_turn"),
                                             "stop_sequence": None},
-         "usage": {"output_tokens": output_tokens}},
+         "usage": {"output_tokens": output_tokens, **(delta_usage or {})}},
         {"type": "message_stop"},
     ]
     return events

@@ -36,18 +36,27 @@ CONSERVATIVE_PRICE = Price(5.00, 15.00, 5.00)
 _CONSERVATIVE_BY_PREFIX: dict[str, Price] = {
     "claude-": Price(15.00, 75.00, 15.00),
 }
+# Bedrock-style ids carry the family after a provider (and optional region) prefix: "anthropic.claude-…",
+# "us.anthropic.claude-…", "global.anthropic.claude-…". The family prefix is matched after it.
+_PROVIDER_MARK = "anthropic."
+
+
+def _family_id(model: str) -> str:
+    i = model.find(_PROVIDER_MARK + "claude-")
+    return model[i + len(_PROVIDER_MARK):] if i >= 0 else model
 
 
 def price_for(model: str, overrides: dict[str, PriceOverride]) -> tuple[Price, bool]:
     """(price, known): user overrides win, then the built-in table, then the longest matching family prefix
-    (known=False), then CONSERVATIVE_PRICE (known=False)."""
+    (known=False; Bedrock-style "…anthropic.claude-…" ids match "claude-"), then CONSERVATIVE_PRICE (known=False)."""
     o = overrides.get(model)
     if o is not None:
         return Price(o.input, o.output, o.cached_input), True
     p = PRICES_PER_M.get(model)
     if p is not None:
         return p, True
-    prefixes = [k for k in _CONSERVATIVE_BY_PREFIX if model.startswith(k)]
+    family = _family_id(model)
+    prefixes = [k for k in _CONSERVATIVE_BY_PREFIX if family.startswith(k)]
     if prefixes:
         return _CONSERVATIVE_BY_PREFIX[max(prefixes, key=len)], False
     return CONSERVATIVE_PRICE, False

@@ -3,7 +3,8 @@
 The wrapper proxies the client (no global monkeypatching). A per-client method table names the metered methods
 by attribute path; for OpenAI-compatible clients, `chat.completions.create` / `parse` / `stream`,
 `responses.create` / `parse` / `stream` and legacy `completions.create`; for Anthropic clients (a client with
-`messages` and no `chat`), `messages.create` / `parse` / `stream` (anthropic.py). Each path routes to a `Shape`
+`messages` and no `chat`), `messages.create` / `parse` / `stream` and the same under `beta.messages`
+(anthropic.py). Each path routes to a `Shape`
 (shapes.py), which knows that API's request and response format. Every other
 attribute is delegated unchanged, and `with_options`/`copy` return wrapped clients so derived clients stay
 metered. `with_raw_response` and `with_streaming_response`, on the client or on any resource on the way to a

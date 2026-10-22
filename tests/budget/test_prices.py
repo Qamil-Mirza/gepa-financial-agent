@@ -61,3 +61,10 @@ def test_longest_matching_prefix_wins(monkeypatch):
     # an exact table entry beats any prefix
     monkeypatch.setitem(prices.PRICES_PER_M, "claude-haiku-9", Price(0.8, 4.0, 0.08))
     assert price_for("claude-haiku-9", {}) == (Price(0.8, 4.0, 0.08), True)
+
+
+def test_bedrock_style_claude_ids_use_family_conservative_price():
+    for model in ("anthropic.claude-mystery-9-v1:0", "us.anthropic.claude-mystery-9-v1:0",
+                  "global.anthropic.claude-mystery-9-v1:0"):
+        assert price_for(model, {}) == (Price(15.0, 75.0, 15.0), False)
+    assert price_for("anthropic.titan-x", {}) == (CONSERVATIVE_PRICE, False)

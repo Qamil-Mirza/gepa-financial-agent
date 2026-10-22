@@ -1,6 +1,7 @@
 """wrap meters the Anthropic SDK: `messages.create` / `parse` / `stream`, raw and streaming responses.
 
-Every test drives a real `anthropic` client over `httpx.MockTransport` (see http_fakes): no sockets, no network.
+Every test drives a real `anthropic` client over `httpx2.MockTransport` (anthropic 2.x runs on httpx2; see
+http_fakes): no sockets, no network.
 """
 import json
 import math
@@ -35,6 +36,18 @@ TOOL_USE = {"name": "search", "input": {"q": "x"}}
 def _init(tmp_path, config: str = ""):
     (tmp_path / "config.toml").write_text(config)
     return pitstop.init(home=tmp_path)
+
+
+@pytest.fixture(autouse=True)
+def _close_db():
+    """The store keeps one connection per thread; close this thread's before the runtime is reset."""
+    yield
+    from pitstop.sdk import runtime
+
+    rt = runtime._runtime
+    conn = getattr(getattr(rt.store, "_local", None), "conn", None) if rt is not None else None
+    if conn is not None:
+        conn.close()
 
 
 def _db():
@@ -105,14 +118,47 @@ def test_messages_create_settles_with_cache_tokens(tmp_path):
         r = w.messages.create(model=CLAUDE, max_tokens=50, messages=MSGS)
     assert r.content[0].text == "hi"
     assert len(seen) == 1 and seen[0][0] == "/v1/messages" and seen[0][1]["max_tokens"] == 50
-    # prompt = input + ceil(1.25 * cache_creation) + cache_read; cache reads billed at the cached rate
-    _assert_settled(210, 20, cached=60)
+    # no cache_creation breakdown: writes at the 1-hour premium (2x); cache reads billed at the cached rate
+    _assert_settled(100 + 80 + 60, 20, cached=60)
     [ev] = _events()
     assert (ev["run_id"], ev["name"]) == (ctx.run_id, CLAUDE)
     assert ev["payload"]["finish_reason"] == "end_turn" and ev["payload"]["content_chars"] == 2
     assert ev["payload"]["tool_calls"] == [] and "usage_estimated" not in ev["payload"]
     run = _run_row(ctx.run_id)
     assert run["base_url"] == "https://api.anthropic.com" and run["price_known"] == 0  # family fallback price
+
+
+def test_cache_writes_charged_by_breakdown(tmp_path):
+    """5-minute writes at 1.25x, 1-hour writes at 2x, any write the breakdown misses at 2x."""
+    _init(tmp_path)
+    bodies = [message_body("hi", input_tokens=100, output_tokens=20, cache_creation=40, cache_read=60,
+                           cache_breakdown=(30, 10)),
+              message_body("hi", input_tokens=100, output_tokens=20, cache_creation=40, cache_read=60,
+                           cache_breakdown=(30, 6))]  # 4 writes not in the breakdown
+    w = wrap(anthropic_client(_recording([], lambda b: json_response(bodies.pop(0)))))
+    w.messages.create(model=CLAUDE, max_tokens=50, messages=MSGS)
+    _assert_settled(100 + math.ceil(1.25 * 30 + 2 * 10) + 60, 20, cached=60)
+    w.messages.create(model=CLAUDE, max_tokens=50, messages=MSGS)
+    _assert_settled(100 + math.ceil(1.25 * 30 + 2 * 6) + 2 * 4 + 60, 20, cached=60)
+
+
+def test_cache_writes_without_breakdown_charged_at_2x(tmp_path):
+    from pitstop.sdk.wrap.anthropic import ANTHROPIC
+    from pitstop.sdk.wrap.shapes import Observed
+
+    obs = Observed()
+    ANTHROPIC.read(message_body("hi", input_tokens=10, output_tokens=2, cache_creation=7), obs)
+    assert (obs.prompt_tokens, obs.cached_tokens, obs.completion_tokens) == (10 + 14, 0, 2)
+
+
+def test_streamed_cache_writes_raised_by_message_delta(tmp_path):
+    """The breakdown comes only on message_start; a larger total on message_delta is charged the excess at 2x."""
+    _init(tmp_path)
+    events = message_events("Hello", input_tokens=30, output_tokens=9, cache_creation=10, cache_read=4,
+                            cache_breakdown=(6, 4), delta_usage={"cache_creation_input_tokens": 14})
+    w = wrap(anthropic_client(_recording([], lambda b: sse_response(events, named=True))))
+    list(w.messages.create(model=CLAUDE, max_tokens=50, messages=MSGS, stream=True))
+    _assert_settled(30 + math.ceil(1.25 * 6 + 2 * 4) + 2 * 4 + 4, 9, cached=4)
 
 
 def test_messages_stream_true_settles_from_events(tmp_path):
@@ -128,7 +174,7 @@ def test_messages_stream_true_settles_from_events(tmp_path):
     unwrapped = [e.type for e in raw_client.messages.create(model=CLAUDE, max_tokens=50, messages=MSGS, stream=True)]
     assert got == unwrapped and got[0] == "message_start" and got[-1] == "message_stop"
     assert seen[0][1] == seen[1][1]  # nothing injected into the request
-    _assert_settled(30 + 10 + 4, 9, cached=4)  # output_tokens from message_delta, not message_start's 1
+    _assert_settled(30 + 16 + 4, 9, cached=4)  # output_tokens from message_delta, not message_start's 1
     [ev] = _events()
     assert ev["payload"]["tool_calls"] == [{"name": "search", "arguments": json.dumps({"q": "x"})}]
     assert ev["payload"]["finish_reason"] == "tool_use" and ev["payload"]["content_chars"] == 5
@@ -318,6 +364,44 @@ async def test_async_messages_stream_helper_metered(tmp_path):
         assert await s.get_final_text() == "Hello"
         assert await s.until_done() is None  # as the SDK's own
     assert [r["state"] for r in _ledger_rows()] == ["settled"] * 2
+
+
+# -- beta.messages ------------------------------------------------------------------------------------------------
+
+
+def test_beta_messages_create_metered(tmp_path):
+    _init(tmp_path)
+    seen = []
+    w = wrap(anthropic_client(_handler(seen, tool_use=TOOL_USE)))
+    r = w.beta.messages.create(model=CLAUDE, max_tokens=50, messages=MSGS)
+    assert r.content[0].text == "hi" and seen[0][0] == "/v1/messages"
+    _assert_settled(13, 5)
+    assert _events()[0]["payload"]["tool_calls"] == [{"name": "search", "arguments": json.dumps({"q": "x"})}]
+
+
+def test_beta_messages_stream_helper_matches_unwrapped(tmp_path):
+    from anthropic.lib.streaming import BetaMessageStream, BetaMessageStreamManager
+
+    _init(tmp_path)
+    raw_client = anthropic_client(_handler([]))
+    results = []
+    for c in (raw_client, wrap(raw_client)):
+        manager = c.beta.messages.stream(model=CLAUDE, max_tokens=50, messages=MSGS)
+        assert isinstance(manager, BetaMessageStreamManager)
+        with manager as s:
+            assert isinstance(s, BetaMessageStream)
+            texts = list(s.text_stream)
+            final = s.get_final_message()
+            done = s.until_done()
+        with c.beta.messages.stream(model=CLAUDE, max_tokens=50, messages=MSGS) as s:
+            kinds = [e.type for e in s]
+        results.append((texts, final.model_dump(), done, kinds))
+    assert results[0] == results[1] and results[1][0] == ["Hel", "lo"]
+    rows = _ledger_rows()
+    assert len(rows) == 2
+    for row in rows:
+        _assert_settled(17, 6, row=row)
+    assert [e["payload"]["content_chars"] for e in _events()] == [5, 5]
 
 
 # -- detection ------------------------------------------------------------------------------------------------

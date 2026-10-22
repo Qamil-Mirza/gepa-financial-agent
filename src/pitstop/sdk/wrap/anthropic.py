@@ -1,15 +1,19 @@
 """The Anthropic Messages API: the `ANTHROPIC` shape and the Anthropic client's method table.
 
 `wrap()` picks `ANTHROPIC_METHODS` for a client that has `messages` and no `chat` (anthropic.Anthropic and
-AsyncAnthropic). `messages.create` / `parse` are "call" kind, `messages.stream` is the SDK's stream helper
-("manager" kind); raw and streaming responses go through the generic resource (proxy.py).
+AsyncAnthropic). `messages.create` / `parse` and `beta.messages.create` / `parse` are "call" kind,
+`messages.stream` and `beta.messages.stream` are the SDK's stream helpers ("manager" kind); raw and streaming
+responses go through the generic resource (proxy.py).
 
 Usage: Anthropic reports cache writes and cache reads apart from `input_tokens`. The prompt is charged as
-`input_tokens + ceil(1.25 * cache_creation_input_tokens) + cache_read_input_tokens`, with the cache reads as cached
-tokens: the 1.25 factor charges cache writes at the provider's write premium, a deliberate over-count. A stream
-carries the input usage on `message_start` and the cumulative `output_tokens` on `message_delta`, so nothing is
-injected into the request. A stream that ends before its `message_delta` keeps the prompt `message_start` showed
-and estimates the completion from the characters seen.
+`input_tokens + <cache writes> + cache_read_input_tokens`, with the cache reads as cached tokens. Cache writes are
+charged at the provider's write premium, never under it: with the `cache_creation` breakdown,
+`ceil(1.25 * ephemeral_5m_input_tokens + 2 * ephemeral_1h_input_tokens)`, plus 2x any part of
+`cache_creation_input_tokens` the breakdown does not cover; without it, 2x `cache_creation_input_tokens` (the 1-hour
+rate, since the TTL is unknown). A stream carries the input usage on `message_start` (the breakdown appears only
+there) and the cumulative counts on `message_delta`; a cache-write total raised by `message_delta` is charged the
+excess at 2x. Nothing is injected into the request. A stream that ends before its `message_delta` keeps the prompt
+`message_start` showed and estimates the completion from the characters seen.
 """
 from __future__ import annotations
 
@@ -59,13 +63,27 @@ def _usage_parts(u: Any, parts: dict, *, output: bool) -> None:
         v = _int(_g(u, name))
         if v is not None:
             parts[name] = v
+    breakdown = _g(u, "cache_creation")
+    if breakdown is not None:
+        parts["cache_5m"] = _int(_g(breakdown, "ephemeral_5m_input_tokens")) or 0
+        parts["cache_1h"] = _int(_g(breakdown, "ephemeral_1h_input_tokens")) or 0
+
+
+def _cache_write_tokens(parts: dict) -> int:
+    """Cache-write tokens at their write premium: 1.25x for the 5-minute cache, 2x for the 1-hour cache, and 2x
+    for any write the breakdown does not cover (or all of them, when there is no breakdown)."""
+    total = parts.get("cache_creation_input_tokens", 0)
+    m5, h1 = parts.get("cache_5m"), parts.get("cache_1h")
+    if m5 is None or h1 is None:
+        return 2 * total
+    return math.ceil(1.25 * m5 + 2 * h1) + 2 * max(total - m5 - h1, 0)
 
 
 def _apply_usage(parts: dict, obs: Observed) -> None:
     inp = parts.get("input_tokens")
     if inp is not None:
         reads = parts.get("cache_read_input_tokens", 0)
-        obs.prompt_tokens = inp + math.ceil(1.25 * parts.get("cache_creation_input_tokens", 0)) + reads
+        obs.prompt_tokens = inp + _cache_write_tokens(parts) + reads
         obs.cached_tokens = reads
     out = parts.get("output_tokens")
     if out is not None:
@@ -190,9 +208,13 @@ class _AnthropicShape:
 
 ANTHROPIC: Shape = _AnthropicShape()
 
-# The Anthropic client's metered methods, by attribute path from the client.
+# The Anthropic client's metered methods, by attribute path from the client. `beta.messages` has the same wire
+# format (its stream helper is BetaMessageStream). Batches and `beta.messages.tool_runner` are not metered.
 ANTHROPIC_METHODS: dict[tuple[str, ...], tuple[Shape, Kind]] = {
     ("messages", "create"): (ANTHROPIC, "call"),
     ("messages", "parse"): (ANTHROPIC, "call"),
     ("messages", "stream"): (ANTHROPIC, "manager"),
+    ("beta", "messages", "create"): (ANTHROPIC, "call"),
+    ("beta", "messages", "parse"): (ANTHROPIC, "call"),
+    ("beta", "messages", "stream"): (ANTHROPIC, "manager"),
 }
