@@ -404,6 +404,83 @@ def test_beta_messages_stream_helper_matches_unwrapped(tmp_path):
     assert [e["payload"]["content_chars"] for e in _events()] == [5, 5]
 
 
+# -- beta.messages.tool_runner ------------------------------------------------------------------------------------
+
+
+def _runner_handler(seen):
+    """First request -> a tool_use of get_weather; second -> the final answer. Streamed when asked."""
+    def respond(body):
+        first = len(seen) == 1
+        tool_use = {"name": "get_weather", "input": {"city": "Paris"}} if first else None
+        if body.get("stream"):
+            return sse_response(message_events("Sunny" if first else "Done!", tool_use=tool_use), named=True)
+        return json_response(message_body("Sunny" if first else "Done!", tool_uses=[tool_use] if first else None))
+    return _recording(seen, respond)
+
+
+def _assert_two_round_trip_calls(seen):
+    assert len(seen) == 2 and seen[1][1]["messages"][-1]["content"][0]["type"] == "tool_result"
+    rows = _ledger_rows()
+    assert [r["state"] for r in rows] == ["settled"] * 2
+    evs = _events()
+    assert len(evs) == 2 and evs[0]["payload"]["tool_calls"][0]["name"] == "get_weather"
+    assert evs[1]["payload"]["tool_calls"] == []
+
+
+@pytest.mark.parametrize("stream", [False, True])
+def test_beta_tool_runner_model_calls_metered(tmp_path, stream):
+    from anthropic import beta_tool
+
+    @beta_tool
+    def get_weather(city: str) -> str:
+        """Get the weather for a city."""
+        return "sunny"
+
+    _init(tmp_path)
+    seen = []
+    w = wrap(anthropic_client(_runner_handler(seen)))
+    kwargs = dict(stream=True) if stream else {}
+    runner = w.beta.messages.tool_runner(model=CLAUDE, max_tokens=50, messages=MSGS, tools=[get_weather], **kwargs)
+    final = runner.until_done()
+    assert final.content[0].text == "Done!"
+    _assert_two_round_trip_calls(seen)
+    if not stream:
+        _assert_settled(13, 5, row=_ledger_rows()[0])
+    else:
+        _assert_settled(17, 6, row=_ledger_rows()[0])
+
+
+async def test_async_beta_tool_runner_model_calls_metered(tmp_path):
+    from anthropic import beta_async_tool
+
+    @beta_async_tool
+    async def get_weather(city: str) -> str:
+        """Get the weather for a city."""
+        return "sunny"
+
+    _init(tmp_path)
+    seen = []
+    w = wrap(anthropic_client(_runner_handler(seen), async_=True))
+    runner = w.beta.messages.tool_runner(model=CLAUDE, max_tokens=50, messages=MSGS, tools=[get_weather])
+    final = await runner.until_done()
+    assert final.content[0].text == "Done!"
+    _assert_two_round_trip_calls(seen)
+
+
+def test_beta_tool_runner_unexpected_shape_returned_unmetered(tmp_path, caplog):
+    """An SDK whose runner has no `_client` still gets its runner back; a warning says it is unmetered."""
+    from types import SimpleNamespace
+
+    _init(tmp_path)
+    raw_client = anthropic_client(_handler([]))
+    odd = SimpleNamespace(until_done=lambda: "ok")
+    raw_client.beta.messages.tool_runner = lambda **kwargs: odd
+    w = wrap(raw_client)
+    with caplog.at_level("WARNING", logger="pitstop"):
+        assert w.beta.messages.tool_runner(model=CLAUDE, max_tokens=50, messages=MSGS, tools=[]) is odd
+    assert "tool runner" in caplog.text and _ledger_rows() == []
+
+
 # -- detection ------------------------------------------------------------------------------------------------
 
 

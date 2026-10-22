@@ -8,7 +8,9 @@ path and switch the mode, so `client.with_raw_response.chat.completions.create` 
 
 A "manager" kind method (the SDK's stream helpers, `chat.completions.stream` and `responses.stream`) reserves when
 it is called and returns a manager proxy; entering it sends the request and yields a stream proxy that passes
-every event through unchanged, and the call settles when the manager exits.
+every event through unchanged, and the call settles when the manager exits. A "runner" kind method (anthropic's
+`beta.messages.tool_runner`) returns the SDK's runner pointed at a wrapped client, so each of its model calls is
+metered as a call of its own.
 """
 from __future__ import annotations
 
@@ -38,6 +40,8 @@ def _route(client: Any, inner: Any, path: tuple[str, ...], mode: Mode, table: Ta
     entry = table.get(sub)
     if entry is not None:
         shape, kind = entry
+        if kind == "runner":
+            return _runner(client, attr)
         return _metered(client, attr, shape, mode) if kind == "call" else _managed(client, attr, shape, mode)
     if name in _MODES:
         sub, mode = path, _MODES[name]
@@ -286,6 +290,32 @@ def _deliver(call: _Call, result: Any, parsed: Any = _UNSET) -> Any:
         return _wrap_stream(result, call)
     call.complete(result)
     return result
+
+
+# -- tool runners ("runner" kind) ------------------------------------------------------------------------------
+
+
+def _runner(client: Any, fn: Any) -> Any:
+    """`fn` builds a tool runner (anthropic's `beta.messages.tool_runner`, sync or async client). The SDK builds it
+    on the unwrapped client and makes every model call through `runner._client.beta.messages.parse` / `stream`;
+    pointing `_client` at a wrapped client meters each of those calls (the runner itself reserves nothing). A runner
+    without that attribute is returned unchanged, unmetered, with a warning: the user's call never breaks."""
+    def method(*args, **kwargs):
+        runner = fn(*args, **kwargs)
+        try:
+            if getattr(runner, "_client", None) is not client:
+                raise AttributeError("the tool runner has no _client pointing at the wrapped client")
+            from . import wrap
+
+            runner._client = wrap(client)
+        except Exception:
+            log.warning("pitstop: could not meter a tool runner; its model calls are not budgeted", exc_info=True)
+        return runner
+    try:
+        functools.update_wrapper(method, fn)
+    except Exception:
+        pass
+    return method
 
 
 # -- streams --------------------------------------------------------------------------------------------

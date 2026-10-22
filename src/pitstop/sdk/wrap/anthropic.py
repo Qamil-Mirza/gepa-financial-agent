@@ -2,7 +2,8 @@
 
 `wrap()` picks `ANTHROPIC_METHODS` for a client that has `messages` and no `chat` (anthropic.Anthropic and
 AsyncAnthropic). `messages.create` / `parse` and `beta.messages.create` / `parse` are "call" kind,
-`messages.stream` and `beta.messages.stream` are the SDK's stream helpers ("manager" kind); raw and streaming
+`messages.stream` and `beta.messages.stream` are the SDK's stream helpers ("manager" kind), and
+`beta.messages.tool_runner` ("runner" kind) runs its model calls through the wrapped client; raw and streaming
 responses go through the generic resource (proxy.py).
 
 Usage: Anthropic reports cache writes and cache reads apart from `input_tokens`. The prompt is charged as
@@ -209,7 +210,8 @@ class _AnthropicShape:
 ANTHROPIC: Shape = _AnthropicShape()
 
 # The Anthropic client's metered methods, by attribute path from the client. `beta.messages` has the same wire
-# format (its stream helper is BetaMessageStream). Batches and `beta.messages.tool_runner` are not metered.
+# format (its stream helper is BetaMessageStream); `tool_runner` makes its model calls through the wrapped client
+# (beta.messages.parse / stream), each metered as its own call. Batches are not metered.
 ANTHROPIC_METHODS: dict[tuple[str, ...], tuple[Shape, Kind]] = {
     ("messages", "create"): (ANTHROPIC, "call"),
     ("messages", "parse"): (ANTHROPIC, "call"),
@@ -217,4 +219,5 @@ ANTHROPIC_METHODS: dict[tuple[str, ...], tuple[Shape, Kind]] = {
     ("beta", "messages", "create"): (ANTHROPIC, "call"),
     ("beta", "messages", "parse"): (ANTHROPIC, "call"),
     ("beta", "messages", "stream"): (ANTHROPIC, "manager"),
+    ("beta", "messages", "tool_runner"): (ANTHROPIC, "runner"),
 }

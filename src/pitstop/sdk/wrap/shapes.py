@@ -422,11 +422,12 @@ class _CompletionsShape:
 
 COMPLETIONS: Shape = _CompletionsShape()
 
-Kind = Literal["call", "manager"]
+Kind = Literal["call", "manager", "runner"]
 
 # The OpenAI client's metered methods, by attribute path from the client. Every other attribute is delegated
 # unchanged. "call": the method returns the response (or a stream). "manager": it returns a stream manager (the
-# SDK's stream helpers), which sends the request when it is entered.
+# SDK's stream helpers), which sends the request when it is entered. "runner": it returns a tool runner (anthropic's
+# `beta.messages.tool_runner`) that makes its own model calls through a client; they are routed through a wrapped one.
 METHODS: dict[tuple[str, ...], tuple[Shape, Kind]] = {
     ("chat", "completions", "create"): (CHAT, "call"),
     ("chat", "completions", "parse"): (CHAT, "call"),
