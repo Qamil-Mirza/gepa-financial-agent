@@ -30,7 +30,10 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
 
     The block/steer/halt decision never depends on the store: a failed drift or event write is logged, leaves
     drift_id None, and the action still applies. The fallback does need the store (the run's model, the previous
-    run, the shared state); when it cannot be read the call keeps its model (fail open)."""
+    run, the shared state); when it cannot be read the call keeps its model (fail open).
+
+    Each recorded P0/P1 occurrence is handed to `pitstop.alerts.dispatch.notify`, which queues the alert and
+    returns at once (the alert is sent once per drift and channel, again on escalation to P0)."""
     from ..detect import drifts
     from ..detect.urgency import Level, action_for, classify
 
@@ -53,6 +56,8 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
             drift_id = None
         if engage is not None:
             _safe(lambda: _engage_fallback(ctx, f.drift_type, drift_id, *engage))
+        if drift_id is not None and level in (Level.P0, Level.P1):
+            _safe(lambda: _notify(drift_id))
         if ctx is not None and level is Level.P0 and criticality == "high":
             reason = None
             with ctx.lock:  # one check-and-set per run, shared with the tool's steer-limit halt
@@ -64,6 +69,12 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
                 _safe(lambda: _halt_event(ctx, f.drift_type, payload))
         applied.append(Applied(f, level, action, drift_id))
     return applied
+
+
+def _notify(drift_id: int) -> None:
+    from ..alerts.dispatch import notify
+
+    notify(drift_id)  # queues the alert on the alerts thread pool; never waits for a channel
 
 
 def _fallback_change(ctx: RunContext, drift_type: str, level: Any) -> tuple[str, Any] | None:

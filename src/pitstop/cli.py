@@ -10,6 +10,7 @@
   pitstop status | drifts [--workflow W] [--all] | budget   # SDK runs, drifts and budgets (local DB)
   pitstop budget reconcile [--older-than-min 60] [--release]  # list / free old reservations (dead processes)
   pitstop fallback status | clear <workflow>   # workflows pinned to their fallback model
+  pitstop alerts test [--channel NAME] | digest [--force]   # check alert channels; send the P2/P3 digest
 
 Runs and the You.com cache live under $PITSTOP_HOME (default ~/.pitstop); see pitstop.config.
 """
@@ -34,7 +35,7 @@ from .llm import LLMClient, UsageTracker
 from .agents.synthesizer import ReportSynthesizer
 from .research.youcom import FinanceResearchClient
 from .sdk.runtime import get_runtime
-from .userconfig import ConfigInvalid
+from .userconfig import ALERT_CHANNELS, ConfigInvalid
 from .schemas import Scenario, SupervisorInput
 from .orchestrator import Swarm
 from .supervisor.supervisor import Supervisor
@@ -289,6 +290,35 @@ def cmd_fallback(args) -> None:
     console.print(t)
 
 
+def cmd_alerts(args) -> None:
+    """`test` sends a test alert to every channel (or `--channel`) and prints each result (exit 1 if one failed);
+    `digest` sends the daily digest of open P2/P3 drifts (at most once per 24 h unless `--force`)."""
+    from .alerts import dispatch
+
+    rt = _runtime()
+    if args.alerts_cmd == "test":
+        results = dispatch.send_test(args.channel)
+        if args.channel is None and set(results.values()) == {"not configured"}:
+            console.print("No alert channel is configured: add an [alerts.<channel>] table to config.toml and set "
+                          "its env var (see docs/config.example.toml).")
+            return
+        for name, result in results.items():
+            console.print(f"{name:<10} {escape(result)}", soft_wrap=True)
+        if any(r.startswith("failed") for r in results.values()):
+            sys.exit(1)
+        return
+    n = dispatch.digest(force=args.force)
+    if n:
+        console.print(f"Sent a digest of {n} drift(s).")
+        return
+    last = dispatch.last_digest_ts(rt.store)
+    if not args.force and last is not None and time.time() - last < dispatch.DIGEST_INTERVAL_S:
+        console.print(f"No digest sent: the last digest went out at {_fmt_ts(last)} (under 24 h ago); "
+                      "use --force to send now.")
+    else:
+        console.print("No digest sent: no new open P2/P3 drifts, or no digest channel is configured.")
+
+
 def _minutes(v: str) -> float:
     m = float(v)
     if not m >= 0:  # also rejects nan
@@ -343,10 +373,16 @@ def main() -> None:
     fsub.add_parser("status", help="workflows whose agent calls go to their pinned fallback model")
     fc = fsub.add_parser("clear", help="send the workflow's calls back to the requested model")
     fc.add_argument("workflow")
+    a = sub.add_parser("alerts")
+    asub = a.add_subparsers(dest="alerts_cmd", required=True)
+    at = asub.add_parser("test", help="send a test alert to each configured channel and report the result")
+    at.add_argument("--channel", choices=ALERT_CHANNELS, help="only this channel")
+    ad = asub.add_parser("digest", help="send the digest of open P2/P3 drifts (once per 24 h; run it from cron)")
+    ad.add_argument("--force", action="store_true", help="send even if the last digest was under 24 h ago")
     args = p.parse_args()
     handler = {"check": cmd_check, "run": cmd_run, "compare": cmd_compare, "timeline": cmd_timeline,
                "serve": cmd_serve, "demo": cmd_demo, "status": cmd_status, "drifts": cmd_drifts,
-               "budget": cmd_budget, "fallback": cmd_fallback}[args.cmd]
+               "budget": cmd_budget, "fallback": cmd_fallback, "alerts": cmd_alerts}[args.cmd]
     if inspect.iscoroutinefunction(handler):
         asyncio.run(handler(args))
     else:

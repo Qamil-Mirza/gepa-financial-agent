@@ -14,7 +14,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 _SCHEMA = Path(__file__).with_name("schema.sql")
 
 
@@ -54,9 +54,17 @@ def _is_v3_entry(e) -> bool:
     return isinstance(e, dict) and set(e) == {"run_id", "ts", "detail"}
 
 
+def _v4_alerts(conn: sqlite3.Connection) -> None:
+    # Same statements as schema.sql (which already created them on an old DB): one row per alert send attempt.
+    conn.execute("CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY, drift_id INTEGER, level TEXT,"
+                 " channel TEXT, kind TEXT, ts REAL, status TEXT, error TEXT)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_alerts_drift ON alerts(drift_id, channel)")
+
+
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     2: _v2_runs_budget,
     3: _v3_drift_occurrences,
+    4: _v4_alerts,
 }
 
 

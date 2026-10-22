@@ -103,3 +103,72 @@ def test_judge_config_validation(tmp_path, body):
     p.write_text(f"[judge]\n{body}\n")
     with pytest.raises(ConfigInvalid, match="judge"):
         load_user_config(p)
+
+
+def test_alerts_empty_when_absent(tmp_path):
+    from pitstop.userconfig import AlertsSpec
+
+    assert load_user_config(tmp_path / "none.toml").alerts == AlertsSpec()
+    a = AlertsSpec()
+    assert (a.pagerduty, a.opsgenie, a.slack, a.email, a.webhook) == (None,) * 5
+    assert a.routes == {"P0": ("pagerduty", "opsgenie", "slack", "webhook"), "P1": ("slack", "email", "webhook"),
+                        "digest": ("email", "slack", "webhook")}
+
+
+def test_alerts_tables_parse_with_defaults(tmp_path):
+    p = tmp_path / "config.toml"
+    p.write_text('[alerts.pagerduty]\n[alerts.opsgenie]\nregion = "eu"\n[alerts.slack]\nwebhook_url_env = "MY_HOOK"\n'
+                 '[alerts.webhook]\n[alerts.email]\nsmtp_host = "smtp.example.com"\nfrom_addr = "p@example.com"\n'
+                 'to = ["a@example.com", "b@example.com"]\nusername = "p"\n'
+                 '[alerts.routes]\nP0 = ["pagerduty", "slack"]\ndigest = []\n')
+    a = load_user_config(p).alerts
+    assert a.pagerduty.routing_key_env == "PAGERDUTY_ROUTING_KEY"
+    assert (a.opsgenie.api_key_env, a.opsgenie.region) == ("OPSGENIE_API_KEY", "eu")
+    assert a.slack.webhook_url_env == "MY_HOOK"
+    assert a.webhook.url_env == "PITSTOP_WEBHOOK_URL"
+    e = a.email
+    assert (e.smtp_host, e.smtp_port, e.starttls, e.username, e.password_env, e.from_addr, e.to) == (
+        "smtp.example.com", 587, True, "p", "SMTP_PASSWORD", "p@example.com", ("a@example.com", "b@example.com"))
+    assert a.routes == {"P0": ("pagerduty", "slack"), "P1": ("slack", "email", "webhook"), "digest": ()}
+
+
+@pytest.mark.parametrize("channel,key", [("pagerduty", "routing_key"), ("opsgenie", "api_key"),
+                                         ("slack", "webhook_url"), ("email", "password"), ("webhook", "url")])
+def test_inline_secret_rejected(tmp_path, channel, key):
+    p = tmp_path / "config.toml"
+    p.write_text(f'[alerts.{channel}]\n{key} = "https://hooks.slack.test/SECRET123"\n')
+    with pytest.raises(ConfigInvalid, match=f"put secrets in environment variables; use {key}_env") as e:
+        load_user_config(p)
+    assert "SECRET123" not in str(e.value)
+
+
+def test_unknown_route_channel_rejected(tmp_path):
+    p = tmp_path / "config.toml"
+    p.write_text('[alerts.routes]\nP0 = ["pagerduty", "sms"]\n')
+    with pytest.raises(ConfigInvalid, match="sms"):
+        load_user_config(p)
+    p.write_text('[alerts.routes]\nP2 = ["slack"]\n')
+    with pytest.raises(ConfigInvalid, match="P2"):
+        load_user_config(p)
+
+
+@pytest.mark.parametrize("body", [
+    "[alerts.sms]",
+    '[alerts.opsgenie]\nregion = "apac"',
+    "[alerts.slack]\nwebhook_url_env = 3",
+    '[alerts.slack]\nwebhook_url_env = ""',
+    '[alerts.slack]\nchannel = "#ops"',
+    '[alerts.email]\nfrom_addr = "p@example.com"\nto = ["a@example.com"]',
+    '[alerts.email]\nsmtp_host = "h"\nfrom_addr = "p@example.com"\nto = []',
+    '[alerts.email]\nsmtp_host = "h"\nfrom_addr = "p@example.com"\nto = "a@example.com"',
+    '[alerts.email]\nsmtp_host = "h"\nfrom_addr = "p@example.com"\nto = ["a@example.com"]\nsmtp_port = 70000',
+    '[alerts.email]\nsmtp_host = "h"\nfrom_addr = "p@example.com"\nto = ["a@example.com"]\nsmtp_port = true',
+    '[alerts.email]\nsmtp_host = "h"\nfrom_addr = "p@example.com"\nto = ["a@example.com"]\nstarttls = "yes"',
+    '[alerts.routes]\nP1 = "slack"',
+    'alerts = 3',
+])
+def test_alerts_config_validation(tmp_path, body):
+    p = tmp_path / "config.toml"
+    p.write_text(body + "\n")
+    with pytest.raises(ConfigInvalid, match="alerts"):
+        load_user_config(p)

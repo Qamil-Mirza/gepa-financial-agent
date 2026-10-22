@@ -121,6 +121,38 @@ $ uv run pitstop fallback status        # workflow, pinned model, since, the cha
 $ uv run pitstop fallback clear support # the next call goes back to the requested model
 ```
 
+### Alerts
+
+Drifts are routed by urgency (P0-P3, see the [design spec](docs/superpowers/specs/2026-10-20-pitstop-runtime-design.md) §5):
+
+| Level | Meaning | Default route |
+|---|---|---|
+| **P0** | Act now: off-task side-effect tool, budget hit, loop on a high-criticality workflow | PagerDuty, Opsgenie, Slack, webhook (sent right away) |
+| **P1** | Hours: tool-call or refusal spike, quality step after a model/provider change | Slack, email, webhook (sent right away) |
+| **P2** | This week: quality degrading within contract | Daily digest: email, Slack, webhook |
+| **P3** | Trend: topic shift, slow token or latency creep | Daily digest: email, Slack, webhook |
+
+Every alert says what drifted, what likely changed (the run's model or provider change in the last 24 hours, or "no change detected" with the run's model and `base_url`) and what PitStop did (blocked, steered, halted, fell back or recorded). P0/P1 alerts are sent from a background thread, so a slow channel never blocks your agent, and it finishes sending before the process exits (a normal exit or an uncaught exception such as `Halted`; not a kill). Each open drift alerts once per channel (deduplicated per workflow and drift type); a drift that escalates from P1 to P0 alerts again, and a failed send is retried at the drift's next occurrence. Each attempt is a row in the `alerts` table (`sent` or `failed` with an error such as `HTTP 500`).
+
+A channel is used only when its `[alerts.<channel>]` table is in `config.toml` **and** its env var is set. Secrets live only in environment variables: `config.toml` holds the variable's name, and an inline `routing_key`, `api_key`, `webhook_url`, `password` or `url` is rejected as an invalid config.
+
+| Channel | Table | Secret env var (default) | Notes |
+|---|---|---|---|
+| PagerDuty Events v2 | `[alerts.pagerduty]` | `PAGERDUTY_ROUTING_KEY` (`routing_key_env`) | P0 critical, P1 error; SMS and phone calls go through PagerDuty or Opsgenie |
+| Opsgenie | `[alerts.opsgenie]` | `OPSGENIE_API_KEY` (`api_key_env`) | `region = "us"` or `"eu"` |
+| Slack incoming webhook | `[alerts.slack]` | `SLACK_WEBHOOK_URL` (`webhook_url_env`) | the webhook URL is a secret |
+| Email (SMTP) | `[alerts.email]` | `SMTP_PASSWORD` (`password_env`, only with `username`) | `smtp_host`, `smtp_port` (587), `starttls` (true), `from_addr`, `to` |
+| Generic webhook | `[alerts.webhook]` | `PITSTOP_WEBHOOK_URL` (`url_env`) | JSON POST of the alert plus `title` and `body`; any 2xx is success |
+
+Change the routes with `[alerts.routes]` (`P0`, `P1` and `digest`, each a list of channel names). Check your setup, then schedule the digest:
+
+```text
+$ uv run pitstop alerts test                  # one test alert per channel: sent, failed: <reason> or not configured
+$ uv run pitstop alerts test --channel slack
+$ uv run pitstop alerts digest                # open P2/P3 drifts not yet sent; at most once per 24 h (cron it)
+$ uv run pitstop alerts digest --force        # send now regardless of the last digest
+```
+
 ## Set a hard budget
 
 Copy [docs/config.example.toml](docs/config.example.toml) to `~/.pitstop/config.toml`. Each `[budgets.<name>]` entry sets a dollar limit for a provider `base_url` and period. Every model call reserves its worst-case cost first, and once the limit would be crossed the call raises `BudgetExceeded` before it reaches the provider. PitStop's own calls (supervisor, judge, GEPA) count against the same budget. A per-workflow cap is the `budget_usd` argument of `pitstop.workflow`. An invalid `config.toml` (a bad period, limit or timezone) never silently removes a budget: `pitstop.init()` raises a `ValueError`, every metered call, `pitstop.prompt` and `pitstop.workflow` (and any guarded tool inside a workflow) raises `pitstop.Halted("pitstop config invalid: ...")` before reaching the provider, and `pitstop status`/`drifts`/`budget` print the error and exit 2. A `pitstop.db` written by a newer PitStop is refused the same way, so a downgrade never runs without its budgets.

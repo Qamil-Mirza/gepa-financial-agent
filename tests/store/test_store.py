@@ -163,14 +163,35 @@ def _meta(store, key):
 
 
 def test_migrations_cover_every_version_step():
-    assert SCHEMA_VERSION == 3
+    assert SCHEMA_VERSION == 4
     assert sorted(MIGRATIONS) == list(range(2, SCHEMA_VERSION + 1))
 
 
 def test_fresh_db_matches_migrated_db(tmp_path):
     old = _make_v1_db(tmp_path / "old.db")
     assert _columns(Store(old)) == _columns(Store(tmp_path / "new.db"))
-    assert Store(old).schema_version() == SCHEMA_VERSION == 3
+    assert Store(old).schema_version() == SCHEMA_VERSION == 4
+
+
+def _indexes(store) -> set:
+    rows = store.connect().execute("SELECT name, tbl_name, sql FROM sqlite_master WHERE type='index'"
+                                   " AND sql IS NOT NULL")
+    return {tuple(r) for r in rows}
+
+
+def test_v4_alerts_table_and_index(tmp_path):
+    old = Store(_make_v1_db(tmp_path / "old.db"))
+    new = Store(tmp_path / "new.db")
+    assert [c[1] for c in _columns(new)["alerts"]] == ["id", "drift_id", "level", "channel", "kind", "ts", "status",
+                                                       "error"]
+    assert _indexes(old) == _indexes(new)
+    assert any(name == "idx_alerts_drift" for name, _t, _s in _indexes(new))
+    # the step itself creates the table on a DB that schema.sql never saw (idempotent)
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    for _ in range(2):
+        MIGRATIONS[4](conn)
+    assert {r[0] for r in conn.execute("SELECT name FROM sqlite_master")} >= {"alerts", "idx_alerts_drift"}
 
 
 def test_v3_migration_backfills_drifts(tmp_path):
@@ -192,7 +213,7 @@ def test_v2_db_migrates_to_v3(tmp_path):
     conn.commit()
     conn.close()
     store = Store(path)
-    assert store.schema_version() == 3
+    assert store.schema_version() == SCHEMA_VERSION
     assert _columns(store) == _columns(Store(tmp_path / "new.db"))
 
 

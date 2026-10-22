@@ -16,7 +16,12 @@ CREATE TABLE IF NOT EXISTS ledger (
 CREATE TABLE IF NOT EXISTS prompts (
     name TEXT, version INTEGER, text TEXT, sha TEXT, source TEXT, created_at REAL,
     active INTEGER, PRIMARY KEY(name, version));
+-- alerts: kind immediate | digest | test; status pending | sent | failed; error is an exception type name or
+-- "HTTP <status>", never a message, URL or body (they can hold secrets).
+CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY, drift_id INTEGER, level TEXT, channel TEXT, kind TEXT,
+    ts REAL, status TEXT, error TEXT);
 CREATE INDEX IF NOT EXISTS idx_events_run ON events(run_id);
 CREATE INDEX IF NOT EXISTS idx_drifts_wf_status ON drifts(workflow, status);
 CREATE INDEX IF NOT EXISTS idx_ledger_ts ON ledger(ts);
-INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '3');
+CREATE INDEX IF NOT EXISTS idx_alerts_drift ON alerts(drift_id, channel);
+INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '4');

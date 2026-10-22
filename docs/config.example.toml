@@ -43,3 +43,35 @@ period = "total"        # one of the periods PitStop accepts, "total" = lifetime
 # base_url = "https://api.inference.crusoecloud.com/v1"
 # api_key_env = "CRUSOE_API_KEY"
 # timeout_s = 10.0
+
+# Alerts. P0 and P1 drifts are sent right away; P2 and P3 go in a daily digest
+# (`pitstop alerts digest`, run it from cron). A channel is used only when its table is
+# present AND its env var is set. Only env var NAMES go here: an inline routing_key,
+# api_key, webhook_url, password or url is rejected. Check with `pitstop alerts test`.
+# [alerts.pagerduty]
+# routing_key_env = "PAGERDUTY_ROUTING_KEY"   # Events v2 integration key
+#
+# [alerts.opsgenie]
+# api_key_env = "OPSGENIE_API_KEY"
+# region = "us"                               # or "eu"
+#
+# [alerts.slack]
+# webhook_url_env = "SLACK_WEBHOOK_URL"       # the incoming-webhook URL is a secret
+#
+# [alerts.email]
+# smtp_host = "smtp.example.com"
+# smtp_port = 587
+# starttls = true
+# username = "alerts@example.com"             # omit for an unauthenticated relay
+# password_env = "SMTP_PASSWORD"
+# from_addr = "pitstop@example.com"
+# to = ["oncall@example.com"]
+#
+# [alerts.webhook]
+# url_env = "PITSTOP_WEBHOOK_URL"             # JSON POST; any 2xx is success
+#
+# Which channels each urgency goes to (these are the defaults; names must be channels above).
+# [alerts.routes]
+# P0 = ["pagerduty", "opsgenie", "slack", "webhook"]
+# P1 = ["slack", "email", "webhook"]
+# digest = ["email", "slack", "webhook"]
