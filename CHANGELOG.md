@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `pitstop status`, `pitstop drifts` and `pitstop budget` commands, and a keyless quickstart example (`examples/quickstart`).
 - Open-source repo basics: Apache-2.0 license, Contributor Covenant code of conduct, security policy, issue and pull-request templates, changelog and a CI workflow.
 - Ruff linting (pyflakes rules) and offline-by-default test suite.
-- `pitstop budget reconcile [--older-than-min 60] [--release]` lists, and with `--release` frees, budget reservations left open by a process that died mid-call.
+- `pitstop budget reconcile [--older-than-min 60] [--release]` lists old budget reservations, left open by a process that died mid-call or by a call still running; `--release` frees them and lists what it freed.
 
 ### Changed
 - `pitstop` is now an installable `src/` layout package with packaged assets.

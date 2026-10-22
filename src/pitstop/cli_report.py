@@ -50,9 +50,12 @@ def budget_rows(ledger, config) -> list[dict]:
 
 def drift_rows(store, workflow: str | None = None, open_only: bool = True) -> list[dict]:
     drifts = list_drifts(store, workflow=workflow, open_only=open_only)
-    drifts.sort(key=lambda d: -d["ts"])  # stable: newest first within a level
+    drifts.sort(key=lambda d: -_last_seen(d))  # stable: most recently seen first within a level
     drifts.sort(key=lambda d: _LEVELS.index(d["level"]) if d["level"] in _LEVELS else len(_LEVELS))
     return [{"id": d["id"], "level": d["level"], "workflow": d["workflow"], "drift_type": d["drift_type"],
              "action": d["action"], "count": d["occurrences"],
-             "first_seen": d["ts"], "last_seen": d["last_seen"] if d["last_seen"] is not None else d["ts"]}
-            for d in drifts]
+             "first_seen": d["ts"], "last_seen": _last_seen(d)} for d in drifts]
+
+
+def _last_seen(d: dict) -> float:
+    return d["last_seen"] if d.get("last_seen") is not None else d["ts"]

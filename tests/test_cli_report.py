@@ -4,6 +4,8 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
+
 from pitstop.budget.ledger import Ledger
 from pitstop.cli_report import budget_rows, drift_rows, workflow_rows
 from pitstop.detect.drifts import record_drift
@@ -106,6 +108,17 @@ def test_cli_invalid_config_is_a_clean_error(tmp_path):
         assert "invalid period 'weekly'" in out.stdout + out.stderr
 
 
+def test_drift_rows_newest_first_by_last_seen_within_a_level(tmp_path):
+    store = Store(tmp_path / "pitstop.db")
+    for dt in ("a", "b"):
+        record_drift(store, run_id=None, workflow="wf", finding=Finding(dt, "off_task", False, {}), level="P1",
+                     action="record")
+    with store.transaction(immediate=True) as c:  # "a" opened earlier but was seen most recently
+        c.execute("UPDATE drifts SET ts=100.0, last_seen=500.0 WHERE drift_type='a'")
+        c.execute("UPDATE drifts SET ts=200.0, last_seen=300.0 WHERE drift_type='b'")
+    assert [r["drift_type"] for r in drift_rows(store)] == ["a", "b"]
+
+
 def test_drift_rows_use_occurrences_and_last_seen(tmp_path):
     store = Store(tmp_path / "pitstop.db")
     for i in range(3):
@@ -124,14 +137,18 @@ def _main(monkeypatch, *argv):
     cli.main()
 
 
-def test_budget_reconcile_cli_dry_run_then_release(tmp_path, capsys, monkeypatch):
+def _ledger_states(ledger):
+    return [r[0] for r in ledger.store.connect().execute("SELECT state FROM ledger ORDER BY id")]
+
+
+def test_budget_reconcile_cli_dry_run_then_release(capsys, monkeypatch):
     from pitstop.sdk.runtime import get_runtime
 
     ledger = get_runtime().ledger
     now = time.time()
-    with ledger.store.transaction(immediate=True) as c:
+    with ledger.store.transaction(immediate=True) as c:  # stale and live rows far either side of 60 minutes
         for ts, state, wf in ((now - 7200, "reserved", "stale-wf"), (now - 7200, "settled", "done-wf"),
-                              (now - 60, "reserved", "live-wf")):
+                              (now - 10, "reserved", "live-wf")):
             c.execute("INSERT INTO ledger(ts, run_id, workflow, meter, model, usd, state) VALUES (?,?,?,?,?,?,?)",
                       (ts, "r", wf, "agent", "m", 1.5, state))
 
@@ -139,24 +156,29 @@ def test_budget_reconcile_cli_dry_run_then_release(tmp_path, capsys, monkeypatch
     out = capsys.readouterr().out
     assert "stale-wf" in out and "live-wf" not in out and "done-wf" not in out
     assert "re-run with --release to free them" in out
-    states = lambda: [r[0] for r in ledger.store.connect().execute("SELECT state FROM ledger ORDER BY id")]
-    assert states() == ["reserved", "settled", "reserved"]  # dry run changes nothing
+    assert _ledger_states(ledger) == ["reserved", "settled", "reserved"]  # dry run changes nothing
 
-    _main(monkeypatch, "budget", "reconcile", "--older-than-min", "1", "--release")
+    _main(monkeypatch, "budget", "reconcile", "--older-than-min", "0")  # threshold is honoured: both open rows
     out = capsys.readouterr().out
-    assert "Released 2 stale reservation" in out
-    assert states() == ["released", "settled", "released"]
+    assert "stale-wf" in out and "live-wf" in out and "done-wf" not in out
+    assert _ledger_states(ledger) == ["reserved", "settled", "reserved"]
+
+    _main(monkeypatch, "budget", "reconcile", "--older-than-min", "60", "--release")
+    out = capsys.readouterr().out
+    assert "stale-wf" in out and "live-wf" not in out  # the rows it freed are listed
+    assert "Released 1 stale reservation" in out
+    assert _ledger_states(ledger) == ["released", "settled", "reserved"]
 
     _main(monkeypatch, "budget", "reconcile")
     assert "No stale reservations" in capsys.readouterr().out
 
 
-def test_budget_reconcile_rejects_negative_age(monkeypatch, capsys):
-    import pytest
-
+@pytest.mark.parametrize("value", ["-5", "nan"])
+def test_budget_reconcile_rejects_bad_age(monkeypatch, capsys, value):
     with pytest.raises(SystemExit) as ei:
-        _main(monkeypatch, "budget", "reconcile", "--older-than-min", "-5")
+        _main(monkeypatch, "budget", "reconcile", "--older-than-min", value)
     assert ei.value.code == 2
+    assert "must be a non-negative number of minutes" in capsys.readouterr().err
 
 
 def test_bare_budget_still_works_in_process(monkeypatch, capsys):

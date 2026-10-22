@@ -3,7 +3,8 @@
 Every model call first *reserves* its worst-case cost (estimated prompt tokens + max completion tokens).
 The check against every applicable budget and the insert of the `reserved` row happen in one
 `BEGIN IMMEDIATE` transaction, so concurrent threads and processes sharing the DB file can never
-jointly reserve past a limit. After the call, `settle` replaces the estimate with the actual cost;
+jointly reserve past a limit. Ledger writes therefore refuse to run inside another transaction (they would
+become a savepoint without the write lock, and an outer rollback would erase a reservation whose call ran). After the call, `settle` replaces the estimate with the actual cost;
 on failure `release` frees it. A reservation left `reserved` by a process that died mid-call keeps counting
 until `release_stale` (`pitstop budget reconcile --release`) frees it.
 
@@ -29,6 +30,8 @@ from .prices import Price, cost_usd, price_for
 # Float slack so that e.g. 50 x $0.10 against $5.00 is not rejected by representation error.
 _EPS = 1e-9
 _LIVE = ("reserved", "settled")
+_NESTED = "ledger operations must not run inside another transaction"
+_STALE_COLS = "id, ts, run_id, workflow, meter, model, usd"
 
 
 @dataclass
@@ -73,7 +76,7 @@ class Ledger:
                 raise ValueError("workflow_budget_usd requires a workflow name")
             checks.append((f"workflow:{workflow}", workflow_budget_usd))
         now = self._now()
-        with self.store.transaction(immediate=True) as conn:
+        with self._write() as conn:
             for scope, limit in checks:
                 spent = self._spent(conn, scope, now)
                 if spent + usd > limit + _EPS:
@@ -89,7 +92,7 @@ class Ledger:
     def settle(self, res: Reservation, *, prompt_tokens: int, completion_tokens: int, cached_tokens: int = 0) -> float:
         """Replace the reservation with the actual cost (at the price fixed at reserve time). Returns the USD."""
         actual = cost_usd(res.price, prompt_tokens, completion_tokens, cached_tokens)
-        with self.store.transaction(immediate=True) as conn:
+        with self._write() as conn:
             conn.execute(
                 "UPDATE ledger SET usd=?, prompt_tokens=?, completion_tokens=?, state='settled' WHERE id=?",
                 (actual, prompt_tokens, completion_tokens, res.id),
@@ -98,29 +101,43 @@ class Ledger:
 
     def release(self, res: Reservation) -> None:
         """Free a reservation whose call did not happen. A settled row is never released."""
-        with self.store.transaction(immediate=True) as conn:
+        with self._write() as conn:
             conn.execute("UPDATE ledger SET state='released' WHERE id=? AND state='reserved'", (res.id,))
 
     def stale_reservations(self, older_than_s: float) -> list[dict]:
-        """Rows still `reserved` after `older_than_s` seconds: their process died between reserve and
-        settle/release, so they hold budget that no call will ever settle."""
+        """Rows still `reserved` after `older_than_s` seconds: left by a process that died between reserve and
+        settle/release (they hold budget no call will ever settle), or by a call that is still running."""
         rows = self.store.connect().execute(
-            "SELECT id, ts, run_id, workflow, meter, model, usd FROM ledger WHERE state='reserved' AND ts < ?"
-            " ORDER BY id", (self._now() - older_than_s,)).fetchall()
+            f"SELECT {_STALE_COLS} FROM ledger WHERE state='reserved' AND ts < ? ORDER BY id",
+            (self._now() - older_than_s,)).fetchall()
         return [dict(r) for r in rows]
 
     def release_stale(self, older_than_s: float) -> int:
         """Release every reservation older than `older_than_s` seconds. Returns how many were released."""
-        with self.store.transaction(immediate=True) as conn:
-            cur = conn.execute("UPDATE ledger SET state='released' WHERE state='reserved' AND ts < ?",
-                               (self._now() - older_than_s,))
-            return cur.rowcount
+        return len(self.release_stale_rows(older_than_s))
+
+    def release_stale_rows(self, older_than_s: float) -> list[dict]:
+        """Release every reservation older than `older_than_s` seconds and return exactly the rows released
+        (selected and updated under one write lock, so a concurrent settle cannot slip in between)."""
+        with self._write() as conn:
+            rows = [dict(r) for r in conn.execute(
+                f"SELECT {_STALE_COLS} FROM ledger WHERE state='reserved' AND ts < ? ORDER BY id",
+                (self._now() - older_than_s,))]
+            conn.executemany("UPDATE ledger SET state='released' WHERE id=? AND state='reserved'",
+                             [(r["id"],) for r in rows])
+        return rows
 
     def spent(self, scope: str) -> float:
         """Settled + reserved USD for `scope` in its current period window."""
         return self._spent(self.store.connect(), scope, self._now())
 
     # -- internals --------------------------------------------------------------------------------
+
+    def _write(self):
+        """The outermost BEGIN IMMEDIATE transaction for a ledger write; never a savepoint of a caller's."""
+        if self.store.connect().in_transaction:
+            raise RuntimeError(_NESTED)
+        return self.store.transaction(immediate=True)
 
     def _spent(self, conn: sqlite3.Connection, scope: str, now: float) -> float:
         kind, sep, name = scope.partition(":")

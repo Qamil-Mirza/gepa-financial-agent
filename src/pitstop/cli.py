@@ -8,7 +8,7 @@
   pitstop serve --port 8765               # timeline API + live SSE stream for the UI
   pitstop demo --port 8770                # GEPA demo page (pitstop.demo)
   pitstop status | drifts [--workflow W] [--all] | budget   # SDK runs, drifts and budgets (local DB)
-  pitstop budget reconcile [--older-than-min 60] [--release]  # list / free reservations left by dead processes
+  pitstop budget reconcile [--older-than-min 60] [--release]  # list / free old reservations (dead processes)
 
 Runs and the You.com cache live under $PITSTOP_HOME (default ~/.pitstop); see pitstop.config.
 """
@@ -235,25 +235,26 @@ def cmd_budget(args) -> None:
 
 
 def cmd_budget_reconcile(args) -> None:
-    """Reservations still `reserved` long after their call should have settled (the process died mid-call)."""
+    """Reservations still `reserved` long after their call should have settled: left by a process that died
+    mid-call, or by a call that is still running. Lists them; --release frees them and lists what it freed."""
     rt = _runtime()
-    older_than_s = args.older_than_min * 60
-    rows = rt.ledger.stale_reservations(older_than_s)
+    mins = args.older_than_min
+    older_than_s = mins * 60
+    rows = rt.ledger.release_stale_rows(older_than_s) if args.release else rt.ledger.stale_reservations(older_than_s)
     if not rows:
-        console.print(f"No stale reservations older than {args.older_than_min:g} min.")
+        console.print(f"No stale reservations older than {mins:g} min.")
         return
-    if args.release:
-        n = rt.ledger.release_stale(older_than_s)
-        console.print(f"Released {n} stale reservation(s) older than {args.older_than_min:g} min.")
-        return
-    t = Table(title=f"Stale reservations (older than {args.older_than_min:g} min)")
+    t = Table(title=f"{'Released' if args.release else 'Stale'} reservations (older than {mins:g} min)")
     for col in ("id", "reserved at", "run", "workflow", "meter", "model", "usd"):
         t.add_column(col)
     for r in rows:
         t.add_row(str(r["id"]), _fmt_ts(r["ts"]), str(r["run_id"]), str(r["workflow"]), str(r["meter"]),
                   str(r["model"]), _usd(r["usd"]))
     console.print(t)
-    console.print(f"{len(rows)} stale reservation(s); re-run with --release to free them.")
+    if args.release:
+        console.print(f"Released {len(rows)} stale reservation(s) older than {mins:g} min.")
+    else:
+        console.print(f"{len(rows)} stale reservation(s); re-run with --release to free them.")
 
 
 def _minutes(v: str) -> float:
@@ -300,7 +301,8 @@ def main() -> None:
     g.add_argument("--workflow"); g.add_argument("--all", action="store_true", help="include resolved drifts")
     b = sub.add_parser("budget")
     bsub = b.add_subparsers(dest="budget_cmd")  # optional: bare `pitstop budget` shows the budgets
-    rc = bsub.add_parser("reconcile", help="list (or --release) reservations left by processes that died mid-call")
+    rc = bsub.add_parser("reconcile", help="list (or --release) old reservations, left by processes that died"
+                                           " or calls still running")
     rc.add_argument("--older-than-min", type=_minutes, default=60.0,
                     help="only reservations older than this many minutes (default 60)")
     rc.add_argument("--release", action="store_true", help="release them (default: only list them)")

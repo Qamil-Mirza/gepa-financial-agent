@@ -174,9 +174,14 @@ def test_fresh_db_matches_migrated_db(tmp_path):
 
 
 def test_v3_migration_backfills_drifts(tmp_path):
+    import json
+
     store = Store(_make_v1_db(tmp_path / "old.db"))
-    row = store.connect().execute("SELECT ts, last_seen, occurrences FROM drifts").fetchone()
+    row = store.connect().execute("SELECT ts, last_seen, occurrences, evidence FROM drifts").fetchone()
     assert (row["ts"], row["last_seen"], row["occurrences"]) == (123.0, 123.0, 2)  # occurrences = old evidence count
+    # pre-v3 raw evidence dicts are wrapped in the v3 entry shape, with the row's run and first-seen time
+    assert json.loads(row["evidence"]) == [{"run_id": "r1", "ts": 123.0, "detail": {"n": 1}},
+                                           {"run_id": "r1", "ts": 123.0, "detail": {"n": 2}}]
 
 
 def test_v2_db_migrates_to_v3(tmp_path):
@@ -217,7 +222,35 @@ def test_newer_db_raises_store_version_error(tmp_path):
     conn.close()
 
 
-def test_runtime_fails_closed_on_newer_db(tmp_path):
+def test_migrate_fast_path_checks_version(tmp_path):
+    path = tmp_path / "pitstop.db"
+    store = Store(path)
+    _set_version(path, 99)  # a newer PitStop migrated the DB after this store's constructor check
+    with pytest.raises(StoreVersionError, match="99"):
+        store._migrate()
+
+
+def test_store_version_error_closes_connection(tmp_path, monkeypatch):
+    path = tmp_path / "pitstop.db"
+    Store(path)
+    _set_version(path, 99)
+    opened = []
+    real_connect = sqlite3.connect
+
+    def spy(*a, **k):
+        opened.append(real_connect(*a, **k))
+        return opened[-1]
+
+    monkeypatch.setattr(sqlite3, "connect", spy)
+    with pytest.raises(StoreVersionError):
+        Store(path)
+    assert opened
+    for conn in opened:
+        with pytest.raises(sqlite3.ProgrammingError, match="closed"):
+            conn.execute("SELECT 1")
+
+
+def test_runtime_fails_closed_on_newer_db():
     import pitstop
     from pitstop.config import pitstop_home
     from pitstop.sdk.errors import Halted

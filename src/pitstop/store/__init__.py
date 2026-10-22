@@ -36,14 +36,22 @@ def _v3_drift_occurrences(conn: sqlite3.Connection) -> None:
     _add_column(conn, "drifts", "last_seen", "REAL")
     _add_column(conn, "drifts", "occurrences", "INTEGER NOT NULL DEFAULT 1")
     conn.execute("UPDATE drifts SET last_seen = ts WHERE last_seen IS NULL")
-    # Before v3 every occurrence appended one evidence entry, so the old list length is the occurrence count.
-    for row in conn.execute("SELECT id, evidence FROM drifts").fetchall():
+    # Before v3 every occurrence appended its raw evidence dict. Wrap each one in the v3 entry shape
+    # {"run_id", "ts", "detail"} (the row's run and first-seen time are the best we know), and count them:
+    # the old list length is the occurrence count.
+    for row in conn.execute("SELECT id, run_id, ts, evidence FROM drifts").fetchall():
         try:
             ev = json.loads(row["evidence"]) if row["evidence"] else []
         except Exception:
             continue
-        if isinstance(ev, list) and len(ev) > 1:
-            conn.execute("UPDATE drifts SET occurrences=? WHERE id=?", (len(ev), row["id"]))
+        ev = ev if isinstance(ev, list) else [ev]
+        wrapped = [e if _is_v3_entry(e) else {"run_id": row["run_id"], "ts": row["ts"], "detail": e} for e in ev]
+        conn.execute("UPDATE drifts SET evidence=?, occurrences=? WHERE id=?",
+                     (json.dumps(wrapped, default=str), max(len(wrapped), 1), row["id"]))
+
+
+def _is_v3_entry(e) -> bool:
+    return isinstance(e, dict) and set(e) == {"run_id", "ts", "detail"}
 
 
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
@@ -58,10 +66,14 @@ class Store:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._local = threading.local()
         conn = self.connect()
-        self._check_version(self._read_version(conn))  # before schema.sql or a migration touches a newer DB
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.executescript(_SCHEMA.read_text())
-        self._migrate()
+        try:
+            self._check_version(self._read_version(conn))  # before schema.sql or a migration touches a newer DB
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.executescript(_SCHEMA.read_text())
+            self._migrate()
+        except StoreVersionError:
+            self._close_local()  # a refused store keeps no open handle on the DB file
+            raise
 
     def connect(self) -> sqlite3.Connection:
         conn = getattr(self._local, "conn", None)
@@ -71,6 +83,12 @@ class Store:
             conn.execute("PRAGMA busy_timeout=5000")
             self._local.conn = conn
         return conn
+
+    def _close_local(self) -> None:
+        conn = getattr(self._local, "conn", None)
+        self._local.conn = None
+        if conn is not None:
+            conn.close()
 
     @contextmanager
     def transaction(self, immediate: bool = False) -> Iterator[sqlite3.Connection]:
@@ -108,7 +126,9 @@ class Store:
         """Upgrade an older DB in place: every step above its version runs in one transaction, so a failing
         step leaves the DB at its old version. Safe across concurrent openers (the version is re-read under
         the write lock)."""
-        if self.schema_version() >= SCHEMA_VERSION:
+        current = self.schema_version()
+        self._check_version(current)  # a newer PitStop may have migrated it since the constructor's check
+        if current >= SCHEMA_VERSION:
             return
         with self.transaction(immediate=True) as c:
             current = self._read_version(c)

@@ -258,3 +258,38 @@ def test_stale_reservations_listed_and_released(tmp_path):
     # the fresh reservation is untouched and still settles normally
     ledger.settle(fresh, prompt_tokens=250_000, completion_tokens=0)
     assert _states(ledger) == ["released", "settled", "settled"]
+
+
+@pytest.mark.parametrize("op", ["reserve", "settle", "release", "release_stale"])
+def test_ledger_refuses_to_run_inside_another_transaction(tmp_path, op):
+    ledger = _ledger(tmp_path, BudgetSpec("crusoe", 10.0, "total", CRUSOE))
+    res = _reserve(ledger, 0.5)
+    calls = {
+        "reserve": lambda: _reserve(ledger, 0.5),
+        "settle": lambda: ledger.settle(res, prompt_tokens=1, completion_tokens=1),
+        "release": lambda: ledger.release(res),
+        "release_stale": lambda: ledger.release_stale(0),
+    }
+    with ledger.store.transaction() as c:
+        c.execute("INSERT INTO meta VALUES ('outer', '1')")
+        with pytest.raises(RuntimeError, match="ledger operations must not run inside another transaction"):
+            calls[op]()
+        c.execute("INSERT INTO meta VALUES ('outer2', '1')")
+    conn = ledger.store.connect()
+    assert not conn.in_transaction
+    assert {r[0] for r in conn.execute("SELECT key FROM meta WHERE key LIKE 'outer%'")} == {"outer", "outer2"}
+    assert _states(ledger) == ["reserved"]  # no savepoint write happened: the ledger is untouched
+    assert ledger.spent("global:crusoe") == pytest.approx(0.5)
+
+
+def test_release_stale_rows_returns_exactly_the_released_rows(tmp_path):
+    clock = [1_000_000.0]
+    ledger = _ledger(tmp_path, BudgetSpec("crusoe", 10.0, "total", CRUSOE), now=lambda: clock[0])
+    old = _reserve(ledger, 1.0, workflow="wf", run_id="r-old")
+    clock[0] += 2 * 3600
+    _reserve(ledger, 0.25)
+    rows = ledger.release_stale_rows(3600)
+    assert [(r["id"], r["run_id"], r["workflow"]) for r in rows] == [(old.id, "r-old", "wf")]
+    assert set(rows[0]) == {"id", "ts", "run_id", "workflow", "meter", "model", "usd"}
+    assert _states(ledger) == ["released", "reserved"]
+    assert ledger.release_stale_rows(3600) == []
