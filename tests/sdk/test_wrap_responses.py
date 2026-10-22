@@ -113,6 +113,10 @@ def test_responses_prompt_estimate_and_max_output(tmp_path):
     assert RESPONSES.max_output_tokens(kwargs) == 77
     assert RESPONSES.max_output_tokens({"input": "x"}) == 4096
     assert RESPONSES.estimate_prompt_tokens({"input": INPUT}) == 100
+    outputs = [{"type": "function_call_output", "call_id": "c", "output": "d" * 40},
+               {"type": "function_call_output", "call_id": "c", "output": [{"type": "input_text", "text": "e" * 40}]},
+               {"type": "function_call", "call_id": "c", "name": "f", "arguments": "g" * 40}]
+    assert RESPONSES.estimate_prompt_tokens({"input": outputs}) == 30
 
 
 def test_responses_parse_is_metered(tmp_path):
@@ -192,6 +196,64 @@ async def test_async_responses_stream_helper_metered(tmp_path):
         assert isinstance(s, AsyncResponseStream)
         assert (await s.get_final_response()).output_text == "Hello"
     _assert_settled(17, 6)
+
+
+def _worst(est_prompt=100, max_output=4096):
+    row = _ledger_rows()[-1]
+    assert row["state"] == "settled" and (row["prompt_tokens"], row["completion_tokens"]) == (est_prompt, max_output)
+    assert row["usd"] == pytest.approx(cost_usd(PRICE, est_prompt, max_output))
+    assert _events()[-1]["payload"]["usage_estimated"] == "worst_case"
+
+
+def test_responses_background_charged_worst_case(tmp_path):
+    """A background response returns while still queued (usage null); its output is billed later."""
+    _init(tmp_path)
+    handler = _recording([], lambda body: json_response(response_body(None, status="queued", usage=False)))
+    w = pitstop.wrap(openai_client(handler))
+    assert w.responses.create(model=MODEL, input=INPUT, background=True).status == "queued"
+    _worst()
+
+
+def test_responses_unfinished_status_charged_worst_case(tmp_path):
+    _init(tmp_path)
+    handler = _recording([], lambda body: json_response(response_body(None, status="in_progress", usage=False)))
+    w = pitstop.wrap(openai_client(handler))
+    w.responses.create(model=MODEL, input=INPUT)
+    _worst()
+
+
+def test_responses_background_stream_dropped_early_charged_worst_case(tmp_path):
+    _init(tmp_path)
+    w = pitstop.wrap(openai_client(_responses_handler([])))
+    stream = w.responses.create(model=MODEL, input=INPUT, stream=True, background=True)
+    next(iter(stream))
+    stream.close()
+    _worst()
+    # Read to its end, a background stream settles from the response.completed usage.
+    list(w.responses.create(model=MODEL, input=INPUT, stream=True, background=True))
+    _assert_settled(17, 6)
+
+
+def test_responses_incomplete_event_usage_settled(tmp_path):
+    _init(tmp_path)
+    events = response_events("Hel", input_tokens=19, output_tokens=7, status="incomplete")
+    w = pitstop.wrap(openai_client(_recording([], lambda body: sse_response(events))))
+    with w.responses.stream(model=MODEL, input=INPUT, max_output_tokens=7) as s:
+        assert [e.type for e in s][-1] == "response.incomplete"
+    _assert_settled(19, 7)
+    assert _events()[0]["payload"]["finish_reason"] == "incomplete"
+
+
+def test_responses_stream_helper_error_in_body_settles_and_propagates(tmp_path):
+    _init(tmp_path)
+    w = pitstop.wrap(openai_client(_responses_handler([])))
+    with pytest.raises(KeyError):
+        with w.responses.stream(model=MODEL, input=INPUT) as s:
+            for e in s:
+                if e.type == "response.output_text.delta":
+                    raise KeyError("caller's own")
+    [row] = _ledger_rows()
+    assert row["state"] == "settled" and _events()[0]["payload"]["usage_estimated"] is True
 
 
 def test_responses_budget_exceeded_before_request(tmp_path):

@@ -439,8 +439,10 @@ def test_chat_stream_helper_matches_unwrapped(tmp_path):
             assert isinstance(s, ChatCompletionStream)
             kinds = [e.type for e in s]
             final = s.get_final_completion()
-        results.append((kinds, final.choices[0].message.content))
+            snapshot_usage = s.current_completion_snapshot.usage
+        results.append((kinds, final.choices[0].message.content, final.usage, snapshot_usage))
     assert results[0] == results[1]
+    assert results[1][2:] == (None, None)  # the usage PitStop asked for is not shown to the caller
     assert "stream_options" not in seen[0][1] and seen[1][1]["stream_options"] == {"include_usage": True}
     [row] = _ledger_rows()
     assert row["state"] == "settled" and (row["prompt_tokens"], row["completion_tokens"]) == (21, 2)
@@ -560,3 +562,36 @@ async def test_async_stream_helper_never_entered_releases(tmp_path):
         gc.collect()
     assert [r["state"] for r in _ledger_rows()] == ["released"]
     assert seen == []
+
+
+def test_chat_stream_helper_error_in_body_settles_and_propagates(tmp_path):
+    _init(tmp_path)
+    w = pitstop.wrap(openai_client(_chat_handler([])))
+    with pytest.raises(ValueError, match="caller's own"):
+        with w.chat.completions.stream(model=MODEL, messages=MSGS) as s:
+            next(iter(s))
+            raise ValueError("caller's own")
+    [row] = _ledger_rows()
+    assert row["state"] == "settled" and len(_events()) == 1
+
+
+async def test_async_chat_stream_helper_error_in_body_settles_and_propagates(tmp_path):
+    _init(tmp_path)
+    w = pitstop.wrap(openai_client(_chat_handler([]), async_=True))
+    with pytest.raises(ValueError, match="caller's own"):
+        async with w.chat.completions.stream(model=MODEL, messages=MSGS) as s:
+            await s.__anext__()
+            raise ValueError("caller's own")
+    assert [r["state"] for r in _ledger_rows()] == ["settled"]
+
+
+def test_chat_stream_helper_caller_stream_options_keeps_usage(tmp_path):
+    """When the caller asked for include_usage itself, the final completion keeps it."""
+    _init(tmp_path)
+    w = pitstop.wrap(openai_client(_chat_handler([])))
+    with w.chat.completions.stream(model=MODEL, messages=MSGS, stream_options={"include_usage": True}) as s:
+        final = s.get_final_completion()
+    assert (final.usage.prompt_tokens, final.usage.completion_tokens) == (21, 2)
+    assert [e.type for e in w.chat.completions.stream(model=MODEL, messages=MSGS,
+                                                      stream_options={"include_usage": True}).__enter__()
+            ].count("chunk") == 4  # the caller's usage chunk is not hidden

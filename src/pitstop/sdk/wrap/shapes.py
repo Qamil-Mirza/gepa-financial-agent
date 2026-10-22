@@ -83,6 +83,10 @@ class Observed:
     completion_tokens: int | None = None
     cached_tokens: int = 0
     chars: int = 0  # all completion text (content, tool names and arguments), for the estimate
+    # The provider keeps generating after the call returns (a Responses background request, or a response still
+    # queued / in progress): its output is billed later, so without final usage the call is charged its full
+    # reservation.
+    pending: bool = False
     # stream accumulators, folded into content / tool_calls by seal()
     _text: list[str] = field(default_factory=list, init=False, repr=False)
     _tools: dict[Any, dict] = field(default_factory=dict, init=False, repr=False)
@@ -129,8 +133,27 @@ class Shape(Protocol):
 
     def observe(self, chunk: Any, obs: Observed, injected: bool) -> bool: ...  # False = hide this chunk
 
+    def pending(self, kwargs: dict) -> bool: ...  # the request keeps generating after the call returns
+
+    # Stream helpers (the "manager" kind). `helper_chunk`: what one helper event feeds to `observe`, or None for an
+    # event derived from one already fed (passed through unfed). `hide_injected`: the caller's view of an
+    # accumulated helper result (final completion, snapshot) while PitStop's own usage request is in effect.
+    def helper_chunk(self, event: Any) -> Any: ...
+
+    def hide_injected(self, result: Any) -> Any: ...
+
 
 # -- OpenAI chat completions ------------------------------------------------------------------------------------
+
+
+def _without_usage(result: Any) -> Any:
+    """`result` as the caller would see it without include_usage: `usage` None (a copy; never mutated)."""
+    if _g(result, "usage") is None:
+        return result
+    try:
+        return result.model_copy(update={"usage": None})
+    except Exception:
+        return result
 
 
 def _openai_usage(u: Any, obs: Observed) -> None:
@@ -213,6 +236,16 @@ class _ChatShape:
         # unwrapped client's (code like chunk.choices[0] must keep working).
         return not (injected and not choices and usage is not None)
 
+    def pending(self, kwargs: dict) -> bool:
+        return False
+
+    def helper_chunk(self, event: Any) -> Any:
+        # The helper's `chunk` events carry the raw chunk; content.delta, tool_calls.* etc. are derived from it.
+        return _g(event, "chunk") if _g(event, "type") == "chunk" else None
+
+    def hide_injected(self, result: Any) -> Any:
+        return _without_usage(result)
+
 
 CHAT: Shape = _ChatShape()
 
@@ -220,6 +253,7 @@ CHAT: Shape = _ChatShape()
 # -- OpenAI Responses API ---------------------------------------------------------------------------------------
 
 _TERMINAL = frozenset({"response.completed", "response.incomplete", "response.failed"})
+_UNFINISHED = frozenset({"queued", "in_progress"})
 
 
 class _ResponsesShape:
@@ -243,7 +277,7 @@ class _ResponsesShape:
             for item in items:
                 total += _content_chars(_g(item, "content"))
                 # function_call / function_call_output items carry text outside `content`
-                total += _text_len(_g(item, "arguments")) + _text_len(_g(item, "output"))
+                total += _text_len(_g(item, "arguments")) + _content_chars(_g(item, "output"))
         return math.ceil((total + _tools_chars(kwargs)) / 4)
 
     def max_output_tokens(self, kwargs: dict) -> int:
@@ -257,7 +291,10 @@ class _ResponsesShape:
             obs.cached_tokens = _int(_g(_g(u, "input_tokens_details"), "cached_tokens")) or 0
 
     def read(self, resp: Any, obs: Observed) -> None:
-        self._usage(_g(resp, "usage"), obs)
+        if _g(resp, "status") in _UNFINISHED:  # a background response: its output is billed after we return
+            obs.pending = True
+        else:
+            self._usage(_g(resp, "usage"), obs)
         output = _g(resp, "output") or []
         texts: list[str] = []
         calls = []
@@ -304,6 +341,15 @@ class _ResponsesShape:
             self._usage(_g(resp, "usage"), obs)
             obs.finish_reason = _g(resp, "status")
         return True
+
+    def pending(self, kwargs: dict) -> bool:
+        return kwargs.get("background") is True
+
+    def helper_chunk(self, event: Any) -> Any:
+        return event  # the helper's events are the raw events (some re-built with parsed fields)
+
+    def hide_injected(self, result: Any) -> Any:
+        return result  # nothing is injected
 
 
 RESPONSES: Shape = _ResponsesShape()
@@ -361,6 +407,15 @@ class _CompletionsShape:
             if first and reason:
                 obs.finish_reason = reason
         return not (injected and not choices and usage is not None)  # hide PitStop's own usage chunk
+
+    def pending(self, kwargs: dict) -> bool:
+        return False
+
+    def helper_chunk(self, event: Any) -> Any:
+        return event  # no stream helper; kept for the protocol
+
+    def hide_injected(self, result: Any) -> Any:
+        return _without_usage(result)
 
 
 COMPLETIONS: Shape = _CompletionsShape()

@@ -121,6 +121,7 @@ class _Call:
         model = model if isinstance(model, str) else "unknown" if model is None else str(model)
         call = cls(ctx, shape, send, model, base_url, stream, injected, mode)
         call.meter = _meter.get()
+        call.obs.pending = _safe(lambda: shape.pending(kwargs)) is True
         try:
             call.est_prompt = shape.estimate_prompt_tokens(kwargs)
             call.max_output = shape.max_output_tokens(kwargs)
@@ -192,6 +193,8 @@ class _Call:
                     log.warning("pitstop: could not release a reservation", exc_info=True)
             return
         _safe(self.obs.seal)
+        if self.obs.pending and (self.obs.prompt_tokens is None or self.obs.completion_tokens is None):
+            self.worst_case = True  # a background response: the output we did not see is billed anyway
         prompt, completion, cached, estimated = self._tokens()
         cost: float | None = None
         if self.res is not None:

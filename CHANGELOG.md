@@ -16,7 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `pitstop.workflow` and `pitstop.agent` decorate generator and async-generator functions; the run spans the generator's steps and never leaks to the consuming code.
 - `wrap` meters `chat.completions.parse` and `with_raw_response` / `with_streaming_response` calls (on the client or the resource). Raw responses are settled from their parsed usage; streaming responses and raw streams, which PitStop can't read, are charged their full reservation (`usage_estimated: "worst_case"`).
 - An endpoint that rejects PitStop's injected `stream_options` with a 400 is retried once without it, and later stream calls to that base_url skip the injection.
-- `wrap` meters the chat stream helper (`chat.completions.stream`), the Responses API (`responses.create` / `parse` / `stream`) and legacy `completions.create`, sync and async. A stream helper reserves when called, settles when its manager exits, and releases its reservation if it is never entered. Assistants, Realtime, Batch and `client.beta.*` (of either SDK) are not metered yet.
+- `wrap` meters the chat stream helper (`chat.completions.stream`), the Responses API (`responses.create` / `parse` / `stream`) and legacy `completions.create`, sync and async. A stream helper reserves when called, settles when its manager exits, and releases its reservation if it is never entered. A background Responses call (`background=True`, or a result still `queued` / `in_progress`) is charged its full reservation. Assistants, Realtime, Batch and `client.beta.*` (of either SDK) are not metered yet.
 
 ### Changed
 - `pitstop` is now an installable `src/` layout package with packaged assets.

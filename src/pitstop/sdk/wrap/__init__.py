@@ -29,7 +29,9 @@ request and yields the SDK's own stream class (proxied: every event passes throu
 `get_final_completion()` / `get_final_response()` / `until_done()` read the stream through the proxy). The call
 settles when the manager exits; a manager that is never entered releases its reservation when it is garbage
 collected. An error raised mid-stream that carries the billed `completion` (LengthFinishReasonError) settles from
-its usage, or at the full reservation when no usage was seen.
+its usage, or at the full reservation when no usage was seen. A Responses call with `background=True` (or a result
+still `queued` / `in_progress`) is charged its full reservation unless its final usage is seen: its output is
+billed after the call returns.
 
 Raw responses: a non-stream `with_raw_response` call is settled from `result.parse()`. Responses that can't be
 read without consuming them for the caller, `with_streaming_response` and `with_raw_response` with

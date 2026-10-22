@@ -456,6 +456,8 @@ class _AsyncStream:
 # Stream methods that consume the stream inside the SDK; the proxy drives the stream through itself first, so
 # every event is observed.
 _FINAL = frozenset({"get_final_completion", "get_final_response"})
+# Accumulated results shown without PitStop's injected usage.
+_SNAPSHOTS = frozenset({"current_completion_snapshot"})
 
 
 def _managed(client: Any, fn: Any, shape: Shape, mode: Mode) -> Any:
@@ -479,11 +481,24 @@ def _managed(client: Any, fn: Any, shape: Shape, mode: Mode) -> Any:
 
 
 def _feed_event(call: _Call, event: Any) -> bool:
-    """Feed one helper event to the shape. A chat helper's `chunk` events carry the raw chunk (its other events
-    are derived from it and not fed); Responses helper events are the raw events. False hides the event."""
-    if call.shape.name == "chat":
-        return call.observe(_g(event, "chunk")) if _g(event, "type") == "chunk" else True
-    return call.observe(event)
+    """Feed one helper event to the shape (`Shape.helper_chunk` picks what it carries). False hides the event."""
+    try:
+        chunk = call.shape.helper_chunk(event)
+    except Exception:
+        log.warning("pitstop: could not read a stream helper event", exc_info=True)
+        return True
+    return True if chunk is None else call.observe(chunk)
+
+
+def _caller_view(call: _Call, result: Any) -> Any:
+    """An accumulated helper result as the unwrapped helper would show it: without the usage PitStop asked for."""
+    if not call.injected:
+        return result
+    try:
+        return call.shape.hide_injected(result)
+    except Exception:
+        log.warning("pitstop: could not hide injected usage", exc_info=True)
+        return result
 
 
 def _entered(call: _Call) -> None:
@@ -582,13 +597,15 @@ class _SyncHelperStream(_SyncStream):
 
     def __getattr__(self, name: str) -> Any:
         attr = super().__getattr__(name)
+        if name in _SNAPSHOTS:
+            return _caller_view(self._pitstop_call, attr)
         if name not in _FINAL:
             return attr
 
         @functools.wraps(attr)
         def final(*args, **kwargs):
             self.until_done()
-            return attr(*args, **kwargs)
+            return _caller_view(self._pitstop_call, attr(*args, **kwargs))
         return final
 
 
@@ -605,6 +622,8 @@ class _AsyncHelperStream(_AsyncStream):
 
     def __getattr__(self, name: str) -> Any:
         attr = super().__getattr__(name)
+        if name in _SNAPSHOTS:
+            return _caller_view(self._pitstop_call, attr)
         if name not in _FINAL:
             return attr
 
@@ -612,5 +631,5 @@ class _AsyncHelperStream(_AsyncStream):
         async def final(*args, **kwargs):
             await self.until_done()
             r = attr(*args, **kwargs)
-            return await r if inspect.isawaitable(r) else r
+            return _caller_view(self._pitstop_call, await r if inspect.isawaitable(r) else r)
         return final

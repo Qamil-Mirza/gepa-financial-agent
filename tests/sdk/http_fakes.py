@@ -104,9 +104,10 @@ def response_body(text: str | None = "hi", *, tool_calls: list[dict] | None = No
 
 
 def response_events(text: str = "Hello", *, tool_call: dict | None = None, input_tokens: int = 13,
-                    output_tokens: int = 5, usage: bool = True, model: str = MODEL) -> list[dict]:
+                    output_tokens: int = 5, usage: bool = True, status: str = "completed",
+                    model: str = MODEL) -> list[dict]:
     """The SSE events of a streamed response: `text` in two deltas, then optionally one function call (its
-    arguments in two deltas), then `response.completed` carrying usage."""
+    arguments in two deltas), then the terminal `response.<status>` event carrying usage."""
     created = response_body(None, status="in_progress", usage=False, model=model)
     events: list[dict] = [
         {"type": "response.created", "response": created},
@@ -137,8 +138,8 @@ def response_events(text: str = "Hello", *, tool_call: dict | None = None, input
              "item": _function_item(tool_call["name"], args)},
         ]
     final = response_body(text, tool_calls=[tool_call] if tool_call else None, input_tokens=input_tokens,
-                          output_tokens=output_tokens, usage=usage, model=model)
-    events.append({"type": "response.completed", "response": final})
+                          output_tokens=output_tokens, usage=usage, status=status, model=model)
+    events.append({"type": f"response.{status}", "response": final})
     for i, e in enumerate(events):
         e["sequence_number"] = i
     return events
