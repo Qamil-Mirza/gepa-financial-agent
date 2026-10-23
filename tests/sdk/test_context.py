@@ -683,7 +683,7 @@ async def test_framework_agent_names_the_calling_scope(tmp_path):
     with workflow("wf") as ctx:
         with agent("outer", goal="og"):
             await asyncio.create_task(_name("lead"))  # like a hook: a child task, its context a copy
-            assert (ctx.agent, ctx.agent_goal) == ("lead", None)
+            assert (ctx.agent, ctx.agent_goal) == ("lead", "og")  # keeps the enclosing scope's goal
             with agent("sub", goal="sg"):
                 assert (ctx.agent, ctx.agent_goal) == ("sub", "sg")
             await asyncio.create_task(_name("next"))  # replaces the name set before
@@ -692,7 +692,7 @@ async def test_framework_agent_names_the_calling_scope(tmp_path):
             assert (ctx.agent, ctx.agent_goal) == ("outer", "og")
         assert ctx.agent is None  # the top level was never named
         await asyncio.create_task(_name("top"))
-        assert ctx.agent == "top"
+        assert (ctx.agent, ctx.agent_goal) == ("top", None)  # no enclosing scope: the workflow goal applies
 
 
 async def _name(name):

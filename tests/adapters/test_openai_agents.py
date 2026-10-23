@@ -283,6 +283,33 @@ async def test_hooks_agent_does_not_override_inner_scope(tmp_path):
     assert r["payload"]["result"] == repr("lead")
 
 
+async def test_hooks_named_agent_keeps_enclosing_agent_goal(tmp_path):
+    """Hooks name the SDK agent on top of the scope Runner.run was called in; that scope's goal still reaches the
+    gate (the agent's directive, not only the broader workflow goal)."""
+    judge = FakeOpenAI([_verdict(True, "fine")])
+    _init(tmp_path, judge)
+    seen = []
+
+    @function_tool
+    def send_email(to: str, body: str) -> str:
+        """Send an email."""
+        ctx = pitstop.sdk.context.current_run()
+        seen.append((ctx.agent, ctx.agent_goal))
+        return "sent"
+
+    model = ScriptedModel([_call("send_email", {"to": "ops@example.test", "body": "hi"}, 1),
+                           [assistant_message("done")]])
+    agent = guard(Agent(name="writer", instructions="Write.", model=model, tools=[send_email]),
+                  side_effects={"send_email"})
+    with pitstop.workflow("wf", goal="Run the support desk", criticality="medium"):
+        with pitstop.agent("x", goal="Email the weekly report to ops"):
+            await Runner.run(agent, "go", hooks=Hooks())
+    assert seen == [("writer", "Email the weekly report to ops")]
+    assert "Email the weekly report to ops" in judge.calls[0]["messages"][-1]["content"]
+    [g] = _events("gate")
+    assert g["agent"] == "writer" and g["payload"]["allow"] is True
+
+
 async def test_outside_workflow_allows(tmp_path):
     _init(tmp_path)
     calls = []

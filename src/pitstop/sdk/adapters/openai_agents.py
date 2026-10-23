@@ -17,7 +17,8 @@ call unchanged but wraps any other one in a `UserError`, so the adapter re-raise
 derives from both the original class and `agents.exceptions.AgentsException` (`except pitstop.Halted` and
 `except pitstop.BudgetExceeded` catch it; it pickles as the original class). The guardrail does this for a pending
 halt or the steer limit, the invoker wrapper for a halt raised in, or left pending by, the tool body (the SDK would
-otherwise turn it into an error message for the model), and `Hooks.on_llm_start` raises a pending halt before the
+otherwise turn it into an error message for the model; a budget hit there therefore arrives as the pending
+`Halted`, not as `BudgetExceeded`), and `Hooks.on_llm_start` raises a pending halt before the
 next model call, also with a model that is not metered through `pitstop.wrap`.
 
 `guard(agent, side_effects=...)` adds that guardrail to each of the agent's `FunctionTool`s (once; the named tools
@@ -28,12 +29,16 @@ the same agent; call it on each agent of a handoff graph.
 
 `Hooks` names the agent: `on_agent_start` names the running SDK agent for the scope `Runner.run` was called in
 (`RunContext.set_framework_agent`, `pitstop.agent(name)` semantics, replacing the agent named before), so the run's
-model calls, tool events, drifts' halt events and the gate see it; `on_agent_end` removes the name. The SDK runs
+model calls, tool events, drifts' halt events and the gate see it; `on_agent_end` removes the name. The named agent
+keeps the goal of the enclosing `pitstop.agent(...)` scope, which the gate judges side-effect calls against (the
+workflow goal when there is none). The SDK runs
 hooks in child asyncio tasks, so a scope entered there would not reach the run. It also tags the run
 `runs.adapter = 'openai-agents'`.
 
 Limits: only `FunctionTool`s are guarded (the SDK runs tool input guardrails for function tools only); hosted
-tools, MCP server tools and handoffs are not. Model calls are metered only through a `pitstop.wrap`-ed client.
+tools, MCP server tools and handoffs are not. Model calls are metered only through a `pitstop.wrap`-ed client. A
+guarded tool's `on_invoke_tool` is replaced, so `tool.__wrapped__` no longer reaches the original function. Prefer
+`guard` to a bare `tool_guardrail`: around a `@pitstop.tool` of the same name, the bare guardrail checks twice.
 """
 from __future__ import annotations
 

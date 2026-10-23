@@ -122,15 +122,15 @@ class RunContext:
 
     @property
     def agent_goal(self) -> str | None:
+        """The goal of the calling task's innermost `agent()` scope, for this run. A framework-named agent keeps
+        the goal of the scope it was named on (None at the top level: the gate then uses the workflow goal)."""
         cur = self._frame()
-        named = self.framework_agents.get(id(cur))
-        if named is not None and named[0] is cur:
-            return None  # a framework-named agent has no PitStop goal: the gate falls back to the workflow goal
         return cur.goal if cur is not None else None
 
     def set_framework_agent(self, name: str | None) -> None:
         """Name the agent for the calling task's innermost `agent()` scope (or the workflow's top level), as if an
-        `agent(name)` scope were entered on top of it, replacing the one named before; None removes it.
+        `agent(name)` scope that keeps that scope's goal were entered on top of it, replacing the one named before;
+        None removes it.
 
         For framework hooks that run in a child asyncio task of the agent run (the OpenAI Agents SDK runs each hook
         through asyncio.gather), where entering a scope would never reach the run's own task. The name applies to
