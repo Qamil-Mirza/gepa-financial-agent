@@ -420,8 +420,9 @@ class _CompletionsShape:
             # A token-id prompt is already in tokens: list[int] is its length, list[list[int]] the sum of theirs.
             if prompt and all(_int(p) is not None for p in prompt):
                 return len(prompt)
-            token_ids = sum(len(p) for p in prompt if isinstance(p, (list, tuple)))
-            return math.ceil(sum(_text_len(p) for p in prompt) / 4) + token_ids
+            # A mixed list counts each item its own way: an int is one token, a str like a string prompt.
+            return sum(1 if _int(p) is not None else len(p) if isinstance(p, (list, tuple))
+                       else math.ceil(_text_len(p) / 4) for p in prompt)
         return 0
 
     def max_output_tokens(self, kwargs: dict) -> int:

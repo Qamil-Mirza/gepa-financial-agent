@@ -9,7 +9,7 @@
   pitstop scan [--every SECONDS]     # L2 change detection over finished runs; records attributed drifts
 
 The local DB and config.toml live under $PITSTOP_HOME (default ~/.pitstop); see pitstop.config. The research
-example's commands (run, check, compare, timeline, serve, demo) are on the `finresearch` console script
+example's commands (run, check, compare, timeline, serve, demo) are on that example's own console script
 (examples/financial-research).
 """
 from __future__ import annotations
@@ -256,8 +256,8 @@ def cmd_alerts(args) -> None:
 
 def _minutes(v: str) -> float:
     m = float(v)
-    if not m >= 0:  # also rejects nan
-        raise argparse.ArgumentTypeError(f"must be a non-negative number of minutes, got {v!r}")
+    if not (m >= 0 and math.isfinite(m)):  # rejects nan and inf
+        raise argparse.ArgumentTypeError(f"must be a non-negative, finite number of minutes, got {v!r}")
     return m
 
 

@@ -71,6 +71,14 @@ def test_no_runs_before(tmp_path):
     assert a.summary == f"no runs before {ISO} to compare"
 
 
+def test_summary_with_no_runs_after(tmp_path):
+    store = Store(tmp_path / "pitstop.db")
+    _runs(store, 5, 0)
+    a = attribute(store, "wf", T0)
+    assert (a.n_before, a.n_after, a.changes) == (5, 0, ())
+    assert a.summary == f"No runs after {ISO} to compare yet."
+
+
 def test_minority_value_not_a_change(tmp_path):
     store = Store(tmp_path / "pitstop.db")
     _runs(store, 30, 20, after=lambda i: {"model": "m2" if i % 5 == 0 else "m1"})  # 20% on m2

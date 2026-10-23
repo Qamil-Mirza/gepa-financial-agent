@@ -98,3 +98,10 @@ def test_otel_tool_results_and_refusals(store):
     assert m["tool_error_rate"] == 0.5
     assert m["refusal_rate"] == 0.25 and m["llm_calls"] == 4.0
     assert m["cost_usd"] == pytest.approx(0.5 + 360e-6)
+
+
+def test_duration_omitted_on_clock_skew(store):
+    skewed = make_run(store, "wf", started_at=200.0, ended_at=100.0)
+    assert "duration_s" not in run_metrics(store, skewed)
+    ok = make_run(store, "wf", started_at=100.0, ended_at=105.0)
+    assert run_metrics(store, ok)["duration_s"] == 5.0

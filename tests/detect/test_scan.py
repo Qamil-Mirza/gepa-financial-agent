@@ -43,6 +43,21 @@ def _model_change(store, **kw):
     _runs(store, 15, start=30, model="m2", tokens=300, **kw)
 
 
+def test_scan_alarm_with_failed_attribution(tmp_path, monkeypatch):
+    from pitstop.detect import scan as scan_mod
+
+    def boom(*a, **k):
+        raise RuntimeError("attribution exploded")
+
+    monkeypatch.setattr(scan_mod, "attribute", boom)
+    store = Store(tmp_path / "p.db")
+    _model_change(store)
+    report = scan(store)
+    assert report.alarms
+    assert {a.summary for a in report.alarms} == {"attribution failed (RuntimeError)"}
+    assert all(a.drift_id is not None for a in report.alarms)  # the drift is still recorded
+
+
 def test_stationary_workflow_no_alarms(tmp_path):
     store = Store(tmp_path / "p.db")
     _runs(store, 60)

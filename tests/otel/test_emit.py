@@ -79,7 +79,10 @@ def test_emit_swallows_span_errors():
 
 
 def test_emit_without_otel_installed_is_noop(monkeypatch, tracing):
+    from pitstop.otel import emit
+
     tracer, exporter = tracing
+    monkeypatch.setattr(emit, "_OTEL", emit._UNSET)  # the import result is cached per process
     with tracer.start_as_current_span("open"):
         monkeypatch.setitem(sys.modules, "opentelemetry", None)
         monkeypatch.setitem(sys.modules, "opentelemetry.trace", None)
@@ -108,3 +111,24 @@ def test_apply_findings_verdict_span_override(tmp_path, tracing):
     [event] = spans["outer"].events
     assert event.name == "pitstop.verdict" and event.attributes["pitstop.action"] == "record"
     assert event.attributes["pitstop.run_id"] == "otel-1"
+
+
+def test_emit_verdict_caches_missing_otel(monkeypatch):
+    import builtins
+
+    from pitstop.otel import emit
+
+    monkeypatch.setattr(emit, "_OTEL", emit._UNSET)
+    attempts = []
+    real_import = builtins.__import__
+
+    def fake_import(name, *a, **k):
+        if name == "opentelemetry" or name.startswith("opentelemetry."):
+            attempts.append(name)
+            raise ImportError(name)
+        return real_import(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    for _ in range(2):
+        emit_verdict(run_id="r", drift_type="t", level="P2", action="record", drift_id=1, reason="r")
+    assert len(attempts) == 1

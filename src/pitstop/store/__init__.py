@@ -139,7 +139,8 @@ class Store:
 
     def open_connections(self) -> int:
         """How many connections this store opened are still open, across all threads (for tests). A connection
-        of a thread that ended without `close_local()` counts until it is garbage collected."""
+        of a thread that ended without `close_local()` counts until it is garbage collected, and so does a
+        connection closed directly rather than through `close_local()`."""
         with self._opened_lock:
             return len(self._opened)
 

@@ -209,14 +209,21 @@ def test_budget_reconcile_cli_dry_run_then_release(capsys, monkeypatch):
     assert "No stale reservations" in capsys.readouterr().out
 
 
-@pytest.mark.parametrize("value", ["-5", "nan"])
+@pytest.mark.parametrize("value", ["-5", "nan", "inf"])
 def test_budget_reconcile_rejects_bad_age(monkeypatch, capsys, value):
     with pytest.raises(SystemExit) as ei:
         _main(monkeypatch, "budget", "reconcile", "--older-than-min", value)
     assert ei.value.code == 2
-    assert "must be a non-negative number of minutes" in capsys.readouterr().err
+    assert "must be a non-negative, finite number of minutes" in capsys.readouterr().err
 
 
 def test_bare_budget_still_works_in_process(monkeypatch, capsys):
     _main(monkeypatch, "budget")
     assert "No runs yet" in capsys.readouterr().out
+
+
+def test_reconcile_rejects_inf(monkeypatch, capsys):
+    with pytest.raises(SystemExit) as ei:
+        _main(monkeypatch, "budget", "reconcile", "--older-than-min", "inf")
+    assert ei.value.code == 2
+    assert "must be a non-negative, finite number of minutes" in capsys.readouterr().err

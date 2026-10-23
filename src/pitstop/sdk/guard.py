@@ -19,6 +19,11 @@ counted once. The decorator sets the mark around its own function; an adapter se
 execution after `guard_call` let the call run. One call records one `tool_result` event: `record_tool_result` under
 the mark sets the mark's `recorded` flag (the mark object is shared with threads and tasks started inside the block),
 so an adapter records the result itself only when no inner `@pitstop.tool` did.
+The mark is one-shot: the first nested same-name call consumes it (`Mark.consumed`), so a later same-name call in
+the block, such as a tool that retries itself or calls its own name twice, is guarded like any other.
+A task created (asyncio.create_task, a thread's copied context) inside a marked call inherits the mark: its first
+same-name call skips the guard too, unless the block's own inner call already consumed it. Documented, not
+prevented; revisited with M4 (plan decision 14).
 PitStop's own failures never break the call; only `Halted` (and `BudgetExceeded` from the judge) propagate."""
 from __future__ import annotations
 
@@ -51,11 +56,15 @@ _GATED = ("high", "medium")
 _RECENT = 5  # the agent's recent tool calls shown to the gate's judge
 
 class Mark:
-    """The check-once mark of one guarded call; `recorded` turns True once its `tool_result` event was recorded."""
-    __slots__ = ("recorded",)
+    """The check-once mark of one guarded call. `recorded` turns True once its `tool_result` event was recorded;
+    `consumed` once the first nested same-name call took the mark (see `is_checked`); `started` is
+    `time.monotonic()` at creation (tool latency)."""
+    __slots__ = ("recorded", "consumed", "started")
 
     def __init__(self) -> None:
         self.recorded = False
+        self.consumed = False
+        self.started = time.monotonic()
 
 
 # (run_id, tool) -> the Mark of the call already guarded there; see `checked`. Replaced, never mutated.
@@ -104,8 +113,14 @@ def checked(ctx: RunContext, tool: str) -> Iterator[Mark]:
 
 
 def is_checked(ctx: RunContext, tool: str) -> bool:
-    """True inside a `checked(ctx, tool)` block: this call was already guarded."""
-    return (ctx.run_id, tool) in _checked.get()
+    """True for the first same-name call inside a `checked(ctx, tool)` block: that call was already guarded, and it
+    consumes the mark. Later same-name calls in the block are guarded normally. The mark itself stays in place until
+    the block exits (`record_tool_result` still finds it); only its `consumed` flag is set."""
+    mark = _checked.get().get((ctx.run_id, tool))
+    if mark is None or mark.consumed:
+        return False
+    mark.consumed = True
+    return True
 
 
 def guard_call(ctx: RunContext, tool: str, side_effects: bool, args_text: str, *,
@@ -205,10 +220,9 @@ def _before(ctx: RunContext, tname: str, side_effects: bool, args_text: str, who
     with ctx.lock:
         over = ctx.steers >= MAX_STEERS
         if over:
-            if ctx.halt_reason is None:
+            if ctx.halt_reason is None:  # a reason set elsewhere keeps its own drift id (even None)
                 ctx.halt_reason = "steer limit exceeded"
-            if ctx.halt_drift_id is None:  # the drift whose steer tripped the limit
-                ctx.halt_drift_id = deciding_id
+                ctx.halt_drift_id = deciding_id  # the drift whose steer tripped the limit
         else:
             ctx.steers += 1
         reason, drift_id = ctx.halt_reason, ctx.halt_drift_id

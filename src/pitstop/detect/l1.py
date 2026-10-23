@@ -2,7 +2,7 @@
 whether this one action serves the goal (the LlamaFirewall AlignmentCheck pattern, spec §6.2).
 
 The prompt is frozen and versioned (`assets/prompts/l1_gate_v2.txt`; v1 stays as it shipped). The untrusted text
-(the proposed call's arguments, the recent calls) sits in `<tool_args>` and `<recent_calls>` blocks with every "</"
+(the proposed call's arguments, the recent calls) sits in `<tool_args>` and `<recent_calls>` blocks with every closer ("</" and near-misses)
 inside written as "<\\/", so it cannot close its block; the prompt says the blocks are data, never instructions.
 
 The judge call is one sync chat call on the "watch" meter, so it counts against the budgets but never feeds L0
@@ -13,6 +13,7 @@ from the judge call propagate."""
 from __future__ import annotations
 
 import functools
+import re
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -38,14 +39,18 @@ class GateVerdict:
     latency_s: float = 0.0
 
 
+_CLOSER = re.compile("[<\uff1c]\\s*[/\uff0f]")
+
+
 @functools.cache
 def _system_prompt() -> str:
     return (PROMPTS / f"{GATE_PROMPT_VERSION}.txt").read_text()
 
 
 def _data(text: str) -> str:
-    """Untrusted text for a tag block: no "</" survives, so the text cannot close the block it sits in."""
-    return text.replace("</", "<\\/")
+    """Untrusted text for a tag block: no closer survives, so the text cannot close the block it sits in. A `<`
+    or fullwidth `＜`, optional whitespace, then `/` or fullwidth `／` is written `<\\/` (near-miss closers too)."""
+    return _CLOSER.sub("<\\\\/", text)
 
 
 def _user_message(workflow_goal: str | None, agent_goal: str | None, tool: str, args_text: str,

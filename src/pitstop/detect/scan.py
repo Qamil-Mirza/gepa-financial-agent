@@ -160,16 +160,22 @@ def _record(store, p: _Pending) -> ScanAlarm:
     """Attribute the alarm, record the drift and queue its alert; a failure is logged (drift_id None, and P2 if
     the level itself could not be classified)."""
     a, summary, drift_id, level = p.alarm, "", None, Level.P2
+    changes: tuple = ()
     try:
         level = classify(p.spec.drift_type, p.criticality, False)
-        attribution = attribute(store, p.workflow, a.at, metric=p.metric)
-        summary = attribution.summary
-        if explains_change(attribution):
-            level = escalate_for_change(level, p.criticality)
+        try:
+            attribution = attribute(store, p.workflow, a.at, metric=p.metric)
+            summary, changes = attribution.summary, attribution.changes
+            if explains_change(attribution):
+                level = escalate_for_change(level, p.criticality)
+        except Exception as e:  # the drift is still recorded, without its attribution
+            log.warning("pitstop: scan could not attribute the %s alarm for %r (%s)", p.metric, p.workflow,
+                        type(e).__name__)
+            summary = f"attribution failed ({type(e).__name__})"
         finding = Finding(p.spec.drift_type, "degraded", False, {
             "layer": "L2", "metric": p.metric, "direction": a.direction, "value": a.value,
             "baseline_mean": a.baseline_mean, "baseline_std": a.baseline_std, "change_at": a.at,
-            "attribution": {"summary": summary, "changes": [asdict(c) for c in attribution.changes]}})
+            "attribution": {"summary": summary, "changes": [asdict(c) for c in changes]}})
         drift_id = record_drift(store, run_id=p.run_id, workflow=p.workflow, finding=finding, level=level,
                                 action="record")
     except Exception as e:

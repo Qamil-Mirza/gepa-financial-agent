@@ -302,7 +302,10 @@ def _unhooked(make: Callable, arg: Any) -> Any:
     gc.collect() finalizes both. The loop's finalizer would schedule an aclose() for each, and the inner one's
     would race the wrapper's own close of it ("aclose(): asynchronous generator is already running"). With this
     one, only the wrapper's aclose() runs, and it closes the inner generator inside the run. Without a finalizer
-    hook at all (no event loop), the inner generator keeps none, as before."""
+    hook at all (no event loop), the inner generator keeps none, as before.
+
+    Limit: the inner generator is closed only by its wrapper. When the wrapper's close was skipped (it was being
+    stepped elsewhere), the inner generator's cleanup is never finalized by anyone."""
     firstiter, finalizer = sys.get_asyncgen_hooks()
     sys.set_asyncgen_hooks(firstiter=None, finalizer=_closed_by_wrapper if finalizer is not None else None)
     try:

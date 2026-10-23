@@ -225,3 +225,34 @@ def test_checked_mark_tells_whether_the_result_was_recorded(tmp_path):
             record_tool_result(ctx, "other", result=1)
             assert fresh.recorded is False  # another tool's result is not this call's
     assert len(_events("tool_result")) == 2 and _events("tool_call") == []
+
+
+def test_steer_limit_halt_keeps_foreign_reason_drift(tmp_path, monkeypatch):
+    from pitstop.sdk import guard
+
+    _init(tmp_path)
+    monkeypatch.setattr(guard, "check_halt", lambda: None)  # the foreign halt lands after the boundary check
+    with workflow("wf") as ctx:
+        ctx.halt_reason, ctx.halt_drift_id = "set elsewhere", None  # e.g. its drift write failed
+        with pytest.raises(Halted, match="set elsewhere") as ei:
+            for _ in range(5):
+                guard_call(ctx, "search", False, tool_args_text(("a",), {}))
+        assert ei.value.drift_id is None
+        assert ctx.halt_reason == "set elsewhere" and ctx.halt_drift_id is None
+
+
+def test_nested_same_name_second_call_is_guarded(tmp_path):
+    _init(tmp_path)
+
+    @pitstop.tool
+    def search(q):
+        return "r"
+
+    with workflow("wf", tools=["search"]) as ctx:
+        with checked(ctx, "search") as mark:
+            search("one")  # consumes the mark: no guard, no tool_call event
+            assert [e["name"] for e in _events("tool_call")] == []
+            search("two")  # a second same-name call in the block is guarded normally
+            assert [e["name"] for e in _events("tool_call")] == ["search"]
+            assert mark.recorded
+            assert isinstance(mark.started, float)

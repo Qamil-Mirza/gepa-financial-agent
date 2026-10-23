@@ -532,17 +532,22 @@ async def test_async_gen_workflow_in_reference_cycle(tmp_path, monkeypatch, capl
             r = current_run()
             seen.append(r.run_id if r else None)
 
-    asyncio.get_running_loop().set_exception_handler(lambda loop, c: errors.append(c))
-    it = agen()
-    rid = await it.__anext__()
-    cycle = [it]
-    cycle.append(cycle)
-    del it, cycle
-    gc.collect()  # the loop's finalizer hook schedules the wrapper's aclose()
-    for _ in range(20):
-        await asyncio.sleep(0.01)
-    gc.collect()  # a failed close task that nobody awaited reports "never retrieved" when it is collected
-    await asyncio.sleep(0)
+    loop = asyncio.get_running_loop()
+    old_handler = loop.get_exception_handler()
+    loop.set_exception_handler(lambda loop, c: errors.append(c))
+    try:
+        it = agen()
+        rid = await it.__anext__()
+        cycle = [it]
+        cycle.append(cycle)
+        del it, cycle
+        gc.collect()  # the loop's finalizer hook schedules the wrapper's aclose()
+        for _ in range(20):
+            await asyncio.sleep(0.01)
+        gc.collect()  # a failed close task that nobody awaited reports "never retrieved" when it is collected
+        await asyncio.sleep(0)
+    finally:
+        loop.set_exception_handler(old_handler)
     assert exits == [None]  # the run ended exactly once
     assert seen == [rid]  # the inner generator's cleanup ran inside the run
     assert _row(rid)["status"] == "ok"
