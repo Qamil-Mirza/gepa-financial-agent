@@ -33,6 +33,8 @@ docs/superpowers/plans/m1-baseline.txt
 
 # The built dashboard (npm --prefix ui run build); shipped in the wheel as a hatch artifact
 src/pitstop/server/static/
+# The dashboard's npm dependencies (npm --prefix ui ci)
+ui/node_modules/
 
 # Generated benchmark data (archived as a release asset; regenerate with the scripts)
 benchmarks/synth/traces/

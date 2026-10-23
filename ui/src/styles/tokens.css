@@ -1,0 +1,111 @@
+/* PitStop design tokens: the mockups' set (docs/superpowers/specs/2026-10-20-pitstop-mockups/workflow-detail.html).
+   Neutrals are tinted toward hue 250; P-level colors are reserved for status and always travel with text.
+   Dark mode follows the system unless the theme toggle pins one: [data-theme] on <html> wins. */
+
+:root {
+  color-scheme: light dark;
+  --hue: 250;
+
+  /* surfaces and ink */
+  --bg: oklch(98.2% 0.004 var(--hue));
+  --surface: oklch(100% 0.002 var(--hue));
+  --sunken: oklch(95.6% 0.006 var(--hue));
+  --line: oklch(90% 0.008 var(--hue));
+  --line-soft: oklch(93.5% 0.006 var(--hue));
+  --ink: oklch(22% 0.02 var(--hue));
+  --ink-2: oklch(42% 0.018 var(--hue));
+  --ink-3: oklch(55% 0.014 var(--hue)); /* the mockup's 58% is 4.1:1 on --bg; 55% clears WCAG AA (4.5:1) */
+
+  /* status: P-levels (with their chip backgrounds), healthy, accent, change markers */
+  --p0: oklch(55% 0.19 18);
+  --p0-bg: oklch(95% 0.03 18);
+  --p1: oklch(54% 0.15 48); /* the mockup's 60% is 3.6:1 on --p1-bg; darkened for AA */
+  --p1-bg: oklch(95.5% 0.035 60);
+  --p2: oklch(52% 0.11 85); /* the mockup's 66% is 2.8:1 on --p2-bg; darkened for AA */
+  --p2-bg: oklch(96% 0.04 90);
+  --p3: oklch(52% 0.03 var(--hue));
+  --p3-bg: oklch(95% 0.008 var(--hue));
+  --ok: oklch(53% 0.11 155); /* the mockup's 58% is 4.1:1; darkened for AA */
+  --accent: oklch(50% 0.13 var(--hue));
+  --change: oklch(52% 0.14 295);
+  --sel: oklch(60% 0.14 var(--hue));
+
+  /* type */
+  --font-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 15px;
+  --text-lg: 17px;
+  --text-title: clamp(24px, 1.6vw + 18px, 30px);
+
+  /* space and shape */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --gutter: clamp(16px, 3vw, 24px);
+  --page-max: 1240px;
+  --radius-sm: 6px;
+  --radius: 10px;
+
+  /* motion: state changes only, ease-out */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 150ms;
+  --dur: 250ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: oklch(17.5% 0.012 var(--hue));
+    --surface: oklch(21% 0.014 var(--hue));
+    --sunken: oklch(15.5% 0.011 var(--hue));
+    --line: oklch(30% 0.014 var(--hue));
+    --line-soft: oklch(25.5% 0.012 var(--hue));
+    --ink: oklch(93% 0.008 var(--hue));
+    --ink-2: oklch(76% 0.012 var(--hue));
+    --ink-3: oklch(62% 0.012 var(--hue));
+    --p0: oklch(70% 0.16 20);
+    --p0-bg: oklch(30% 0.07 20);
+    --p1: oklch(74% 0.13 55);
+    --p1-bg: oklch(31% 0.06 55);
+    --p2: oklch(82% 0.12 90);
+    --p2-bg: oklch(32% 0.05 90);
+    --p3: oklch(70% 0.02 var(--hue));
+    --p3-bg: oklch(28% 0.012 var(--hue));
+    --ok: oklch(74% 0.11 155);
+    --accent: oklch(76% 0.1 var(--hue));
+    --change: oklch(74% 0.12 295);
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: oklch(17.5% 0.012 var(--hue));
+  --surface: oklch(21% 0.014 var(--hue));
+  --sunken: oklch(15.5% 0.011 var(--hue));
+  --line: oklch(30% 0.014 var(--hue));
+  --line-soft: oklch(25.5% 0.012 var(--hue));
+  --ink: oklch(93% 0.008 var(--hue));
+  --ink-2: oklch(76% 0.012 var(--hue));
+  --ink-3: oklch(62% 0.012 var(--hue));
+  --p0: oklch(70% 0.16 20);
+  --p0-bg: oklch(30% 0.07 20);
+  --p1: oklch(74% 0.13 55);
+  --p1-bg: oklch(31% 0.06 55);
+  --p2: oklch(82% 0.12 90);
+  --p2-bg: oklch(32% 0.05 90);
+  --p3: oklch(70% 0.02 var(--hue));
+  --p3-bg: oklch(28% 0.012 var(--hue));
+  --ok: oklch(74% 0.11 155);
+  --accent: oklch(76% 0.1 var(--hue));
+  --change: oklch(74% 0.12 295);
+}

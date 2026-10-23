@@ -1,0 +1,100 @@
+{
+  "home": "/home/you/.pitstop",
+  "workflows": [
+    {
+      "name": "earnings-research",
+      "criticality": "high",
+      "sensitivity": "normal",
+      "fix_mode": "manual",
+      "budget_usd": 2.0
+    },
+    {
+      "name": "nightly-digest",
+      "criticality": "low",
+      "sensitivity": "normal",
+      "fix_mode": "auto",
+      "budget_usd": null
+    },
+    {
+      "name": "support-triage",
+      "criticality": "medium",
+      "sensitivity": "normal",
+      "fix_mode": "auto",
+      "budget_usd": null
+    },
+    {
+      "name": "kb-sync",
+      "criticality": "low",
+      "sensitivity": "normal",
+      "fix_mode": "auto",
+      "budget_usd": null
+    }
+  ],
+  "budgets": [],
+  "judge": {
+    "model": "openai/gpt-oss-120b",
+    "base_url": "https://api.inference.crusoecloud.com/v1",
+    "api_key_env": "CRUSOE_API_KEY",
+    "key_set": false
+  },
+  "alerts": {
+    "channels": [
+      {
+        "name": "pagerduty",
+        "configured": false,
+        "env_var": "PAGERDUTY_ROUTING_KEY",
+        "env_set": false
+      },
+      {
+        "name": "opsgenie",
+        "configured": false,
+        "env_var": "OPSGENIE_API_KEY",
+        "env_set": false
+      },
+      {
+        "name": "slack",
+        "configured": false,
+        "env_var": "SLACK_WEBHOOK_URL",
+        "env_set": false
+      },
+      {
+        "name": "email",
+        "configured": false,
+        "env_var": "SMTP_PASSWORD",
+        "env_set": false
+      },
+      {
+        "name": "webhook",
+        "configured": false,
+        "env_var": "PITSTOP_WEBHOOK_URL",
+        "env_set": false
+      }
+    ],
+    "routes": {
+      "P0": [
+        "pagerduty",
+        "opsgenie",
+        "slack",
+        "webhook"
+      ],
+      "P1": [
+        "slack",
+        "email",
+        "webhook"
+      ],
+      "digest": [
+        "email",
+        "slack",
+        "webhook"
+      ]
+    }
+  },
+  "worker": {
+    "enabled": false,
+    "running": false,
+    "last_scan_at": null,
+    "last_scan_runs": null,
+    "last_error": null,
+    "scan_every_s": null
+  }
+}
