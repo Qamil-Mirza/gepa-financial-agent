@@ -856,3 +856,9 @@ Items not done in 3a, each with its reason.
   - `gen_fixtures.py` bare `next()`;
   - poll tests coverage;
   - light-token comments (p3 and p1/p2 chroma).
+- From the fix-wave re-review:
+  - `--host 0` / `0.0` resolve to the wildcard address but get past R10's check (`ipaddress` rejects the shorthand); treat a host that resolves to an unspecified address as a wildcard.
+  - `test_nul_in_static_path_is_404_without_traceback` absorbed the not-built-page assertions of `test_spa_fallback_and_not_built_page`; split them back.
+  - `pitstop scan --every 1e300` overflows `time.sleep` (cap it like `--scan-every`).
+  - The empty state's step 3 says `pitstop ui`; from a checkout it is `uv run pitstop ui`.
+  - README sections outside the dashboard still lead with `pip install "pitstop[...]"` for extras of an unpublished package.
