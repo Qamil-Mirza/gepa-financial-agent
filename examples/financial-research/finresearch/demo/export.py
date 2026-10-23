@@ -2,7 +2,8 @@
 
   python -m finresearch.demo.export --fixture                       # offline FIXTURE swarm (page development)
   python -m finresearch.demo.export --fixture-pair                  # offline FIXTURE pair (live-mode layout)
-  python -m finresearch.demo.export --swarm-run runs/<run_id>       # a real recording (cli run --shadow-prompt)
+  python -m finresearch.demo.export --swarm-run runs/<run_id>       # a real recording
+      (record it with: finresearch run --legacy-supervisor --shadow-prompt <prompt.txt>)
   python -m finresearch.demo.export --swarm-run runs/pair-<hex>     # a recorded live pair (dir with pair.json)
       [--gepa-run runs/gepa/pitstop_nano_800] [--arm key=label|sublabel|path[,fallback...]]... [--out PATH]
 
@@ -101,7 +102,8 @@ def main(argv: Optional[list[str]] = None) -> int:
               f"decisions a={len(sw['decisions']['a'])} b={len(sw['decisions']['b'])} flags={flags} "
               f"team_report={reports}")
         if sw["supervisors"]["b"] is None:
-            print("  warning: no shadow supervisor in this run (record with `cli run --shadow-prompt`)", file=sys.stderr)
+            print("  warning: no shadow supervisor in this run "
+                  "(record with `finresearch run --legacy-supervisor --shadow-prompt`)", file=sys.stderr)
     else:
         print("swarm: none (pass --swarm-run or --fixture)")
     if g:

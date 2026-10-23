@@ -4,6 +4,9 @@ The worker never sees supervisor verdicts. When the swarm runs with corrections
 on, it does receive the supervisor's correction messages (supervisor/correction.py),
 which go last in its prompts. Its optional drift injection is hidden from the
 supervisor and recorded only as ground truth in the run metadata.
+
+The paid You.com call is a PitStop side-effect tool (`youcom_research`): inside the swarm's workflow, PitStop's
+pre-action gate may block it. A block is an ERROR event naming the reason, and the next plan is told about it.
 """
 from __future__ import annotations
 
@@ -11,6 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+import pitstop
 from pitstop.llm import JSONParseError, LLMClient
 from pitstop.sdk.errors import Halted
 
@@ -32,6 +36,7 @@ class WorkerState:
     consecutive_plan_failures: int = 0
     finished: bool = False
     corrections: list[str] = field(default_factory=list)  # supervisor correction messages, oldest first
+    blocked: Optional[str] = None  # why PitStop blocked the last research call (cleared by the next one that runs)
     final_report: Optional[str] = None
 
 
@@ -83,6 +88,9 @@ class ResearchWorker:
             user += f"\n\nPRIVATE PRIORITY UPDATE: {self.spec.drift_injection.instruction}"
         if s.corrections:
             user += f"\n\n{s.corrections[-1]}"
+        if s.blocked:
+            user += (f"\n\nPitStop blocked your last research call ({s.blocked}). "
+                     "Re-plan: ask a question that serves your directive.")
         if s.step >= self.spec.max_steps - 1 and s.research_calls > 0:
             user += "\n\nThis is your last turn: you must choose finish."
         try:
@@ -122,12 +130,21 @@ class ResearchWorker:
             parent_event_id=proposal.plan_event_id,
         )
         s.queries.append(proposal.query)
+        # a side-effect tool: on the swarm's workflow, PitStop's L1 gate judges the call against this agent's directive
+        research = pitstop.tool(side_effects=True, name="youcom_research")(self.research.research)
         try:
-            res = await self.research.research(proposal.query)
+            res = await research(proposal.query)
         except YouComError as e:
             self.collector.emit(self.id, s.step, EventType.ERROR, f"research failed: {type(e).__name__}",
                                 {"error": str(e)[:300]}, parent_event_id=call.event_id)
             return
+        if isinstance(res, dict) and res.get("blocked_by") == "pitstop":  # the call did not run
+            s.blocked = str(res.get("reason", ""))[:500]
+            self.collector.emit(self.id, s.step, EventType.ERROR, f"research blocked by PitStop: {s.blocked}",
+                                {"blocked_by": "pitstop", "reason": s.blocked, "query": proposal.query},
+                                parent_event_id=call.event_id)
+            return
+        s.blocked = None
         s.research_calls += 1
         resp = self.collector.emit(
             self.id, s.step, EventType.TOOL_RESPONSE,

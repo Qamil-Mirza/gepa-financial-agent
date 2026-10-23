@@ -1,15 +1,18 @@
 """Command line entry points of the research example (installed as the `finresearch` console script).
 
   finresearch check                     # verify Crusoe inference (and optionally You.com)
-  finresearch run [--scenario PATH] [--correct-on-drift] [--no-report]   # default: the packaged nvda_amd scenario
-  finresearch run --model <crusoe id> --shadow-prompt <prompt.txt>     # 2 supervisors, same inputs
+  finresearch run --offline [--no-inject-drift]   # no keys: scripted models, canned research, scripted gate judge
+  finresearch run [--scenario PATH] [--no-report]   # live; default: the packaged nvda_amd scenario
+  finresearch run --legacy-supervisor [PROMPT] [--correct-on-drift]   # also the hackathon per-step supervisor
+  finresearch run --legacy-supervisor --model <crusoe id> --shadow-prompt <prompt.txt>   # 2 supervisors
   finresearch compare --run-dir <runs_dir>/<id> --prompt-b <prompt.txt>  # prompt A defaults to supervisor_v0
   finresearch timeline --run-dir <runs_dir>/<id>   # rebuild + print the curated drift timeline
   finresearch serve --port 8765               # timeline API + live SSE stream for the UI
   finresearch demo --port 8770                # GEPA demo page (finresearch.demo)
 
-Runs and the You.com cache live under $PITSTOP_HOME (default ~/.pitstop); see finresearch.config. The SDK
-commands (status, drifts, budget, fallback, alerts) are on the `pitstop` console script.
+Every run is watched by the PitStop SDK (see finresearch.orchestrator). Runs and the You.com cache live under
+$PITSTOP_HOME (default ~/.pitstop); see finresearch.config. The SDK commands (status, drifts, budget, fallback,
+alerts) are on the `pitstop` console script.
 """
 from __future__ import annotations
 
@@ -27,6 +30,7 @@ from pitstop.llm import LLMClient, UsageTracker
 from pitstop.sdk.runtime import get_runtime
 from pitstop.userconfig import ConfigInvalid
 
+from . import offline
 from .config import PROMPTS, SCENARIOS, load_settings
 from .agents.synthesizer import ReportSynthesizer
 from .research.youcom import FinanceResearchClient
@@ -78,11 +82,18 @@ async def cmd_run(args) -> None:
     _runtime()  # an invalid config.toml exits 2 before any model or research call
     s = load_settings()
     scenario = Scenario.model_validate_json(Path(args.scenario).read_text())
+    if not args.inject_drift:
+        scenario = offline.without_injection(scenario)
+    if args.offline:
+        await offline.make_swarm(scenario, runs_dir=s.runs_dir, console=console).run_all()
+        return
     worker_llm = _llm(s, s.worker_model, 0.4)
-    model = args.model or s.supervisor_model
-    sup_llm = _llm(s, model, 0.0)
-    # same model, own client (own usage counter), different prompt; never halts or touches the timeline
-    shadow = Supervisor(_llm(s, model, 0.0), Path(args.shadow_prompt)) if args.shadow_prompt else None
+    supervisor = shadow = None
+    if args.legacy_supervisor:
+        model = args.model or s.supervisor_model
+        supervisor = Supervisor(_llm(s, model, 0.0), Path(args.legacy_supervisor))
+        # same model, own client (own usage counter), different prompt; never halts or touches the timeline
+        shadow = Supervisor(_llm(s, model, 0.0), Path(args.shadow_prompt)) if args.shadow_prompt else None
     research = FinanceResearchClient(
         api_key=s.ydc_api_key, cache_dir=Path(args.cache_dir or s.cache_dir), mode=args.mode,
         effort=s.youcom_effort, max_live_calls=args.max_research_calls or s.max_research_calls,
@@ -90,7 +101,7 @@ async def cmd_run(args) -> None:
     synthesizer = None if args.no_report else ReportSynthesizer(
         LLMClient(s.report_model, api_key=s.crusoe_api_key, base_url=s.crusoe_base_url, temperature=0.2,
                   max_tokens=4000, usage=UsageTracker()), PROMPTS / "worker")
-    swarm = Swarm(scenario, worker_llm=worker_llm, supervisor=Supervisor(sup_llm, Path(args.prompt)),
+    swarm = Swarm(scenario, worker_llm=worker_llm, supervisor=supervisor,
                   research=research, prompts_dir=PROMPTS / "worker", runs_dir=s.runs_dir,
                   halt_on_drift=args.halt_on_drift, correct_on_drift=args.correct_on_drift,
                   max_corrections=args.max_corrections, synthesizer=synthesizer, shadow_supervisor=shadow)
@@ -166,16 +177,22 @@ def main() -> None:
     c = sub.add_parser("check"); c.add_argument("--youcom", action="store_true", help="also make one paid You.com call")
     r = sub.add_parser("run")
     r.add_argument("--scenario", default=str(SCENARIOS / "nvda_amd.json"))
-    r.add_argument("--prompt", default=str(PROMPTS / "supervisor_v0.txt"))
-    r.add_argument("--model", help="supervisor model (default: PITSTOP_SUPERVISOR_MODEL)")
-    r.add_argument("--shadow-prompt", help="also judge every input with this prompt (same model); "
-                                          "logged to decisions_shadow.jsonl, never halts")
+    r.add_argument("--offline", action="store_true",
+                   help="no keys, no network: scripted worker, canned research, scripted PitStop gate judge")
+    r.add_argument("--inject-drift", action=argparse.BooleanOptionalAction, default=True,
+                   help="keep the scenario's drift injection (default on; --no-inject-drift for a clean run)")
+    r.add_argument("--legacy-supervisor", nargs="?", const=str(PROMPTS / "supervisor_v0.txt"), metavar="PROMPT",
+                   help="also run the hackathon per-step supervisor (default prompt: supervisor_v0.txt)")
+    r.add_argument("--model", help="legacy supervisor model (default: PITSTOP_SUPERVISOR_MODEL)")
+    r.add_argument("--shadow-prompt", help="with --legacy-supervisor: also judge every input with this prompt "
+                                          "(same model); logged to decisions_shadow.jsonl, never halts")
     r.add_argument("--mode", choices=["live", "replay"], default="live",
                    help="live: cache-first, call You.com on miss; replay: cache only")
     r.add_argument("--cache-dir"); r.add_argument("--max-research-calls", type=int)
-    r.add_argument("--halt-on-drift", action="store_true", help="stop an agent at its intervention point")
+    r.add_argument("--halt-on-drift", action="store_true",
+                   help="with --legacy-supervisor: stop an agent at its intervention point")
     r.add_argument("--correct-on-drift", action="store_true",
-                   help="at an intervention point, block the query and send the agent a correction")
+                   help="with --legacy-supervisor: at an intervention point, block the query and send a correction")
     r.add_argument("--max-corrections", type=int, default=2,
                    help="corrections per agent before --halt-on-drift (if set) halts it")
     r.add_argument("--no-report", action="store_true", help="skip the final report agent")
@@ -193,6 +210,14 @@ def main() -> None:
     d.add_argument("--host", default="127.0.0.1"); d.add_argument("--port", type=int, default=8770)
     d.add_argument("--snapshot", help="default: demo/snapshot.json")
     args = p.parse_args()
+    if args.cmd == "run":
+        legacy_only = [f for f, on in (("--model", args.model), ("--shadow-prompt", args.shadow_prompt),
+                                       ("--halt-on-drift", args.halt_on_drift),
+                                       ("--correct-on-drift", args.correct_on_drift)) if on]
+        if legacy_only and not args.legacy_supervisor:
+            r.error(f"{', '.join(legacy_only)} need --legacy-supervisor")
+        if args.offline and args.legacy_supervisor:
+            r.error("--legacy-supervisor needs a live supervisor model; it is not available with --offline")
     handler = {"check": cmd_check, "run": cmd_run, "compare": cmd_compare, "timeline": cmd_timeline,
                "serve": cmd_serve, "demo": cmd_demo}[args.cmd]
     asyncio.run(handler(args))
