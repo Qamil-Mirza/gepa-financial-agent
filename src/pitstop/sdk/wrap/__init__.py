@@ -32,15 +32,26 @@ request and yields the SDK's own stream class (proxied: every event passes throu
 `get_final_completion()` / `get_final_response()` / `get_final_message()` / `get_final_text()` / `until_done()` and
 Anthropic's `text_stream` read the stream through the proxy). The call
 settles when the manager exits; a manager that is never entered releases its reservation when it is garbage
-collected. An error raised mid-stream that carries the billed `completion` (LengthFinishReasonError) settles from
-its usage, or at the full reservation when no usage was seen. A Responses call with `background=True` (or a result
-still `queued` / `in_progress`) is charged its full reservation unless its final usage is seen: its output is
-billed after the call returns.
+collected. A chat stream helper's `current_completion_snapshot` hides PitStop's injected usage, so it returns a fresh
+copy on each access (not the SDK's live object); `event.snapshot` on the events is the SDK's own live accumulator
+and shows the injected usage once the usage chunk has arrived. An error raised mid-stream that carries the billed
+`completion` (LengthFinishReasonError) settles from its usage, or at the full reservation when no usage was seen.
+A Responses call with `background=True` (or a result still `queued` / `in_progress`) is charged its full
+reservation unless its final usage is seen: its output is billed after the call returns. With
+`previous_response_id` or `conversation`, the earlier turns are billed as input but are not in the request, so the
+prompt estimate adds `PRIOR_CONTEXT_TOKENS` (32,000) for them.
 
 Raw responses: a non-stream `with_raw_response` call is settled from `result.parse()`. Responses that can't be
-read without consuming them for the caller, `with_streaming_response` and `with_raw_response` with
-`stream=True`, are charged their full reservation at return (`usage_estimated: "worst_case"`) and feed no
-detection: over-counted, never under-counted.
+read without consuming them for the caller are charged their full reservation (`usage_estimated: "worst_case"`)
+and feed no detection: over-counted, never under-counted. A `with_raw_response` call with `stream=True` is charged
+at return; a `with_streaming_response` manager reserves when called, is charged when it is entered (the request is
+sent then), and, like a stream helper's manager, releases its reservation when it is garbage collected without
+being entered, or when entering it fails.
+
+L0 reads tool calls and refusals from every shape. For Responses, custom tool calls (their `input` as the
+arguments) and hosted tool calls (web/file search, code interpreter, computer use, MCP, image generation, local
+shell; arguments "") count as tool calls but never as parse failures, and a message's `refusal` content part makes
+the call refused.
 
 A reservation is always settled or released, including on KeyboardInterrupt and asyncio cancellation. Store or
 ledger failures never reach user code: the call proceeds unmetered and its event carries `unmetered: true`. An

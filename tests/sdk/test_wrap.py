@@ -679,3 +679,13 @@ def test_meter_exits_in_other_context():
     other.run(_meter.set, "watch")  # the other Context sees the meter too, but holds no token for it
     other.run(cm.__exit__, None, None, None)  # must not raise ValueError
     assert other.run(_meter.get) == "agent"
+
+
+def test_mode_is_a_literal_of_the_modes_used():
+    import typing
+
+    from pitstop.sdk.wrap.call import Mode
+    from pitstop.sdk.wrap.proxy import _MODES
+
+    assert typing.get_origin(Mode) is typing.Literal
+    assert set(typing.get_args(Mode)) == {"normal", "raw", "streaming"} == {"normal", *_MODES.values()}

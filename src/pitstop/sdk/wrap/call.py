@@ -9,7 +9,7 @@ import json
 import logging
 import math
 import time
-from typing import Any
+from typing import Any, Literal
 
 from ...userconfig import ConfigInvalid
 from ...budget.ledger import Reservation
@@ -27,7 +27,7 @@ log = logging.getLogger("pitstop")
 # succeeded without it. Process-level: later stream calls to these endpoints are sent without the injection.
 _NO_STREAM_OPTIONS: set[str] = set()
 
-Mode = str  # "normal" | "raw" (with_raw_response) | "streaming" (with_streaming_response)
+Mode = Literal["normal", "raw", "streaming"]  # "raw": with_raw_response; "streaming": with_streaming_response
 
 
 # -- post-call hooks (L0 detection) --------------------------------------------------------------------------
@@ -48,6 +48,8 @@ def _after_llm_call(ctx: RunContext | None, obs: Observed, refused: bool) -> Non
 
     failures = 0
     for tc in obs.tool_calls:
+        if _g(tc, "kind") is not None:  # a custom or hosted call: its arguments are not JSON by design
+            continue
         try:
             json.loads(_g(tc, "arguments"))
         except Exception:

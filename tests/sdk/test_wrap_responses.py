@@ -284,6 +284,113 @@ def test_responses_budget_exceeded_before_request(tmp_path):
     assert _ledger_rows() == [] and _events() == []
 
 
+def test_responses_estimate_counts_prior_context():
+    """Earlier turns behind previous_response_id / conversation are billed but not in the request: over-count."""
+    import openai
+
+    from pitstop.sdk.wrap.shapes import PRIOR_CONTEXT_TOKENS, RESPONSES
+
+    assert PRIOR_CONTEXT_TOKENS == 32_000
+    assert RESPONSES.estimate_prompt_tokens({"input": INPUT}) == 100
+    assert RESPONSES.estimate_prompt_tokens({"input": INPUT, "previous_response_id": "resp_0"}) == 100 + 32_000
+    assert RESPONSES.estimate_prompt_tokens({"input": INPUT, "conversation": "conv_1"}) == 100 + 32_000
+    assert RESPONSES.estimate_prompt_tokens({"input": INPUT, "conversation": {"id": "conv_1"}}) == 100 + 32_000
+    both = {"input": INPUT, "previous_response_id": "resp_0", "conversation": "conv_1"}
+    assert RESPONSES.estimate_prompt_tokens(both) == 100 + 32_000  # added once
+    unset = {"input": INPUT, "previous_response_id": None, "conversation": openai.NOT_GIVEN}
+    assert RESPONSES.estimate_prompt_tokens(unset) == 100
+
+
+def _hosted_and_custom_output() -> list[dict]:
+    return [
+        {"type": "custom_tool_call", "id": "ctc_1", "call_id": "call_c", "name": "run_sql", "input": "SELECT 1"},
+        {"type": "web_search_call", "id": "ws_1", "status": "completed",
+         "action": {"type": "search", "query": "x"}},
+        {"type": "file_search_call", "id": "fs_1", "status": "completed", "queries": ["x"]},
+        {"type": "code_interpreter_call", "id": "ci_1", "status": "completed", "code": "1+1",
+         "container_id": "c", "outputs": []},
+        {"type": "computer_call", "id": "cc_1", "call_id": "call_cc", "status": "completed",
+         "action": {"type": "screenshot"}, "pending_safety_checks": []},
+        {"type": "mcp_call", "id": "mcp_1", "name": "lookup", "server_label": "s", "arguments": "{}"},
+        {"type": "image_generation_call", "id": "ig_1", "status": "completed", "result": None},
+        {"type": "local_shell_call", "id": "ls_1", "call_id": "call_ls", "status": "completed",
+         "action": {"type": "exec", "command": ["ls"], "env": {}}},
+    ]
+
+
+EXPECTED_HOSTED = ["run_sql", "web_search_call", "file_search_call", "code_interpreter_call", "computer_call",
+                   "lookup", "image_generation_call", "local_shell_call"]
+
+
+def test_responses_hosted_and_custom_tool_calls_recorded(tmp_path):
+    """Custom and hosted tool calls count as tool calls for L0, and never as parse failures."""
+    _init(tmp_path)
+    body = response_body("hi")
+    body["output"] += _hosted_and_custom_output()
+    created = response_body(None, status="in_progress", usage=False)
+    events = [{"type": "response.created", "response": created},
+              {"type": "response.output_item.added", "output_index": 0,
+               "item": {"type": "custom_tool_call", "id": "ctc_1", "call_id": "call_c", "name": "run_sql",
+                        "input": ""}},
+              {"type": "response.custom_tool_call_input.delta", "output_index": 0, "item_id": "ctc_1",
+               "delta": "SELECT"},
+              {"type": "response.custom_tool_call_input.delta", "output_index": 0, "item_id": "ctc_1",
+               "delta": " 1"},
+              {"type": "response.output_item.added", "output_index": 1,
+               "item": {"type": "web_search_call", "id": "ws_1", "status": "in_progress"}},
+              {"type": "response.output_item.added", "output_index": 2,
+               "item": {"type": "mcp_call", "id": "mcp_1", "name": "lookup", "server_label": "s",
+                        "arguments": ""}},
+              {"type": "response.completed", "response": response_body(None, input_tokens=17, output_tokens=6)}]
+    for i, e in enumerate(events):
+        e["sequence_number"] = i
+
+    def respond(b):
+        return sse_response(events) if b.get("stream") else json_response(body)
+
+    w = pitstop.wrap(openai_client(_recording([], respond)))
+    with workflow("wf") as ctx:
+        w.responses.create(model=MODEL, input=INPUT)
+        list(w.responses.create(model=MODEL, input=INPUT, stream=True))
+        history = list(ctx.llm_history)
+    first, second = _events()
+    calls = first["payload"]["tool_calls"]
+    assert [c["name"] for c in calls] == EXPECTED_HOSTED
+    assert calls[0]["arguments"] == "SELECT 1"
+    assert all(c["arguments"] == "" for c in calls[1:])
+    assert [(c["name"], c["arguments"]) for c in second["payload"]["tool_calls"]] == [
+        ("run_sql", "SELECT 1"), ("web_search_call", ""), ("lookup", "")]
+    assert [(r.tool_calls, r.tool_call_parse_failures) for r in history] == [(8, 0), (3, 0)]
+    assert _db().execute("SELECT COUNT(*) FROM drifts").fetchone()[0] == 0
+
+
+def test_responses_refusal_part_counts(tmp_path):
+    _init(tmp_path)
+    body = response_body(None)
+    body["output"] = [{"type": "message", "id": "msg_1", "role": "assistant", "status": "completed",
+                       "content": [{"type": "refusal", "refusal": "No."}]}]
+    created = response_body(None, status="in_progress", usage=False)
+    events = [{"type": "response.created", "response": created},
+              {"type": "response.refusal.delta", "output_index": 0, "content_index": 0, "item_id": "msg_1",
+               "delta": "No."},
+              {"type": "response.refusal.done", "output_index": 0, "content_index": 0, "item_id": "msg_1",
+               "refusal": "No."},
+              {"type": "response.completed", "response": body}]
+    for i, e in enumerate(events):
+        e["sequence_number"] = i
+
+    def respond(b):
+        return sse_response(events) if b.get("stream") else json_response(body)
+
+    w = pitstop.wrap(openai_client(_recording([], respond)))
+    with workflow("wf") as ctx:
+        w.responses.create(model=MODEL, input=INPUT)
+        list(w.responses.create(model=MODEL, input=INPUT, stream=True))
+        refusals = ctx.refusals
+    assert [e["payload"]["refused"] for e in _events()] == [True, True]
+    assert refusals == 2
+
+
 # -- legacy completions -------------------------------------------------------------------------------------------
 
 
@@ -322,6 +429,16 @@ def test_legacy_completions_estimate_and_max_tokens(tmp_path):
     assert COMPLETIONS.estimate_prompt_tokens({"prompt": [INPUT, INPUT]}) == 200
     assert COMPLETIONS.max_output_tokens({"prompt": "x"}) == 4096  # the API default is 16; reserve conservatively
     assert COMPLETIONS.max_output_tokens({"prompt": "x", "max_tokens": 9}) == 9
+
+
+def test_completions_token_id_prompt_estimate():
+    """A token-id prompt is already in tokens: list[int] counts its length, list[list[int]] the sum."""
+    from pitstop.sdk.wrap.shapes import COMPLETIONS
+
+    assert COMPLETIONS.estimate_prompt_tokens({"prompt": list(range(50))}) == 50
+    assert COMPLETIONS.estimate_prompt_tokens({"prompt": [list(range(30)), list(range(12))]}) == 42
+    assert COMPLETIONS.estimate_prompt_tokens({"prompt": [[]]}) == 0
+    assert COMPLETIONS.estimate_prompt_tokens({"prompt": []}) == 0
 
 
 def test_resource_proxies_keep_isinstance_and_weakref(tmp_path):
