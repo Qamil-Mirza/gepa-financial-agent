@@ -774,4 +774,85 @@ Items not done in 3a, each with its reason.
 
 ### From the milestone 3a reviews
 
-(added after the final review)
+- Polling cost:
+  - `/api/changes` runs `run_metrics` per run (up to 1,000 queries).
+  - `/api/graph` loads every event payload of up to 200 runs, every 10 s per open tab.
+  - Measure on a real store; consider a `PRAGMA data_version` short-circuit before 3b adds pollers.
+- Tests to add:
+  - dismiss 404/409 path;
+  - "≥"/"—" time rendering (fixture with a `time_partial` node and a null-time node);
+  - Explain 404/422 states;
+  - poll during a pending dismiss;
+  - poll hidden-abort and refresh-abort;
+  - `latency_s` on async/error tool paths;
+  - failing agent-event write fails open;
+  - re-entered `agent()` writes one event;
+  - prompt_versions key-order and malformed JSON;
+  - chart single-point, all-equal and missing-metric cases.
+- Accessibility polish:
+  - `aria-label` on `<p>` in the tile;
+  - unannounced skeletons on the pit wall;
+  - node buttons hide their facts from screen readers (`aria-describedby`; `aria-expanded` instead of `aria-pressed`);
+  - scope line `role="status"` announces every poll;
+  - focus lost after Dismiss;
+  - duplicate "Explanation" region names;
+  - drawer heading ids collide (`useId`);
+  - tile focus ring relies on `:has()`.
+- UI robustness:
+  - layout failure shows an empty canvas;
+  - chart hit-testing mixes CSS px and viewBox units when scaled;
+  - `tickText` has no M/B units;
+  - the line joins across missing-metric runs;
+  - unknown latency/cost omitted (not "—") in the event timeline;
+  - truncated notice only at the bottom;
+  - `RunGraph` with `controls={false}` still polls;
+  - `statusWord` lives in `RunsTable`;
+  - ≤900 px canvas captures vertical swipes;
+  - settings: alerts empty state, negative remaining budget, `ConfigNote` path with a custom `PITSTOP_HOME`, silent health-poll failure.
+- Server/data:
+  - runs cursor skips ties on `started_at`;
+  - ~10 queries per workflow per board poll;
+  - feed id tie-break sorts as strings;
+  - explain 422 body shape differs from FastAPI's;
+  - `redact_text` stops at `( ) < > " '`;
+  - feed cutoff at exactly 200 runs;
+  - changes OFFSET batching races;
+  - tag markers only over runs with metrics;
+  - `base_url` marker compared unredacted;
+  - node-id collisions with `|`;
+  - halt/fallback placement depends on processing order;
+  - graph events query fetches all kinds;
+  - OTel agent events before the parent fix lack `parent`;
+  - worker probe-then-scan race;
+  - write guard is a method denylist;
+  - 500 log includes the exception message;
+  - socket not closed if startup fails after bind.
+- SDK and alerts:
+  - `is_checked` consume not atomic across threads;
+  - `_tag_run` check-then-update not atomic;
+  - nested same-name tool latency includes adapter overhead;
+  - a halted nested Agents SDK run leaves its name on the stack;
+  - processor uses one warn key for two failures;
+  - `_ensure_run` holds the trace lock during INSERT;
+  - end-time agent name only for spans ending after the agent span;
+  - `__signature__` captured at wrap time;
+  - emit caches a failed import for the process lifetime;
+  - `list[str]` prompt estimate sums per item;
+  - budget cause prints 2 decimals;
+  - `_deliver_unrecorded` duplicates `_update`;
+  - send-first test doesn't assert the follow-up row;
+  - tautological assertion in the store-refused test.
+- Example:
+  - finresearch fallback hardcodes the tool name;
+  - `--offline` truthiness checks (`--max-research-calls 0`);
+  - only the first unsupported flag reported;
+  - the benchmark test monkeypatch is brittle;
+  - dashboard_demo refuses only `pitstop.db`/`config.toml`;
+  - quickstart README's "no env var key is read" is loose (`.env` is loaded from cwd);
+  - demo test calls `init()` in-process;
+  - a spend assertion could flake at midnight.
+- Build:
+  - Rollup >500 kB chunk warning for the lazy elkjs chunk;
+  - `gen_fixtures.py` bare `next()`;
+  - poll tests coverage;
+  - light-token comments (p3 and p1/p2 chroma).
