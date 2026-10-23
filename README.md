@@ -218,6 +218,33 @@ with pitstop.workflow("support", goal="Answer the ticket", criticality="medium",
 
 Limits: only function tools are guarded, because the SDK runs tool input guardrails for function tools only; hosted tools (web search, file search, code interpreter, computer use), MCP server tools and handoffs are not checked. Model calls are metered and budgeted only through a `pitstop.wrap`-ed client. `guard` replaces each guarded tool's `on_invoke_tool`, so `tool.__wrapped__` no longer reaches the original function.
 
+## LangChain / LangGraph
+
+Install `pip install "pitstop[langchain]"`. For a LangChain v1 agent (`create_agent`, which runs on LangGraph), add PitStop's middleware, and for hard budgets give the chat model a wrapped client:
+
+```python
+import pitstop
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+from openai import AsyncOpenAI, OpenAI
+from pitstop.sdk.adapters.langchain import PitStopMiddleware
+
+model = ChatOpenAI(model="gpt-5", client=pitstop.wrap(OpenAI()).chat.completions,
+                   async_client=pitstop.wrap(AsyncOpenAI()).chat.completions)   # metered, budgeted
+
+agent = create_agent(model, [search, send_email],
+                     middleware=[PitStopMiddleware(side_effects={"send_email"}, agent="support")])
+
+with pitstop.workflow("support", goal="Answer the ticket", criticality="medium", tools=("search", "send_email")):
+    result = agent.invoke({"messages": [{"role": "user", "content": question}]})   # raises pitstop.Halted
+```
+
+Each tool call then goes through the same checks as a `@pitstop.tool` call before it runs: a pending halt, the scope and loop checks, and the pre-action gate for the tools named in `side_effects` on `high` and `medium` workflows. A blocked or steered call doesn't run: the model gets a `ToolMessage` with `status="error"` whose content is `{"blocked_by":"pitstop","reason":...}` (or the corrective text of a steer). A tool whose body is itself a `@pitstop.tool` of the same name is checked once, and each call records one result. The middleware also raises a pending halt before each model call, so `pitstop.Halted` (and `BudgetExceeded` from a wrapped client) comes out of `invoke` / `ainvoke`. `agent=` names the agent for the run's model calls, tool events and halt events; it keeps the goal of the enclosing `pitstop.agent(..., goal=...)` scope, which the gate judges side-effect calls against (the workflow goal when there is none). The run is tagged `adapter = langchain`. Outside a `pitstop.workflow(...)` the middleware does nothing. A `side_effects` name that is none of the agent's tools is logged as a warning once.
+
+What is enforced and what is only observed: tool calls are enforced (blocked, steered, halted). Model calls are budgeted only through a `pitstop.wrap`-ed client as above. A model call that no wrapped client metered (any other chat model, or `ChatOpenAI` without a wrapped client) is still recorded, as an `llm_call` event marked `"observed": true` with the tokens the reply reports and a cost estimated from the price table, and the L0 checks run on it (refusal spikes, and invalid tool calls as tool-call breakage). Its cost never reaches the budget ledger, so it can't trip a budget or the spend-spike halt.
+
+Limits: only tool calls that reach the agent's tool node are guarded; tools the provider runs server side are not. "Already metered" is judged per run, so a run with an unwrapped and a wrapped model call in flight at the same moment may miss recording the unwrapped one. A plain LangGraph `StateGraph` without `create_agent` doesn't use middleware: decorate its tools with `@pitstop.tool` and give its model a `pitstop.wrap`-ed client.
+
 ## Already tracing with OpenTelemetry?
 
 If your agent is already traced with OpenTelemetry GenAI spans (Langfuse, Logfire, OpenLLMetry, OpenInference/Phoenix or the GenAI semantic conventions), PitStop can read those spans without touching your agent code. Install `pip install "pitstop[otel]"` and add its span processor to your tracer provider:
