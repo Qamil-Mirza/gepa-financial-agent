@@ -65,12 +65,17 @@ T = TypeVar("T")
 
 @contextlib.contextmanager
 def meter(name: str):
-    """Tag every metered call made inside the block with ledger meter `name` (default "agent")."""
+    """Tag every metered call made inside the block with ledger meter `name` (default "agent"). Exiting restores
+    the meter from before the block, also when the block is exited in another Context than the one it entered."""
+    prev = _meter.get()
     token = _meter.set(name)
     try:
         yield
     finally:
-        _meter.reset(token)
+        try:
+            _meter.reset(token)
+        except ValueError:  # the token belongs to another Context (as in _GenRun._pop)
+            _meter.set(prev)
 
 
 def _table_for(client: Any) -> Table:

@@ -151,7 +151,7 @@ def _before(ctx: RunContext, tname: str, side_effects: bool, args: tuple, kwargs
             return _NeedsGate(args_text, recent)
         _safe(lambda: _event(ctx, "tool_call", tname, {"args": args_text[:500]}))
         return _RUN
-    finding, _level, action, _drift_id = decision
+    finding, _level, action, deciding_id = decision
     text = f"{finding.drift_type}: {_one_line(finding.evidence)}"
     if action == "block":
         _safe(lambda: _event(ctx, "block", tname, {"reason": text, "args": args_text[:500]}))
@@ -162,6 +162,8 @@ def _before(ctx: RunContext, tname: str, side_effects: bool, args: tuple, kwargs
         if over:
             if ctx.halt_reason is None:
                 ctx.halt_reason = "steer limit exceeded"
+            if ctx.halt_drift_id is None:  # the drift whose steer tripped the limit
+                ctx.halt_drift_id = deciding_id
         else:
             ctx.steers += 1
         reason, drift_id = ctx.halt_reason, ctx.halt_drift_id

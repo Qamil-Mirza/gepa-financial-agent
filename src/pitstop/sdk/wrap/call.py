@@ -33,10 +33,18 @@ Mode = str  # "normal" | "raw" (with_raw_response) | "streaming" (with_streaming
 # -- post-call hooks (L0 detection) --------------------------------------------------------------------------
 
 
-def _after_llm_call(ctx: RunContext | None, obs: Observed) -> None:
+def _refused(obs: Observed) -> bool:
+    """Whether the reply is a refusal. A provider-declared refusal (Anthropic's stop_reason "refusal") counts
+    whatever the text says."""
+    from ...detect.l0 import is_refusal
+
+    return bool(obs.refused or is_refusal(obs.content, len(obs.tool_calls)))
+
+
+def _after_llm_call(ctx: RunContext | None, obs: Observed, refused: bool) -> None:
     """Post-call L0 checks: build the call record, update the run's history and refusal count, record findings
-    as drifts."""
-    from ...detect.l0 import LLMCallRecord, check_llm_call, is_refusal
+    as drifts. `refused` is `_refused(obs)`, computed once for the event and for detection."""
+    from ...detect.l0 import LLMCallRecord, check_llm_call
 
     failures = 0
     for tc in obs.tool_calls:
@@ -44,8 +52,6 @@ def _after_llm_call(ctx: RunContext | None, obs: Observed) -> None:
             json.loads(_g(tc, "arguments"))
         except Exception:
             failures += 1
-    # A provider-declared refusal (Anthropic's stop_reason "refusal") counts whatever the text says.
-    refused = obs.refused or is_refusal(obs.content, len(obs.tool_calls))
     record = LLMCallRecord(failures, len(obs.tool_calls), refused)
     if ctx is None:
         findings = check_llm_call([], record, "normal", 1 if record.refused else 0)
@@ -226,11 +232,13 @@ class _Call:
                 cost = self.res.usd
         else:
             cost = _safe(lambda: self._unmetered_cost(prompt, completion, cached))
-        _safe(lambda: self._record(cost, estimated))
+        # A response charged worst case was never read: it is not known to be a refusal.
+        refused = not self.worst_case and _safe(lambda: _refused(self.obs)) is True
+        _safe(lambda: self._record(cost, estimated, prompt, completion, refused))
         # Only the agent's own calls feed L0 detection, and only with what the response showed.
         if self.meter == "agent" and not self.worst_case:
             obs = self.obs
-            _safe(lambda: _after_llm_call(self.ctx, obs))
+            _safe(lambda: _after_llm_call(self.ctx, obs, refused))
 
     def _tokens(self) -> tuple[int, int, int, bool | str]:
         if self.worst_case:
@@ -258,12 +266,17 @@ class _Call:
     def _unmetered_cost(self, prompt: int, completion: int, cached: int) -> float:
         return cost_usd(price_for(self.model, self._rt().config.prices)[0], prompt, completion, cached)
 
-    def _record(self, cost: float | None, estimated: bool | str) -> None:
+    def _record(self, cost: float | None, estimated: bool | str, prompt: int, completion: int,
+                refused: bool) -> None:
+        """Write the `llm_call` event (its tokens are the ones settled, or estimated) and the run's tags: the first
+        agent call sets model, base_url and adapter (an adapter that tagged the run first keeps its tag), and a
+        call redirected to the fallback model records the first model it replaced."""
         from ... import __version__
 
         o = self.obs
         payload: dict[str, Any] = {"tool_calls": o.tool_calls, "finish_reason": o.finish_reason,
-                                   "content_chars": o.content_chars, "meter": self.meter}
+                                   "content_chars": o.content_chars, "meter": self.meter,
+                                   "prompt_tokens": prompt, "completion_tokens": completion, "refused": refused}
         if estimated:
             payload["usage_estimated"] = estimated  # True (character estimate) or "worst_case"
         if self.unmetered:
@@ -288,9 +301,12 @@ class _Call:
             if first:
                 # price_known only ever drops: an earlier unknown-priced call (any meter) keeps the run's 0
                 c.execute(
-                    "UPDATE runs SET model=?, base_url=?, adapter='wrap', pitstop_version=?,"
+                    "UPDATE runs SET model=?, base_url=?, adapter=COALESCE(adapter, 'wrap'), pitstop_version=?,"
                     " price_known=CASE WHEN ? THEN price_known ELSE 0 END WHERE id=?",
                     (self.model, normalize_base_url(self.base_url), __version__, known is not False, ctx.run_id),
                 )
             elif known is False:  # any meter: an unknown-priced call makes the run's cost a lower bound
                 c.execute("UPDATE runs SET price_known=0 WHERE id=?", (ctx.run_id,))
+            if self.fallback_from is not None:  # set only on agent-meter calls (_fallback_from)
+                c.execute("UPDATE runs SET fallback_from=COALESCE(fallback_from, ?) WHERE id=?",
+                          (self.fallback_from, ctx.run_id))

@@ -504,3 +504,47 @@ async def test_async_generator_steps_see_consumer_context_and_keep_their_own_age
     user_var.set("set-by-consumer")  # set between steps: the next step runs in the consumer's context
     assert await it.__anext__() == ("inner", "set-by-consumer")
     await it.aclose()
+
+
+async def test_async_gen_workflow_in_reference_cycle(tmp_path, monkeypatch, caplog):
+    """Abandoned inside a reference cycle, the wrapper and the inner generator are finalized by the same
+    gc.collect(). Only the wrapper may close the inner generator: the loop must not also schedule its own aclose(),
+    which would race the wrapper's and fail with "already running"."""
+    from pitstop.sdk import context
+
+    pitstop.init(home=tmp_path)
+    exits, seen, errors = [], [], []
+    real_exit = context._Workflow.__exit__
+
+    def spy(self, et, ev, tb):
+        exits.append(et)
+        return real_exit(self, et, ev, tb)
+
+    monkeypatch.setattr(context._Workflow, "__exit__", spy)
+
+    @workflow("ag")
+    async def agen():
+        try:
+            while True:
+                yield current_run().run_id
+        finally:
+            await asyncio.sleep(0.01)  # cleanup that suspends: a second aclose() would find it running
+            r = current_run()
+            seen.append(r.run_id if r else None)
+
+    asyncio.get_running_loop().set_exception_handler(lambda loop, c: errors.append(c))
+    it = agen()
+    rid = await it.__anext__()
+    cycle = [it]
+    cycle.append(cycle)
+    del it, cycle
+    gc.collect()  # the loop's finalizer hook schedules the wrapper's aclose()
+    for _ in range(20):
+        await asyncio.sleep(0.01)
+    gc.collect()  # a failed close task that nobody awaited reports "never retrieved" when it is collected
+    await asyncio.sleep(0)
+    assert exits == [None]  # the run ended exactly once
+    assert seen == [rid]  # the inner generator's cleanup ran inside the run
+    assert _row(rid)["status"] == "ok"
+    assert errors == []  # no "aclose(): asynchronous generator is already running" from a second close task
+    assert "already running" not in caplog.text

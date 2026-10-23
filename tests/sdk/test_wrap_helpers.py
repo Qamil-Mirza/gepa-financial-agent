@@ -592,6 +592,6 @@ def test_chat_stream_helper_caller_stream_options_keeps_usage(tmp_path):
     with w.chat.completions.stream(model=MODEL, messages=MSGS, stream_options={"include_usage": True}) as s:
         final = s.get_final_completion()
     assert (final.usage.prompt_tokens, final.usage.completion_tokens) == (21, 2)
-    assert [e.type for e in w.chat.completions.stream(model=MODEL, messages=MSGS,
-                                                      stream_options={"include_usage": True}).__enter__()
-            ].count("chunk") == 4  # the caller's usage chunk is not hidden
+    with w.chat.completions.stream(model=MODEL, messages=MSGS, stream_options={"include_usage": True}) as s:
+        types = [e.type for e in s]
+    assert types.count("chunk") == 4  # the caller's usage chunk is not hidden

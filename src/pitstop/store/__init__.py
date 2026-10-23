@@ -4,20 +4,27 @@ A fresh DB is created at the latest schema by `schema.sql`. An older DB is upgra
 `MIGRATIONS` (keyed by the version each step produces), all applied in one `BEGIN IMMEDIATE`. Only a DB that had
 no tables when opened is stamped with the latest version outright; one with tables but no schema_version row is
 treated as version 1 and migrated. To add a schema version: append a step, bump `SCHEMA_VERSION` and update
-`schema.sql` (a fresh DB and a migrated one must match). A DB written by a newer PitStop is refused with
-`StoreVersionError` before anything touches it.
+`schema.sql` (a fresh DB and a migrated one must match). `schema.sql` runs in two parts: everything above its
+`-- @after-migrations` line before the migration steps, the rest after them, so an index on a column that a step
+adds goes below that line. A DB written by a newer PitStop is refused with `StoreVersionError` before anything
+touches it.
+
+Each thread uses its own connection (`connect()`), opened on first use. A long-lived worker thread (a pool's)
+calls `close_local()` when its job ends, so it never holds a connection between jobs.
 """
 from __future__ import annotations
 
 import json
 import sqlite3
 import threading
+import weakref
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 _SCHEMA = Path(__file__).with_name("schema.sql")
+_AFTER_MIGRATIONS = "-- @after-migrations"
 
 
 class StoreVersionError(RuntimeError):
@@ -63,11 +70,30 @@ def _v4_alerts(conn: sqlite3.Connection) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_alerts_drift ON alerts(drift_id, channel)")
 
 
+def _v5_observe(conn: sqlite3.Connection) -> None:
+    # Scan state for L2/L5 (runs.scanned_at, l2_state), the fallback tag, OTel span links, and the indexes the
+    # scan and per-run queries need. Same statements as schema.sql.
+    _add_column(conn, "runs", "scanned_at", "REAL")
+    _add_column(conn, "runs", "fallback_from", "TEXT")
+    _add_column(conn, "events", "span_id", "TEXT")
+    _add_column(conn, "events", "parent_span_id", "TEXT")
+    conn.execute("CREATE TABLE IF NOT EXISTS l2_state (workflow TEXT, metric TEXT, state TEXT, updated_at REAL,"
+                 " PRIMARY KEY(workflow, metric))")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_runs_wf_started ON runs(workflow, started_at)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_runs_scan ON runs(scanned_at, ended_at)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_ledger_run ON ledger(run_id)")
+
+
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     2: _v2_runs_budget,
     3: _v3_drift_occurrences,
     4: _v4_alerts,
+    5: _v5_observe,
 }
+
+
+class _Connection(sqlite3.Connection):
+    """A plain sqlite3 connection that can be weakly referenced, so a Store can count the ones it opened."""
 
 
 class Store:
@@ -75,32 +101,47 @@ class Store:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._local = threading.local()
+        self._opened: weakref.WeakSet[sqlite3.Connection] = weakref.WeakSet()  # every thread's, until closed
+        self._opened_lock = threading.Lock()
         conn = self.connect()
         try:
             version = self._read_version(conn)
             self._check_version(version)  # before schema.sql or a migration touches a newer DB
             fresh = version == 0 and conn.execute("SELECT 1 FROM sqlite_master WHERE type='table'").fetchone() is None
             conn.execute("PRAGMA journal_mode=WAL")
-            conn.executescript(_SCHEMA.read_text())
+            before, marker, after = _SCHEMA.read_text().partition(_AFTER_MIGRATIONS)
+            conn.executescript(before)
             self._migrate(fresh=fresh)
+            conn.executescript(marker + after)  # the marker line is a comment
         except StoreVersionError:
-            self._close_local()  # a refused store keeps no open handle on the DB file
+            self.close_local()  # a refused store keeps no open handle on the DB file
             raise
 
     def connect(self) -> sqlite3.Connection:
         conn = getattr(self._local, "conn", None)
         if conn is None:
-            conn = sqlite3.connect(self.path, isolation_level=None, timeout=5.0)
+            conn = sqlite3.connect(self.path, isolation_level=None, timeout=5.0, factory=_Connection)
             conn.row_factory = sqlite3.Row
             conn.execute("PRAGMA busy_timeout=5000")
             self._local.conn = conn
+            with self._opened_lock:
+                self._opened.add(conn)
         return conn
 
-    def _close_local(self) -> None:
+    def close_local(self) -> None:
+        """Close the calling thread's connection, if it has one; the next `connect()` opens a new one."""
         conn = getattr(self._local, "conn", None)
         self._local.conn = None
         if conn is not None:
+            with self._opened_lock:
+                self._opened.discard(conn)
             conn.close()
+
+    def open_connections(self) -> int:
+        """How many connections this store opened are still open, across all threads (for tests). A connection
+        of a thread that ended without `close_local()` counts until it is garbage collected."""
+        with self._opened_lock:
+            return len(self._opened)
 
     @contextmanager
     def transaction(self, immediate: bool = False) -> Iterator[sqlite3.Connection]:

@@ -616,3 +616,66 @@ def test_wrapped_client_supports_weakref():
     w = pitstop.wrap(FakeOpenAI([]))
     ref = weakref.ref(w)
     assert ref() is w
+
+
+# -- the llm_call record and the run's tags ------------------------------------------------------------
+
+
+def test_llm_call_payload_has_tokens_and_refusal(tmp_path):
+    _init(tmp_path)
+    fake = FakeOpenAI([make_response("I'm sorry, I can't help with that", prompt_tokens=321, completion_tokens=9),
+                       make_response("fine", prompt_tokens=50, completion_tokens=7)])
+    w = pitstop.wrap(fake)
+    with workflow("wf"):
+        w.chat.completions.create(model=MODEL, messages=MSGS)
+        w.chat.completions.create(model=MODEL, messages=MSGS)
+    first, second = _events()
+    rows = _ledger_rows()
+    assert first["payload"]["refused"] is True and second["payload"]["refused"] is False
+    for ev, row in zip((first, second), rows):
+        assert (ev["payload"]["prompt_tokens"], ev["payload"]["completion_tokens"]) == (
+            row["prompt_tokens"], row["completion_tokens"])
+    assert (first["payload"]["prompt_tokens"], first["payload"]["completion_tokens"]) == (321, 9)
+
+
+def test_llm_call_payload_tokens_when_estimated(tmp_path):
+    """Usage missing: the payload carries the same estimated tokens the ledger settled."""
+    _init(tmp_path)
+    resp = make_response("abcdefgh")
+    resp.usage = None
+    w = pitstop.wrap(FakeOpenAI([resp]))
+    with workflow("wf"):
+        w.chat.completions.create(model=MODEL, messages=MSGS)
+    [ev] = _events()
+    [row] = _ledger_rows()
+    assert ev["payload"]["usage_estimated"] is True
+    assert (ev["payload"]["prompt_tokens"], ev["payload"]["completion_tokens"]) == (
+        row["prompt_tokens"], row["completion_tokens"]) == (100, 2)
+
+
+def test_adapter_tag_not_overwritten(tmp_path):
+    _init(tmp_path)
+    w = pitstop.wrap(FakeOpenAI([make_response("a"), make_response("b")]))
+    with workflow("wf") as ctx:
+        with get_runtime().store.transaction() as c:
+            c.execute("UPDATE runs SET adapter='langchain' WHERE id=?", (ctx.run_id,))
+        w.chat.completions.create(model=MODEL, messages=MSGS)
+    with workflow("wf") as ctx2:
+        w.chat.completions.create(model=MODEL, messages=MSGS)
+    tags = {r["id"]: (r["adapter"], r["model"]) for r in _db().execute("SELECT id, adapter, model FROM runs")}
+    assert tags == {ctx.run_id: ("langchain", MODEL), ctx2.run_id: ("wrap", MODEL)}
+
+
+def test_meter_exits_in_other_context():
+    import contextvars
+
+    from pitstop.sdk.wrap import _meter, meter
+
+    cm = meter("watch")
+    entered = contextvars.copy_context()
+    entered.run(cm.__enter__)
+    assert entered.run(_meter.get) == "watch"
+    other = contextvars.copy_context()
+    other.run(_meter.set, "watch")  # the other Context sees the meter too, but holds no token for it
+    other.run(cm.__exit__, None, None, None)  # must not raise ValueError
+    assert other.run(_meter.get) == "agent"

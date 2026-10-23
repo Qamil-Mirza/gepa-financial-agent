@@ -374,3 +374,26 @@ def test_unreadable_state_is_listed_and_replaced(tmp_path, capsys, monkeypatch):
     assert _activate() is True  # replaced, not blocked forever
     assert fallback.active(store, "wf")["model"] == FALLBACK
     assert "invalid" not in fallback.list_active(store)[0]
+
+
+def _fallback_from(run_id):
+    return get_runtime().store.connect().execute("SELECT fallback_from FROM runs WHERE id=?",
+                                                 (run_id,)).fetchone()[0]
+
+
+def test_fallback_run_tagged(tmp_path):
+    _init(tmp_path)
+    _activate()
+    fake = FakeOpenAI([_ok(), _ok(), _ok(), _ok()])
+    w = pitstop.wrap(fake)
+    with workflow("wf", fallback_model=FALLBACK) as ctx:
+        with meter("watch"):
+            w.chat.completions.create(model=MODEL_A, messages=MSGS)  # not swapped: no tag
+        assert _fallback_from(ctx.run_id) is None
+        w.chat.completions.create(model=MODEL_B, messages=MSGS)
+        w.chat.completions.create(model=MODEL_A, messages=MSGS)  # the first requested model is kept
+    assert [c["model"] for c in fake.calls] == [MODEL_A, FALLBACK, FALLBACK]
+    assert _fallback_from(ctx.run_id) == MODEL_B
+    with workflow("other", fallback_model=FALLBACK) as other:  # not engaged for this workflow
+        w.chat.completions.create(model=MODEL_B, messages=MSGS)
+    assert _fallback_from(other.run_id) is None

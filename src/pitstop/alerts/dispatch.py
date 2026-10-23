@@ -98,6 +98,7 @@ def wait_idle(timeout: float = 10.0) -> bool:
 
 
 def _deliver(store, alerts, drift_id: int) -> None:
+    """One pool job. The worker thread outlives the job, so its store connection is closed when the job ends."""
     try:
         alert = build_alert(store, drift_id)  # the drift's current level: it may have escalated since
         if alert.level not in IMMEDIATE_LEVELS:
@@ -108,6 +109,11 @@ def _deliver(store, alerts, drift_id: int) -> None:
                 _attempt(store, [row_id], ch, alert, retries=RETRY_BACKOFF_S)
     except Exception as e:
         log.warning("pitstop: alert for drift %s failed (%s)", drift_id, type(e).__name__)
+    finally:
+        try:
+            store.close_local()
+        except Exception as e:
+            log.warning("pitstop: could not close the alert worker's store connection (%s)", type(e).__name__)
 
 
 # A row that still counts: sent, or pending and fresh enough that its sender may still be alive.

@@ -353,3 +353,22 @@ def test_steer_limit_is_atomic_across_threads(tmp_path):
             t.join()
     assert ctx.steers == 2 and len(_events("steer")) == 2
     assert outcomes == ["halted"] * 8
+
+
+def test_steer_limit_halt_carries_drift_id(tmp_path):
+    _init(tmp_path)
+
+    @pitstop.tool
+    def search(q):
+        return "r"
+
+    with pytest.raises(Halted, match="steer limit exceeded") as exc:
+        with workflow("wf", goal="wf goal") as ctx:
+            search("a")
+            search("a")
+            assert search("a").startswith("PitStop: this step drifts")  # steer 1
+            assert search("a").startswith("PitStop: this step drifts")  # steer 2
+            search("a")  # the third steer halts
+    [drift] = list_drifts(get_runtime().store)
+    assert drift["drift_type"] == "unproductive_loop"
+    assert exc.value.drift_id == drift["id"] == ctx.halt_drift_id

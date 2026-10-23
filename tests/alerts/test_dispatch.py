@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import signal
 import smtplib
 import subprocess
 import sys
@@ -446,6 +447,19 @@ def test_digest_counts_only_sent_drifts(tmp_path, monkeypatch):
     assert dispatch.last_digest_ts(rt.store) is not None
 
 
+def _wait_child(pid: int, timeout: float) -> int:
+    """The forked child's exit code. A child still running at the deadline is killed and the test fails."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        done, status = os.waitpid(pid, os.WNOHANG)
+        if done:
+            return os.waitstatus_to_exitcode(status)
+        time.sleep(0.05)
+    os.kill(pid, signal.SIGKILL)
+    os.waitpid(pid, 0)
+    pytest.fail(f"forked child {pid} did not exit within {timeout} s")
+
+
 @pytest.mark.skipif(not hasattr(os, "fork"), reason="needs os.fork")
 def test_forked_child_can_send(tmp_path, monkeypatch):
     import warnings
@@ -468,7 +482,25 @@ def test_forked_child_can_send(tmp_path, monkeypatch):
             code = 0 if dispatch.wait_idle(5) else 2
         finally:
             os._exit(code)
-    _, status = os.waitpid(pid, 0)
-    assert os.waitstatus_to_exitcode(status) == 0
+    assert _wait_child(pid, timeout=10.0) == 0
     assert [(r["status"], r["drift_id"]) for r in _rows()] == [("sent", 1), ("sent", 2)]
     assert rt.store is get_runtime().store
+
+
+def test_alert_worker_closes_its_connection(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    seen = _capture(monkeypatch)
+    rt.store.connect()  # this thread's own connection stays open
+    before = rt.store.open_connections()
+    _apply(_p0())
+    assert dispatch.wait_idle() and len(seen) == 1
+    assert rt.store.open_connections() == before
+
+    def broken(store, drift_id):
+        store.connect()
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(dispatch, "build_alert", broken)  # a failing job closes its connection too
+    _apply(Finding("unproductive_loop", "off_task", True, {}))
+    assert dispatch.wait_idle()
+    assert rt.store.open_connections() == before

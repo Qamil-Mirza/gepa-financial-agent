@@ -30,12 +30,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Hackathon-era docs moved to `docs/history/`.
 - Runs and the You.com cache now default to `~/.pitstop/runs` and `~/.pitstop/cache/youcom` (override with `PITSTOP_HOME`, `PITSTOP_RUNS_DIR`, `PITSTOP_CACHE_DIR`); previously they lived under `pitstop/pitstop/runs` and `pitstop/pitstop/cache` in the checkout.
 - `pitstop` is now an installed console script (previously `python -m pitstop.cli` run from `pitstop/pitstop/`).
-- Store schema v4 (v4 adds the `alerts` table): older DBs are upgraded step by step in one transaction, and a DB written by a newer PitStop fails closed with `Halted("pitstop config invalid: ...")`.
+- Store schema v5 (v4 adds the `alerts` table; v5 adds `runs.scanned_at`, `runs.fallback_from`, `events.span_id`, `events.parent_span_id`, the `l2_state` table and indexes on `runs(workflow, started_at)`, `runs(scanned_at, ended_at)` and `ledger(run_id)`): older DBs are upgraded step by step in one transaction, and a DB written by a newer PitStop fails closed with `Halted("pitstop config invalid: ...")`.
+- `llm_call` events carry `prompt_tokens`, `completion_tokens` (the settled or estimated counts) and `refused`. A run whose agent calls went to the pinned fallback model records the model it replaced in `runs.fallback_from`. A run's `adapter` tag set before its first wrapped call is kept.
 - Drift records count every occurrence (`occurrences`, `last_seen`) and keep only the newest 20 evidence entries, each `{"run_id", "ts", "detail"}`; `pitstop drifts` shows the occurrence count (`occurrences` column) and the real first and last seen times.
 - `runs.base_url` is stored normalized (no trailing `/`), matching the budget ledger.
 - Drift detection and the run's model tag use only calls on the `agent` meter; judge, supervisor and GEPA calls no longer trigger L0 drifts. `llm_call` events carry their `meter`.
 - Per-agent tool history and per-run LLM history keep the newest 64 calls; refusals are counted over the whole run.
-- The steer limit (2 per run) holds when several threads share a run.
+- The steer limit (2 per run) holds when several threads share a run, and its `Halted` carries the id of the drift that tripped it.
+- `pitstop.meter()` exited in another `contextvars.Context` than the one it entered restores the meter instead of raising `ValueError`.
+- An async-generator workflow abandoned inside a reference cycle ends its run once, with its cleanup inside the run, instead of racing a second close ("asynchronous generator is already running").
+- The alert sender's worker threads close their store connection after each alert.
 - `pitstop.sdk.wrap` is a package; wrapped streams pass `isinstance` checks against the SDK's stream classes.
 - A pending P0 halt on a high-criticality workflow is recorded as a `halt` event (`pending: true`) when it is set.
 - Drift actions escalate on dedup in the order record < fallback < steer < block < halt.

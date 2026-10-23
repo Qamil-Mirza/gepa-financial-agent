@@ -3,8 +3,10 @@ isolated per thread and per asyncio task: parallel sub-agents started with async
 share the RunContext but each sees its own agent name and goal.
 
 A scope decorating a generator (or async generator) function opens on the generator's first step and closes
-when it finishes, raises or is closed. Each step sets the run (and agent) in the consumer's own context and
-resets it when the step yields, so code that consumes the generator between yields never sees the run."""
+when it finishes, raises or is closed, by the caller or by garbage collection (also inside a reference cycle: an
+async generator's inner generator is only ever closed by its wrapper, see `_unhooked`). Each step sets the run (and
+agent) in the consumer's own context and resets it when the step yields, so code that consumes the generator
+between yields never sees the run."""
 from __future__ import annotations
 
 import functools
@@ -224,7 +226,7 @@ class _Scope:
             try:
                 agen = fn(*a, **k)
                 # Only this wrapper is registered with the event loop's async-generator hooks; the inner
-                # generator is closed by the wrapper, never concurrently by the loop's own shutdown.
+                # generator is closed by the wrapper, never concurrently by the loop's shutdown or finalizer.
                 aw = _unhooked(agen.asend, None)
                 while True:
                     try:
@@ -254,14 +256,25 @@ class _Scope:
 
 
 def _unhooked(make: Callable, arg: Any) -> Any:
-    """Make an async generator's first awaitable with the firstiter hook disabled, so the event loop does not
-    track (and at shutdown close) that generator on its own."""
+    """Make an async generator's first awaitable with the event loop's hooks replaced, so the loop never closes
+    that generator on its own: no firstiter hook (the loop does not track it, or close it at shutdown) and a
+    finalizer that does nothing (garbage collection does not schedule its aclose()).
+
+    The finalizer matters when the wrapper and the inner generator are abandoned in a reference cycle: one
+    gc.collect() finalizes both. The loop's finalizer would schedule an aclose() for each, and the inner one's
+    would race the wrapper's own close of it ("aclose(): asynchronous generator is already running"). With this
+    one, only the wrapper's aclose() runs, and it closes the inner generator inside the run. Without a finalizer
+    hook at all (no event loop), the inner generator keeps none, as before."""
     firstiter, finalizer = sys.get_asyncgen_hooks()
-    sys.set_asyncgen_hooks(firstiter=None, finalizer=finalizer)
+    sys.set_asyncgen_hooks(firstiter=None, finalizer=_closed_by_wrapper if finalizer is not None else None)
     try:
         return make(arg)
     finally:
         sys.set_asyncgen_hooks(firstiter=firstiter, finalizer=finalizer)
+
+
+def _closed_by_wrapper(agen: Any) -> None:
+    """The inner generator's finalizer: nothing to do, its wrapper closes it."""
 
 
 class _GenRun:
