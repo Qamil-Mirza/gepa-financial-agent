@@ -20,6 +20,7 @@ anthropic = ["anthropic>=2.0"]
 otel = ["opentelemetry-api>=1.45", "opentelemetry-sdk>=1.45"]
 openai-agents = ["openai-agents>=0.24"]
 langchain = ["langchain>=1.4", "langchain-core>=1.7", "langgraph>=1.0"]
+ui = ["fastapi>=0.115", "uvicorn>=0.32"]
 
 [project.scripts]
 pitstop = "pitstop.cli:main"
@@ -27,7 +28,8 @@ pitstop = "pitstop.cli:main"
 [dependency-groups]
 dev = ["pytest>=8", "pytest-asyncio>=0.24", "pytest-socket>=0.7", "ruff>=0.6", "anthropic>=2.0",
        "opentelemetry-api>=1.45", "opentelemetry-sdk>=1.45", "openai-agents>=0.24",
-       "langchain>=1.4", "langchain-core>=1.7", "langchain-openai>=1.7", "pitstop-financial-research"]
+       "langchain>=1.4", "langchain-core>=1.7", "langchain-openai>=1.7", "pitstop-financial-research",
+       "fastapi>=0.115", "uvicorn>=0.32"]
 
 [tool.uv.workspace]
 members = ["examples/financial-research"]
@@ -41,6 +43,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pitstop"]
+artifacts = ["src/pitstop/server/static/**"]  # the built dashboard (npm --prefix ui run build); git-ignored
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

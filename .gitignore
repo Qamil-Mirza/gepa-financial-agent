@@ -31,6 +31,9 @@ dist/
 docs/superpowers/plans/m1-baseline.txt
 .ruff_cache/
 
+# The built dashboard (npm --prefix ui run build); shipped in the wheel as a hatch artifact
+src/pitstop/server/static/
+
 # Generated benchmark data (archived as a release asset; regenerate with the scripts)
 benchmarks/synth/traces/
 benchmarks/synth/traces_archive/
