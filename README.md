@@ -190,6 +190,22 @@ $ uv run pitstop alerts digest                # open P2/P3 drifts not yet sent; 
 $ uv run pitstop alerts digest --force        # send now regardless of the last digest
 ```
 
+## Already tracing with OpenTelemetry?
+
+If your agent is already traced with OpenTelemetry GenAI spans (Langfuse, Logfire, OpenLLMetry, OpenInference/Phoenix or the GenAI semantic conventions), PitStop can read those spans without touching your agent code. Install `pip install "pitstop[otel]"` and add its span processor to your tracer provider:
+
+```python
+from pitstop.otel import SpanProcessor
+
+provider.add_span_processor(SpanProcessor(workflow="support"))   # before your exporter's processor
+```
+
+Each trace becomes one PitStop run (id `otel-<trace id>`, shown by `pitstop status` and `pitstop drifts` like any other run). The workflow name is the root span's `pitstop.workflow` attribute (set it when the span starts), else the `workflow=` argument, else the root span's name; `goal`, `criticality`, `sensitivity` and `tools` work as in `pitstop.workflow(...)`. LLM spans become `llm_call` events with their model, token counts and a cost estimated from the price table; tool spans become `tool_call` and `tool_result` events; agent spans become `agent` events, and each event names the agent it ran under. The first LLM span that names a model sets the run's model and its `base_url`, built as `https://<server.address>`. The L0 checks run on the trace: unproductive tool loops, out-of-scope tools (checked as read-only, since a span does not say whether a tool had side effects), tool-call breakage and refusal spikes (a `content_filter` or `refusal` finish reason). Drifts are recorded and P0/P1 alerts are sent as usual.
+
+This is observe-only: the spans are read after they end, so PitStop can't block, steer, halt or fall back, and the estimated costs never count against a budget. For hard budgets and blocking, use `pitstop.wrap` and `@pitstop.tool` as above. Spans that run inside a `pitstop.workflow(...)` are skipped, since `wrap` and `@pitstop.tool` already record them. The processor never raises into your app: a malformed span or a locked store costs you at most one logged warning.
+
+Every drift PitStop records on a trace adds a `pitstop.verdict` event to the trace's root span while it is still open, so the trace you already export shows what PitStop decided: `pitstop.drift_type`, `pitstop.level`, `pitstop.action` (always `record` here), `pitstop.run_id`, `pitstop.drift_id` and `pitstop.reason`. Add the PitStop processor before the exporting processor so the root span is exported with those events. The same event is added to the current span for drifts found by `wrap` and `@pitstop.tool`. `pitstop.reason` is the drift's evidence, up to 300 characters, and can include a tool's arguments, which then reach your tracing backend.
+
 ## Set a hard budget
 
 Copy [docs/config.example.toml](docs/config.example.toml) to `~/.pitstop/config.toml`. Each `[budgets.<name>]` entry sets a dollar limit for a provider `base_url` and period. Every model call reserves its worst-case cost first, and once the limit would be crossed the call raises `BudgetExceeded` before it reaches the provider. PitStop's own calls (supervisor, judge, GEPA) count against the same budget. A per-workflow cap is the `budget_usd` argument of `pitstop.workflow`. An invalid `config.toml` (a bad period, limit or timezone) never silently removes a budget: `pitstop.init()` raises a `ValueError`, every metered call, `pitstop.prompt` and `pitstop.workflow` (and any guarded tool inside a workflow) raises `pitstop.Halted("pitstop config invalid: ...")` before reaching the provider, and `pitstop status`/`drifts`/`budget` print the error and exit 2. A `pitstop.db` written by a newer PitStop is refused the same way, so a downgrade never runs without its budgets.
