@@ -19,7 +19,7 @@ _MOVED = (r"pitstop\.(orchestrator|collector|schemas|timeline|agents|research|de
           r"|pitstop\.ui\.server|src/pitstop/(orchestrator|collector|schemas|timeline|server)\.py"
           r"|src/pitstop/(agents|research|demo|ui|supervisor)/"
           r"|src/pitstop/assets/(scenarios|prompts/(worker|gepa|supervisor_v0))"
-          r"|pitstop (check|compare|timeline|serve|demo)([^a-z]|$)|pitstop run --")
+          r"|pitstop (check|compare|timeline|demo)([^a-z]|$)|pitstop run --")  # `pitstop serve` is the M3 dashboard
 _STALE = r"gepa_financial_agent|(^|[^.~/])pitstop/pitstop|synthetic-data/|policies/versions|" + _MOVED
 
 
