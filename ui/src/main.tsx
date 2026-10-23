@@ -6,6 +6,7 @@ import "@fontsource/newsreader/500.css";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/pitwall.css";
+import "./styles/workflow.css";
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";

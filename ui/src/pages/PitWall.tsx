@@ -1,16 +1,15 @@
 // The pit wall (home), direction B of the health-board mockups: the workflows that need you as large tiles, the
 // healthy ones as small tiles, the global budgets in the header, and a live feed in the rail. The board polls
 // every 10 s and the feed every 5 s (decision 11); a poll that fails keeps the last answer on screen and says so.
-import { useEffect, useState } from "react";
 import { getBoard, getFeed, type Board, type Tile as TileData } from "../api/client";
 import { usePoll } from "../api/poll";
 import { BudgetBar } from "../components/BudgetBar";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
 import { Feed } from "../components/Feed";
+import { Stale, useStampedAt } from "../components/Stale";
 import { Tile } from "../components/Tile";
 import { TileSmall } from "../components/TileSmall";
-import { clock } from "../time";
 
 const BOARD_EVERY_MS = 10_000;
 const FEED_EVERY_MS = 5_000;
@@ -25,24 +24,6 @@ export function countLine(tiles: TileData[]): string {
   if (needs === 0) return tiles.length === 1 ? "1 workflow, healthy" : `All ${tiles.length} workflows healthy`;
   const line = `${needs} ${needs === 1 ? "workflow needs" : "workflows need"} you`;
   return healthy > 0 ? `${line} · ${healthy} healthy` : line;
-}
-
-/** When `data` last changed (ms), for the staleness line of a poll whose answer carries no time of its own. */
-function useStampedAt(data: unknown): number | null {
-  const [at, setAt] = useState<number | null>(null);
-  useEffect(() => {
-    if (data !== null) setAt(Date.now());
-  }, [data]);
-  return at;
-}
-
-function Stale({ what, sinceS }: { what: string; sinceS: number | null }) {
-  const since = sinceS !== null ? ` — showing data from ${clock(sinceS)}` : "";
-  return (
-    <p className="stale" role="status" aria-label={`${what} not refreshed`}>
-      Couldn't refresh{since}. Retrying.
-    </p>
-  );
 }
 
 function Budgets({ board }: { board: Board }) {
