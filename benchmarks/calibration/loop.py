@@ -133,7 +133,8 @@ def cmd_swarm(args, s: Settings, state: LoopState) -> int:
                           max_tokens=4000, usage=UsageTracker()), PROMPTS / "worker")
             swarms.append(Swarm(Scenario.model_validate_json(path.read_text()), worker_llm=worker, supervisor=sup,
                                 research=research, prompts_dir=PROMPTS / "worker", runs_dir=rd / "runs",
-                                verbose_events=False, correct_on_drift=not args.no_correct, synthesizer=synth))
+                                verbose_events=False, correct_on_drift=not args.no_correct, synthesizer=synth,
+                                watch=False))  # measure the supervisor alone (no SDK gate)
         await asyncio.gather(*(sw.run_all() for sw in swarms))
 
     asyncio.run(go())

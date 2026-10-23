@@ -6,6 +6,9 @@ The few lines that hook the swarm into PitStop: `run_all` runs inside `pitstop.w
 judges each research call against the agent's directive and blocks an off-task one (the worker gets an ERROR event
 naming the reason and re-plans); a `pitstop.Halted` (budget, or a P0 on a high workflow) ends the swarm.
 
+`Swarm(watch=False)` skips that wiring entirely (research is called directly): the benchmarks and the demo pair use it
+to measure the legacy supervisor alone, with no gate and no judge calls.
+
 The hackathon per-step supervisor below is opt-in (`supervisor=...`, `finresearch run --legacy-supervisor`); it
 still drives the demo page and the benchmarks. Its early-detection design:
   1. Workers ask one narrow question per step, so drift shows up in *which*
@@ -25,6 +28,7 @@ still drives the demo page and the benchmarks. Its early-detection design:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import uuid
 from dataclasses import dataclass, field
@@ -98,8 +102,10 @@ class Swarm:
         max_corrections: int = 2,
         synthesizer: Optional[ReportSynthesizer] = None,
         shadow_supervisor: Optional[Supervisor] = None,
+        watch: bool = True,
     ):
         self.scenario = scenario
+        self.watch = watch  # False: no PitStop workflow, agents or gated tool (measure the legacy supervisor alone)
         self.supervisor = supervisor  # None: the PitStop SDK alone watches the run
         # judges every input the primary judges; own policy, own log, never halts.
         # Its timeline (timeline_shadow.json) is rebuilt from that log when the run ends.
@@ -124,7 +130,7 @@ class Swarm:
         self.board: list[SwarmMessage] = []
         self.workers = [
             ResearchWorker(spec, swarm_objective=scenario.swarm_objective, llm=worker_llm,
-                           research=research, collector=self.collector, prompts_dir=prompts_dir)
+                           research=research, collector=self.collector, prompts_dir=prompts_dir, watched=watch)
             for spec in scenario.agents
         ]
 
@@ -229,7 +235,7 @@ class Swarm:
 
     # ---------------- main loop ----------------
     async def _run_worker(self, w: ResearchWorker) -> None:
-        async with pitstop.agent(w.id, goal=w.spec.directive):
+        async with pitstop.agent(w.id, goal=w.spec.directive) if self.watch else contextlib.nullcontext():
             await self._worker_loop(w)
 
     async def _worker_loop(self, w: ResearchWorker) -> None:
@@ -268,10 +274,12 @@ class Swarm:
         self._print_header()
         self.timeline.run_started(self.run.run_id, self.scenario.model_dump(mode="json"),
                                   halt_on_drift=self.halt_on_drift, supervisor=self._supervisor_info())
+        scope = pitstop.workflow(WORKFLOW, goal=self.scenario.swarm_objective, criticality="medium",
+                                 tools=(RESEARCH_TOOL,)) if self.watch else contextlib.nullcontext()
         try:
-            async with pitstop.workflow(WORKFLOW, goal=self.scenario.swarm_objective, criticality="medium",
-                                        tools=(RESEARCH_TOOL,)) as ctx:
-                self.run.pitstop_run_id = ctx.run_id
+            async with scope as ctx:
+                if ctx is not None:
+                    self.run.pitstop_run_id = ctx.run_id
                 await self._gather_workers()
                 if self.synthesizer:
                     await self._synthesize()
@@ -312,8 +320,9 @@ class Swarm:
         c.print(f"[bold]Objective:[/] {self.scenario.swarm_objective}")
         for a in self.scenario.agents:
             c.print(f"[bold]{a.agent_id}[/]: {a.directive}")
-        c.print(f"watched by PitStop: workflow {WORKFLOW!r} (medium), {RESEARCH_TOOL} gated against each "
-                f"agent's directive | You.com mode: {self.research.mode}")
+        watched = (f"watched by PitStop: workflow {WORKFLOW!r} (medium), {RESEARCH_TOOL} gated against each "
+                   f"agent's directive" if self.watch else "not watched by PitStop (watch=False)")
+        c.print(f"{watched} | You.com mode: {self.research.mode}")
         if self.supervisor:
             c.print(f"legacy supervisor prompt: {self.supervisor.prompt_version} | model: {self.supervisor.llm.model}"
                     f" | halt_on_drift: {self.halt_on_drift}")
@@ -340,7 +349,8 @@ class Swarm:
             "ground_truth": self._ground_truth(), "interventions": self.run.interventions,
             "supervisor": ({**self._supervisor_info(), "usage": self.supervisor.llm.usage.as_dict()}
                            if self.supervisor else None),
-            "pitstop": {"workflow": WORKFLOW, "run_id": self.run.pitstop_run_id, "halted": self.run.halted},
+            "pitstop": ({"workflow": WORKFLOW, "run_id": self.run.pitstop_run_id, "halted": self.run.halted}
+                        if self.watch else None),
             "worker_usage": self.workers[0].llm.usage.as_dict() if self.workers else {},
             "research": self.research.stats(), "halt_on_drift": self.halt_on_drift,
             "correct_on_drift": self.correct_on_drift, "report": self.run.report,
@@ -366,7 +376,7 @@ class Swarm:
         c = self.console
         c.rule("[bold]Run summary (single run: anecdotal, not a benchmark)")
         gt = self._ground_truth()
-        for a in self.scenario.agents:
+        for a in self.scenario.agents if self.watch else ():
             g, blocks = gt[a.agent_id], self._pitstop_blocks(a.agent_id)
             injected = f"drift injected at step {g['onset_step']}" if g["drift_injected"] else "no injection"
             if blocks:
@@ -387,8 +397,11 @@ class Swarm:
             c.print(f"supervisor usage: {self.supervisor.llm.usage.as_dict()}")
         c.print(f"You.com: {self.research.stats()}")
         status = f"halted: {escape(self.run.halted)}" if self.run.halted is not None else "ok"
-        c.print(f"PitStop run {self.run.pitstop_run_id or '(not started)'} ({status}); "
-                f"`pitstop drifts` lists what PitStop caught")
+        if self.watch:
+            c.print(f"PitStop run {self.run.pitstop_run_id or '(not started)'} ({status}); "
+                    f"`pitstop drifts` lists what PitStop caught")
+        elif self.run.halted is not None:
+            c.print(f"run {status}")
         c.print(f"logs: {self.run.run_dir}")
 
     def _print_supervisor_summary(self, gt: dict) -> None:

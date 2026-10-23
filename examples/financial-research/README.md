@@ -15,7 +15,7 @@ res = await research(query)   # {"blocked_by": "pitstop", "reason": ...} when Pi
 
 The You.com call costs money outside the process, so it is a side-effect tool. On this medium workflow, PitStop's L1 pre-action gate asks a judge model whether each research call serves the agent's directive before it runs. A rejected call is a P0 `out_of_scope_action` drift: the call does not run, the worker gets an ERROR event naming the reason and re-plans its next step. A `pitstop.Halted` (a budget hit, for example) ends the swarm, which prints the reason and records the run as halted.
 
-The hackathon's per-step supervisor (a Nemotron model plus code-computed trajectory signals, which can block a query and send a correction or halt the agent) is still here, but opt-in: `finresearch run --legacy-supervisor`. The demo page and the benchmarks use it.
+The hackathon's per-step supervisor (a Nemotron model plus code-computed trajectory signals, which can block a query and send a correction or halt the agent) is still here, but opt-in: `finresearch run --legacy-supervisor` (still watched by PitStop). The demo page and the benchmarks use it with `Swarm(watch=False)`, which skips the PitStop wiring entirely, so they measure the supervisor alone with no gate and no judge calls.
 
 It is a uv workspace member of the PitStop repo: the package is `finresearch` (distribution `pitstop-financial-research`) and its CLI is `finresearch`. A `uv sync` at the repo root installs both `pitstop` and `finresearch`.
 

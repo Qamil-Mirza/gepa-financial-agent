@@ -128,3 +128,27 @@ def test_run_flag_combinations_rejected(argv, message, monkeypatch, capsys):
     with pytest.raises(SystemExit) as e:
         cli.main()
     assert e.value.code == 2 and message in capsys.readouterr().err
+
+
+def test_unwatched_swarm_records_no_pitstop_run_and_makes_no_judge_call(tmp_path):
+    """watch=False (the benchmarks and the demo pair): no workflow, no gated tool, no judge call."""
+    import pitstop
+    from finresearch.config import PROMPTS
+    from finresearch.orchestrator import Swarm
+
+    judge, judged = offline.scripted_judge(), []
+    create = judge.chat.completions.create
+    judge.chat.completions.create = lambda **kw: judged.append(kw) or create(**kw)
+    pitstop.init(judge_client=judge)
+    scenario = Scenario.model_validate_json((SCENARIOS / "nvda_amd.json").read_text())
+    swarm = Swarm(scenario, worker_llm=offline.ScriptedWorkerLLM(), research=offline.CannedResearch(),
+                  prompts_dir=PROMPTS / "worker", runs_dir=tmp_path / "runs", console=Console(file=io.StringIO()),
+                  watch=False)
+    run = asyncio.run(swarm.run_all())
+    assert judged == []
+    c = get_runtime().store.connect()
+    for table in ("runs", "events", "drifts"):
+        assert c.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] == 0, table
+    assert run.pitstop_run_id is None
+    assert any("GeForce" in q for q in swarm.research.queries)  # the injected drift ran: nothing gated it
+    assert json.loads((run.run_dir / "meta.json").read_text())["pitstop"] is None

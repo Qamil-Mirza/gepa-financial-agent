@@ -125,6 +125,6 @@ def build_pair(objective: str, runs_dir: Path, settings: Settings,
                      halt_on_drift=False, correct_on_drift=True, max_corrections=LIVE_MAX_CORRECTIONS,
                      synthesizer=ReportSynthesizer(llm(settings.report_model, 0.2, max_tokens=4000),
                                                    PROMPTS / "worker"),
-                     console=Console(quiet=True), verbose_events=False)
+                     console=Console(quiet=True), verbose_events=False, watch=False)
 
     return Pair.create(runs_dir, side)

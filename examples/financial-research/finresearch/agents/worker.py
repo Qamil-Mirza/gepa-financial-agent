@@ -50,8 +50,10 @@ class ResearchWorker:
         research: FinanceResearchClient,
         collector: TrajectoryCollector,
         prompts_dir: Path,
+        watched: bool = True,
     ):
         self.spec = spec
+        self.watched = watched  # False: call research directly, never as a PitStop tool
         self.id = spec.agent_id
         self.objective = swarm_objective
         self.llm = llm
@@ -131,7 +133,9 @@ class ResearchWorker:
         )
         s.queries.append(proposal.query)
         # a side-effect tool: on the swarm's workflow, PitStop's L1 gate judges the call against this agent's directive
-        research = pitstop.tool(side_effects=True, name="youcom_research")(self.research.research)
+        research = self.research.research
+        if self.watched:
+            research = pitstop.tool(side_effects=True, name="youcom_research")(research)
         try:
             res = await research(proposal.query)
         except YouComError as e:

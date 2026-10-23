@@ -155,7 +155,7 @@ async def make_fixture_run(runs_dir: Path) -> SwarmRun:
                   supervisor=sup(primary_handler, PROMPTS / "supervisor_v0.txt"),
                   shadow_supervisor=sup(shadow_handler, gepa), research=research,
                   prompts_dir=PROMPTS / "worker", runs_dir=runs_dir, halt_on_drift=False,
-                  console=Console(file=io.StringIO()), verbose_events=False)
+                  console=Console(file=io.StringIO()), verbose_events=False, watch=False)
     try:
         return await swarm.run_all()
     finally:
@@ -188,7 +188,7 @@ async def make_fixture_pair(runs_dir: Path) -> Pair:
                      research=research, prompts_dir=PROMPTS / "worker", runs_dir=pair_dir,
                      halt_on_drift=False, correct_on_drift=True, max_corrections=LIVE_MAX_CORRECTIONS,
                      synthesizer=ReportSynthesizer(llm(report_handler), PROMPTS / "worker", backoff_s=0.0),
-                     console=Console(file=io.StringIO()), verbose_events=False)
+                     console=Console(file=io.StringIO()), verbose_events=False, watch=False)
 
     pair = Pair.create(runs_dir, side)
     try:
