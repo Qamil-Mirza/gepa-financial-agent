@@ -18,8 +18,9 @@ from fastapi import APIRouter, HTTPException, Path, Query
 from fastapi.responses import JSONResponse
 
 from ..sdk.runtime import Runtime
-from . import graph, views
-from .models import Board, DismissResult, Explain, FeedItem, Graph, RunDetail, RunPage, Settings, WorkflowDetail
+from . import changes, graph, views
+from .models import (Board, Changes, DismissResult, Explain, FeedItem, Graph, RunDetail, RunPage, Settings,
+                     WorkflowDetail)
 from .worker import Worker
 
 F = TypeVar("F", bound=Callable)
@@ -100,6 +101,11 @@ def register(api: APIRouter, rt: Runtime, worker: Worker | None) -> None:
             return graph.build_graph(rt.store, workflow, run_id=run_id or None, window=window)
         except views.NotFound as e:
             raise HTTPException(404, str(e)) from None
+
+    @api.get("/changes", response_model=Changes)
+    @closing
+    def get_changes(workflow: Annotated[str, Query()], limit: int = 200) -> Changes:
+        return changes.change_series(rt.store, workflow, limit=limit)
 
     @api.get("/settings", response_model=Settings)
     @closing

@@ -177,6 +177,7 @@ def _get_everything(client, store) -> list:
         responses.append(client.get("/api/workflow", params={"name": name}))
         responses.append(client.get("/api/runs", params={"workflow": name}))
         responses.append(client.get("/api/graph", params={"workflow": name, "window": "30d"}))
+        responses.append(client.get("/api/changes", params={"workflow": name}))
     responses += [client.get(f"/api/runs/{run_id}") for run_id in run_ids]
     responses += [client.get("/api/graph", params={"workflow": r[1], "run_id": r[0]}) for r in runs
                   if r[1] is not None]
@@ -280,11 +281,12 @@ def test_endpoints_are_in_the_openapi_schema():
 
     schema = export_openapi()
     paths = {"/api/board", "/api/feed", "/api/workflow", "/api/drifts/{drift_id}/dismiss",
-             "/api/drifts/{drift_id}/explain", "/api/runs", "/api/runs/{run_id}", "/api/settings", "/api/graph"}
+             "/api/drifts/{drift_id}/explain", "/api/runs", "/api/runs/{run_id}", "/api/settings", "/api/graph",
+             "/api/changes"}
     assert paths <= set(schema["paths"])
     models = {"Board", "Tile", "BudgetRow", "FeedItem", "WorkflowDetail", "DriftCard", "DismissResult", "Explain",
               "TagChange", "RunPage", "RunRow", "RunDetail", "EventRow", "Settings", "Graph", "GraphNode", "GraphEdge",
-              "GraphVerdicts"}
+              "GraphVerdicts", "Changes", "Point", "Marker", "MetricInfo"}
     assert models <= set(schema["components"]["schemas"])
 
 

@@ -271,3 +271,42 @@ class Graph(BaseModel):
     window: str | None
     run_id: str | None
     slowest_path: list[str]
+
+
+class Point(BaseModel):
+    """One run's L2 metrics. A rate (`tool_error_rate`, `refusal_rate`) is a fraction in 0..1 (the UI shows it as %);
+    a metric the run has no data for is absent."""
+    run_id: str
+    started_at: float
+    status: str | None
+    source: Literal["sdk", "otel"]
+    metrics: dict[str, float]
+
+
+class Marker(BaseModel):
+    """A change to mark on the charts, at `at` (epoch seconds). `model`, `base_url` and `prompt_versions` markers
+    carry the tag's value `before` and `after` (the run `run_id` is the first with the new value) and `source` (their
+    runs are compared only with runs of the same source); an `l2_alarm` marker is an L2 drift's change point, with
+    its `drift_id` and `metric` (`before` and `after` are null)."""
+    at: float
+    kind: Literal["model", "base_url", "prompt_versions", "l2_alarm"]
+    before: str | None = None
+    after: str | None = None
+    run_id: str | None = None
+    drift_id: int | None = None
+    metric: str | None = None
+    source: Literal["sdk", "otel"] | None = None
+
+
+class MetricInfo(BaseModel):
+    name: str
+    label: str
+    unit: str  # "%", "$", "s", "chars" or "" (a count)
+
+
+class Changes(BaseModel):
+    """The workflow page's "What changed" data: the newest runs with metrics (oldest first) and the change markers
+    inside their time range."""
+    points: list[Point]
+    markers: list[Marker]
+    metrics: list[MetricInfo]
