@@ -1,7 +1,7 @@
 """Score a supervisor prompt on the labeled hard-pairs dataset (Crusoe only, no You.com).
 
   uv run python -m benchmarks.hard_pairs.run_hard_cases [--splits train val test] [--trials 3]
-      [--prompt src/pitstop/assets/prompts/supervisor_v0.txt] [--model <crusoe id>]
+      [--prompt examples/financial-research/finresearch/assets/prompts/supervisor_v0.txt] [--model <crusoe id>]
 
 A judgment is correct when the alert decision matches the label: the policy fires
 (DRIFTING at confidence >= 0.75) on drift cases and does not fire on ok cases.
@@ -17,11 +17,11 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
-from pitstop.config import PROMPTS, load_settings
+from finresearch.config import PROMPTS, load_settings
 from pitstop.llm import LLMClient, UsageTracker
-from pitstop.schemas import Status, SupervisorInput
-from pitstop.supervisor.policy import AlertPolicy
-from pitstop.supervisor.supervisor import Supervisor
+from finresearch.schemas import Status, SupervisorInput
+from finresearch.supervisor.policy import AlertPolicy
+from finresearch.supervisor.supervisor import Supervisor
 
 from .hard_cases import DATA_DIR, write_splits
 

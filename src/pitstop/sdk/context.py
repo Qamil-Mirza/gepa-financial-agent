@@ -3,8 +3,10 @@ isolated per thread and per asyncio task: parallel sub-agents started with async
 share the RunContext but each sees its own agent name and goal.
 
 A scope decorating a generator (or async generator) function opens on the generator's first step and closes
-when it finishes, raises or is closed. Each step sets the run (and agent) in the consumer's own context and
-resets it when the step yields, so code that consumes the generator between yields never sees the run."""
+when it finishes, raises or is closed, by the caller or by garbage collection (also inside a reference cycle: an
+async generator's inner generator is only ever closed by its wrapper, see `_unhooked`). Each step sets the run (and
+agent) in the consumer's own context and resets it when the step yields, so code that consumes the generator
+between yields never sees the run."""
 from __future__ import annotations
 
 import functools
@@ -19,8 +21,9 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal, NamedTuple, TypeVar
 
-from .errors import Halted
-from .runtime import get_runtime, halt_if_config_invalid
+from ..userconfig import ConfigInvalid
+from .errors import BudgetExceeded, Halted
+from .runtime import config_halt, get_runtime, halt_if_config_invalid
 
 log = logging.getLogger("pitstop")
 
@@ -35,6 +38,7 @@ _FIX_MODES = ("manual", "auto", None)
 _GATE_ERROR_POLICIES = ("block", "allow", None)
 
 HISTORY_MAX = 64  # per-agent tool history and per-run LLM history are capped at this many recent calls
+UNSET = object()  # RunContext.spend_baseline before the run's first settle computed it (None: no baseline)
 
 
 def _history() -> deque:
@@ -89,8 +93,16 @@ class RunContext:
     refusals: int = 0  # every refusal in the run; the capped llm_history cannot count them all
     llm_calls: int = 0  # agent-meter LLM calls only
     prompt_versions: dict[str, int] = field(default_factory=dict)
+    started_at: float = field(default_factory=time.time)
+    # The spend-rate P0 (pitstop.detect.spend): the run's settled agent-meter USD, its workflow's baseline
+    # (computed once, at the first settle) and whether the spike was already applied (at most once per run).
+    spend_usd: float = 0.0
+    spend_baseline: Any = UNSET
+    spend_spiked: bool = False
     # Guards the counters and histories when several threads share the run (e.g. the steer limit).
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
+    # Agents named by a framework hook (see set_framework_agent): id(base frame) -> (base frame, name).
+    framework_agents: dict = field(default_factory=dict, repr=False, compare=False)
 
     def tool_history_for(self, agent: str | None) -> deque:
         hist = self.tool_history.get(agent)
@@ -100,14 +112,42 @@ class RunContext:
 
     @property
     def agent(self) -> str | None:
-        """The agent name set by the innermost `agent()` scope of the calling task, for this run."""
-        cur = _agent_var.get()
-        return cur.name if cur is not None and cur.run_id == self.run_id else None
+        """The agent name of the calling task, for this run: the framework-named agent on top of its innermost
+        `agent()` scope (see set_framework_agent), else that scope's name."""
+        cur = self._frame()
+        named = self.framework_agents.get(id(cur))
+        if named is not None and named[0] is cur:
+            return named[1]
+        return cur.name if cur is not None else None
 
     @property
     def agent_goal(self) -> str | None:
+        """The goal of the calling task's innermost `agent()` scope, for this run. A framework-named agent keeps
+        the goal of the scope it was named on (None at the top level: the gate then uses the workflow goal)."""
+        cur = self._frame()
+        return cur.goal if cur is not None else None
+
+    def set_framework_agent(self, name: str | None) -> None:
+        """Name the agent for the calling task's innermost `agent()` scope (or the workflow's top level), as if an
+        `agent(name)` scope that keeps that scope's goal were entered on top of it, replacing the one named before;
+        None removes it.
+
+        For framework hooks that run in a child asyncio task of the agent run (the OpenAI Agents SDK runs each hook
+        through asyncio.gather), where entering a scope would never reach the run's own task. The name applies to
+        every task whose innermost scope is the one the hook saw, i.e. the scope the framework run was started in:
+        its model calls, tools and events, until it is replaced or removed. A scope entered inside (say, in a tool
+        body) names its own calls as usual. Concurrent framework runs started in the same scope share the name;
+        give each its own `agent()` scope to keep them apart."""
+        base = self._frame()
+        with self.lock:
+            if name is None:
+                self.framework_agents.pop(id(base), None)
+            else:
+                self.framework_agents[id(base)] = (base, name)  # holds the frame: its id is never reused meanwhile
+
+    def _frame(self) -> _AgentFrame | None:
         cur = _agent_var.get()
-        return cur.goal if cur is not None and cur.run_id == self.run_id else None
+        return cur if cur is not None and cur.run_id == self.run_id else None
 
 
 class _AgentFrame(NamedTuple):
@@ -224,7 +264,7 @@ class _Scope:
             try:
                 agen = fn(*a, **k)
                 # Only this wrapper is registered with the event loop's async-generator hooks; the inner
-                # generator is closed by the wrapper, never concurrently by the loop's own shutdown.
+                # generator is closed by the wrapper, never concurrently by the loop's shutdown or finalizer.
                 aw = _unhooked(agen.asend, None)
                 while True:
                     try:
@@ -254,14 +294,25 @@ class _Scope:
 
 
 def _unhooked(make: Callable, arg: Any) -> Any:
-    """Make an async generator's first awaitable with the firstiter hook disabled, so the event loop does not
-    track (and at shutdown close) that generator on its own."""
+    """Make an async generator's first awaitable with the event loop's hooks replaced, so the loop never closes
+    that generator on its own: no firstiter hook (the loop does not track it, or close it at shutdown) and a
+    finalizer that does nothing (garbage collection does not schedule its aclose()).
+
+    The finalizer matters when the wrapper and the inner generator are abandoned in a reference cycle: one
+    gc.collect() finalizes both. The loop's finalizer would schedule an aclose() for each, and the inner one's
+    would race the wrapper's own close of it ("aclose(): asynchronous generator is already running"). With this
+    one, only the wrapper's aclose() runs, and it closes the inner generator inside the run. Without a finalizer
+    hook at all (no event loop), the inner generator keeps none, as before."""
     firstiter, finalizer = sys.get_asyncgen_hooks()
-    sys.set_asyncgen_hooks(firstiter=None, finalizer=finalizer)
+    sys.set_asyncgen_hooks(firstiter=None, finalizer=_closed_by_wrapper if finalizer is not None else None)
     try:
         return make(arg)
     finally:
         sys.set_asyncgen_hooks(firstiter=firstiter, finalizer=finalizer)
+
+
+def _closed_by_wrapper(agen: Any) -> None:
+    """The inner generator's finalizer: nothing to do, its wrapper closes it."""
 
 
 class _GenRun:
@@ -329,20 +380,54 @@ class _Workflow(_Scope):
             raise RuntimeError("pitstop.workflow cannot be nested")
         halt_if_config_invalid()  # an invalid config.toml fails closed before the run starts
         ctx = RunContext(run_id=uuid.uuid4().hex, spec=self.spec)
+        refused = self._exhausted()
+        if refused is not None:
+            _safe(lambda: self._insert(ctx, "refused"))
+            _safe(lambda: self._record_refusal(ctx, refused))
+            raise refused
         _safe(lambda: self._insert(ctx))
         _current.set(ctx)
         return ctx
 
-    def _insert(self, ctx: RunContext) -> None:
+    def _exhausted(self) -> BudgetExceeded | None:
+        """The used-up budget that refuses this run at its start (spec 3.2), else None: the workflow's own budget,
+        a global budget without base_url, or the global budget for the endpoint of the workflow's previous run
+        that made a call (a refused run has none; a run observed through OpenTelemetry never counts); an endpoint
+        the run has not used yet halts at its first call. A store or ledger error is logged and the run starts
+        (fail open); an invalid config still fails closed."""
+        try:
+            rt = get_runtime()
+            row = rt.store.connect().execute(
+                "SELECT base_url FROM runs WHERE workflow=? AND base_url IS NOT NULL"
+                " AND (adapter IS NULL OR adapter != 'otel') ORDER BY started_at DESC LIMIT 1", (self.spec.name,)).fetchone()
+            return rt.ledger.exhausted(workflow=self.spec.name, workflow_budget_usd=self.spec.budget_usd,
+                                       base_url=row["base_url"] if row is not None else None)
+        except ConfigInvalid as e:
+            raise config_halt(e) from e
+        except Exception:
+            log.warning("pitstop: could not check the budgets at run start; the run starts", exc_info=True)
+            return None
+
+    def _record_refusal(self, ctx: RunContext, exc: BudgetExceeded) -> None:
+        from ..detect.l0 import Finding
+        from .actions import apply_findings
+
+        ctx.halt_reason = str(exc)  # the run never starts: no pending halt (or its event) to record
+        apply_findings(ctx, [Finding("budget_exhausted", "degraded", False,
+                                     {"scope": exc.scope, "limit_usd": exc.limit_usd, "spent_usd": exc.spent_usd,
+                                      "refused": True})])
+
+    def _insert(self, ctx: RunContext, status: str = "running") -> None:
         from .. import __version__
 
         s = ctx.spec
+        ended = ctx.started_at if status == "refused" else None
         with get_runtime().store.transaction() as c:
             c.execute(
-                "INSERT INTO runs(id, workflow, goal, criticality, sensitivity, fix_mode, started_at, status,"
-                " pitstop_version, budget_usd) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO runs(id, workflow, goal, criticality, sensitivity, fix_mode, started_at, ended_at,"
+                " status, pitstop_version, budget_usd) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 (ctx.run_id, s.name, s.goal, s.criticality, s.sensitivity, s.effective_fix_mode,
-                 time.time(), "running", __version__, s.budget_usd),
+                 ctx.started_at, ended, status, __version__, s.budget_usd),
             )
 
     def __exit__(self, et, ev, tb):

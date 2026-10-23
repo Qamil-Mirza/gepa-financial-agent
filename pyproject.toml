@@ -1,7 +1,7 @@
 [project]
 name = "pitstop"
 version = "0.1.0.dev0"
-description = "PitStop: a GEPA-optimized, task-scoped drift supervisor for multi-agent research swarms"
+description = "Drift detection, urgency labels and prompt correction for LLM agent workflows"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
@@ -17,12 +17,23 @@ dependencies = [
 
 [project.optional-dependencies]
 anthropic = ["anthropic>=2.0"]
+otel = ["opentelemetry-api>=1.45", "opentelemetry-sdk>=1.45"]
+openai-agents = ["openai-agents>=0.24"]
+langchain = ["langchain>=1.4", "langchain-core>=1.7"]
 
 [project.scripts]
 pitstop = "pitstop.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8", "pytest-asyncio>=0.24", "pytest-socket>=0.7", "ruff>=0.6", "anthropic>=2.0"]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "pytest-socket>=0.7", "ruff>=0.6", "anthropic>=2.0",
+       "opentelemetry-api>=1.45", "opentelemetry-sdk>=1.45", "openai-agents>=0.24",
+       "langchain>=1.4", "langchain-core>=1.7", "langchain-openai>=1.7", "pitstop-financial-research"]
+
+[tool.uv.workspace]
+members = ["examples/financial-research"]
+
+[tool.uv.sources]
+pitstop-financial-research = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

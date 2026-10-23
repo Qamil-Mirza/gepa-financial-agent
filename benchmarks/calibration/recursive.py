@@ -31,10 +31,10 @@ from pathlib import Path
 from typing import Any, Callable
 
 from pitstop import llm as llm_mod
-from pitstop import schemas
-from pitstop.config import ASSETS, PROMPTS
+from finresearch import schemas
+from finresearch.config import ASSETS, PROMPTS
 from pitstop.correct.client import ModelClient
-from pitstop.supervisor import supervisor as sup_mod
+from finresearch.supervisor import supervisor as sup_mod
 
 from .adapter import HardCase
 

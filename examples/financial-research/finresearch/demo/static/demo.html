@@ -1,0 +1,1034 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PitStop GEPA demo</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8F%81%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* Same visual language as the pit wall (finresearch/ui/static/index.html). */
+:root {
+  color-scheme: dark;
+  --asphalt: #1A1F26;
+  --tarmac: #232A33;
+  --tarmac-2: #2B333E;
+  --line: #36404C;
+  --chalk: #E6E9EC;
+  --muted: #8F9AA7;
+  --green: #2FA36B;
+  --yellow: #F0B429;
+  --red: #E0464E;
+  --kerb-white: #F3F4F6;
+  --on-flag: #10141A;
+  --focus: #7CB7FF;
+  --display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --asphalt: #EBEEF1;
+    --tarmac: #FFFFFF;
+    --tarmac-2: #F4F6F8;
+    --line: #CBD2DA;
+    --chalk: #1B2128;
+    --muted: #59636F;
+    --green: #1E8A55;
+    --yellow: #C98C0A;
+    --red: #C8323B;
+    --kerb-white: #D3D9E0;
+    --on-flag: #FFFFFF;
+    --focus: #1F6FD1;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--asphalt); color: var(--chalk);
+  font: 400 16px/1.5 var(--body); overflow: hidden;
+}
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button, input { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+/* ---------- chrome: wordmark, mode, progress ---------- */
+/* Sized for a projector: nothing on screen is smaller than ~17px. */
+.chrome {
+  position: fixed; inset: 0 0 auto 0; display: flex; align-items: center; gap: 16px;
+  padding: 16px 28px; z-index: 5; pointer-events: none;
+}
+.chrome > * { pointer-events: auto; }
+.wordmark { font: 700 28px/1 var(--display); background: none; border: 0; padding: 0; cursor: pointer; }
+.wordmark span { color: var(--muted); font-weight: 500; }
+.mode {
+  margin-left: auto; font: 600 16px/1 var(--display); letter-spacing: .08em; text-transform: uppercase;
+  padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: none; cursor: pointer;
+}
+.mode.live { color: var(--green); border-color: var(--green); }
+.fixture {
+  font: 700 16px/1 var(--display); letter-spacing: .06em; text-transform: uppercase;
+  padding: 7px 11px; border-radius: 3px; background: var(--red); color: var(--on-flag);
+}
+.dots { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 5; }
+.dots button { width: 12px; height: 12px; border-radius: 50%; border: 0; padding: 0; background: var(--line); cursor: pointer; }
+.dots button[aria-current="step"] { background: var(--chalk); }
+.navbtn {
+  position: fixed; bottom: 12px; z-index: 5; background: var(--asphalt); border: 1px solid var(--line);
+  border-radius: 6px; padding: 8px 18px; color: var(--muted); cursor: pointer; font: 600 20px var(--display);
+}
+.navbtn:hover { color: var(--chalk); border-color: var(--muted); }
+.next { right: 24px; }
+.home { left: 24px; }
+
+/* ---------- screens ---------- */
+.screen {
+  position: fixed; inset: 0; padding: 76px 40px 68px; display: flex; flex-direction: column;
+  opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility 0s linear .35s;
+}
+.screen.on { opacity: 1; visibility: visible; transition: opacity .35s ease; }
+.kicker { font: 600 20px/1.1 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.headline { font: 700 clamp(38px, 4.6vw, 68px)/1.05 var(--display); margin: 0; max-width: 28ch; }
+.headline em { font-style: normal; color: var(--green); }
+.note { color: var(--muted); font-size: 18px; }
+
+/* ---------- 1. start ---------- */
+#s-start { align-items: center; justify-content: center; text-align: center; }
+#s-start .headline { margin: 0 auto 36px; }
+.chat {
+  width: min(1000px, 100%); display: flex; gap: 12px; padding: 12px; background: var(--tarmac);
+  border: 1px solid var(--line); border-radius: 12px; text-align: left;
+}
+.chat input {
+  flex: 1; min-width: 0; border: 0; background: none; padding: 12px 14px; font-size: 26px; outline: none;
+}
+.chat button {
+  border: 0; border-radius: 8px; padding: 0 28px; background: var(--chalk); color: var(--asphalt);
+  font: 700 24px var(--display); cursor: pointer;
+}
+.chat button:disabled { opacity: .5; cursor: default; }
+.spawn { display: flex; gap: 16px; justify-content: center; margin-top: 32px; min-height: 56px; }
+.spawn .agent {
+  font: 600 24px/1 var(--display); padding: 14px 20px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--tarmac-2); opacity: 0; transform: translateY(8px); transition: opacity .3s, transform .3s;
+}
+.spawn .agent.in { opacity: 1; transform: none; }
+.spawn .agent::before {
+  content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--green);
+  margin-right: 10px; vertical-align: 2px; animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse { 50% { opacity: .25; } }
+.err { color: var(--red); margin-top: 16px; min-height: 1.5em; font-size: 20px; }
+
+/* ---------- 2. watch ---------- */
+#s-watch .headline { max-width: none; font-size: clamp(32px, 3.4vw, 52px); }
+.watch-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 14px; }
+.panes { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; min-height: 0; }
+.pane {
+  display: flex; flex-direction: column; background: var(--tarmac); border: 1px solid var(--line);
+  border-radius: 8px; padding: 16px 22px; min-width: 0; min-height: 0; transition: box-shadow .3s;
+}
+.pane.caught { box-shadow: 0 0 0 3px var(--red); }
+.pane-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.pane-title { font: 700 34px/1.05 var(--display); }
+.pane-title small { display: block; font: 500 19px var(--body); color: var(--muted); margin-top: 4px; }
+.pane-flag { font: 700 32px/1.05 var(--display); text-align: right; color: var(--muted); white-space: nowrap; }
+.pane-flag.t-DRIFTING { color: var(--red); }
+.pane-flag .fa { color: var(--yellow); }
+.fa-sum { color: var(--muted); font-weight: 600; }
+.pane-flag small { display: block; font: 400 18px var(--body); color: var(--muted); margin-top: 4px; }
+.sup {
+  margin: 8px 0 0; align-self: center; font: 600 19px/1 var(--display); padding: 9px 16px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--tarmac-2); position: relative;
+}
+.sup::before {
+  content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--muted); margin-right: 9px; vertical-align: 1px;
+}
+.pane.running .sup::before { background: var(--green); animation: pulse 1.4s ease-in-out infinite; }
+/* fan-out connector from the supervisor to its three lanes */
+.fan { height: 14px; margin: 0 14% 0; border: 1px solid var(--line); border-bottom: 0; border-radius: 6px 6px 0 0; position: relative; top: 6px; }
+.lanes { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; gap: 2px; margin-top: 6px; min-height: 0; }
+.lane { display: grid; grid-template-columns: 120px 1fr; gap: 14px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
+.lane:first-child { border-top: 0; }
+.lane-name { font: 700 26px/1.1 var(--display); }
+.lane-body { min-width: 0; }
+.cells { display: flex; gap: 6px; position: relative; padding-top: 22px; }
+.cell {
+  position: relative; flex: 1; max-width: 84px; height: 52px; border-radius: 4px; display: grid; place-items: center;
+  font: 700 22px/1 var(--display); color: var(--on-flag); background: none; border: 1px dashed var(--line);
+  transition: background .25s;
+}
+.cell.pending { color: var(--muted); }
+.cell.ON_TRACK { background: var(--green); border-color: transparent; }
+.cell.UNCERTAIN { background: repeating-linear-gradient(135deg, var(--yellow) 0 7px, color-mix(in srgb, var(--yellow) 75%, var(--tarmac)) 7px 14px); border-color: transparent; }
+.cell.DRIFTING { background: var(--red); border-color: transparent; }
+.cell.FAILED { background: none; border: 2px dashed var(--muted); color: var(--muted); }
+.cell.post { max-width: 60px; font-size: 24px; }
+.cell.corrected::before {
+  content: "corrected"; position: absolute; top: -22px; left: 0; white-space: nowrap;
+  font: 700 16px/1 var(--display); color: var(--yellow); border-left: 3px solid var(--yellow); padding-left: 5px;
+}
+.cell.catch::after {
+  content: ""; position: absolute; left: -3px; right: -3px; bottom: -9px; height: 6px; border-radius: 1px;
+  background: repeating-linear-gradient(90deg, var(--red) 0 8px, var(--kerb-white) 8px 16px);
+}
+.cell.onset::before {
+  content: "drift starts"; position: absolute; top: -22px; left: 0; white-space: nowrap;
+  font: 600 16px/1 var(--display); color: var(--chalk); border-left: 3px solid var(--chalk); padding-left: 5px;
+}
+.activity { font-size: 19px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 10px; min-height: 1.4em; line-height: 1.4; }
+.activity .q { font-style: italic; color: var(--chalk); }
+.activity .q::before { content: "“"; } .activity .q::after { content: "”"; }
+.verdict {
+  margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 48px;
+  font: 700 clamp(28px, 3vw, 42px)/1.1 var(--display); opacity: 0; transition: opacity .4s;
+}
+.verdict.in { opacity: 1; }
+.results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 10px; opacity: 0; transition: opacity .4s; }
+.results.in { opacity: 1; }
+.result { font-size: 18px; line-height: 1.35; color: var(--muted); border-left: 4px solid var(--line); padding: 2px 0 2px 12px; min-width: 0; }
+.result b { display: block; font: 700 21px var(--display); color: var(--chalk); }
+.result span { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.waiting { color: var(--yellow); font: 600 22px var(--display); }
+
+/* ---------- 3. prompt evolution ---------- */
+.evo { flex: 1; display: grid; grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr); gap: 40px; min-height: 0; margin-top: 12px; }
+.chart-wrap { position: relative; min-height: 0; display: flex; flex-direction: column; }
+.bignum { font: 700 clamp(60px, 8vw, 120px)/1 var(--display); letter-spacing: -.01em; }
+.bignum .from { color: var(--muted); font-weight: 600; }
+.bignum .arrow { color: var(--muted); font-weight: 500; margin: 0 .15em; }
+.bignum .to { color: var(--green); }
+.bignum-sub { color: var(--muted); margin: 8px 0 12px; font-size: 24px; line-height: 1.3; }
+#chart { flex: 1; width: 100%; min-height: 220px; }
+#chart .axis { stroke: var(--line); stroke-width: 1; }
+#chart .tick { fill: var(--muted); font: 500 18px var(--body); }
+#chart .best { fill: none; stroke: var(--green); stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; }
+#chart .dot { fill: var(--green); }
+#chart .dot.low { fill: var(--muted); opacity: .5; }
+#chart .rej { stroke: var(--muted); stroke-width: 3; opacity: .5; }
+#chart .more { fill: none; stroke: var(--green); stroke-width: 4; stroke-dasharray: 3 10; stroke-linecap: round; opacity: .85; }
+#chart .more-label { fill: var(--chalk); font: 700 24px var(--display); }
+#chart .more-note { fill: var(--muted); font: 500 18px var(--body); }
+.minimap-wrap { display: flex; flex-direction: column; min-height: 0; }
+.minimap-head { font: 700 26px/1.15 var(--display); margin-bottom: 8px; }
+.minimap-head small { display: block; font: 500 20px var(--body); color: var(--muted); margin-top: 2px; }
+.minimap {
+  flex: 1; min-height: 0; overflow: hidden; background: var(--tarmac); border: 1px solid var(--line); border-radius: 6px;
+  padding: 14px; display: flex; flex-direction: column; gap: 2px;
+}
+.minimap i { display: block; height: 3px; border-radius: 1px; background: var(--line); flex: none; transition: background .4s; }
+.minimap i.add { background: var(--yellow); }
+.minimap i.gap { background: none; }
+.legend { display: flex; gap: 8px 20px; color: var(--muted); font-size: 18px; margin-top: 10px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 18px; height: 6px; border-radius: 1px; vertical-align: 4px; margin-right: 8px; }
+
+/* ---------- 4. scoreboard ---------- */
+#s-score .watch-head { margin-bottom: 0; }
+.board { flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: clamp(28px, 7vw, 110px); min-height: 0; padding-top: 20px; }
+.arm { display: flex; flex-direction: column; align-items: center; width: clamp(170px, 20vw, 270px); height: 100%; }
+.arm .pct { font: 700 clamp(60px, 7vw, 100px)/1 var(--display); margin-bottom: 12px; }
+.arm .bar-box { flex: 1; width: 100%; display: flex; align-items: flex-end; min-height: 60px; }
+.arm .bar { width: 100%; height: 0; border-radius: 5px 5px 0 0; background: var(--line); transition: height .9s cubic-bezier(.2,.7,.2,1); }
+.arm.hero .bar { background: var(--green); }
+.arm.hero .pct { color: var(--green); }
+.arm.ref .bar { background: var(--muted); }
+.arm.pending .bar { background: none; border: 3px dashed var(--line); border-bottom: 0; height: 30% !important; }
+.arm.pending .pct { color: var(--muted); font-size: clamp(32px, 3vw, 44px); }
+.arm .name { font: 700 34px/1.05 var(--display); margin-top: 14px; text-align: center; }
+.arm .name small { display: block; font: 500 20px var(--body); color: var(--muted); margin-top: 3px; }
+.arm .sub { font-size: 20px; line-height: 1.35; color: var(--muted); text-align: center; margin-top: 8px; white-space: nowrap; }
+.baseline-rule { border-top: 1px solid var(--line); width: 100%; }
+.foot { text-align: center; margin: 12px auto 0; max-width: 70ch; }
+
+/* ---------- trace flow ---------- */
+.pane { position: relative; }
+.pane-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.flow-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+.flow-chip {
+  position: absolute; font: 700 15px/1 var(--display); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap;
+  padding: 6px 11px; border-radius: 999px; background: var(--tarmac-2); border: 2px solid var(--muted); color: var(--chalk);
+  box-shadow: 0 3px 10px rgb(0 0 0 / .35); will-change: transform, opacity;
+}
+.flow-chip.k-tool_call, .flow-chip.k-tool_response { border-color: var(--focus); }
+.flow-chip.k-finding { border-color: var(--green); color: var(--green); }
+.flow-chip.k-agent_message { border-color: var(--chalk); }
+.flow-chip.k-error { border-color: var(--red); color: var(--red); }
+.flow-chip.k-correction { background: var(--yellow); border-color: var(--yellow); color: var(--on-flag); }
+.sup .read { font: 500 16px var(--body); color: var(--muted); margin-left: 10px; }
+
+/* ---------- team reports ---------- */
+.reports { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; min-height: 0; margin-top: 16px; }
+.report {
+  overflow-y: auto; background: var(--tarmac); border: 1px solid var(--line); border-radius: 8px; padding: 18px 26px 28px;
+  font-size: 20px; line-height: 1.45; min-width: 0;
+}
+.report .pane-title { margin-bottom: 8px; }
+.report h3 { font: 700 28px/1.15 var(--display); margin: 14px 0 6px; }
+.report h4 { font: 700 18px/1.2 var(--display); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin: 20px 0 6px; }
+.report p { margin: 0 0 10px; }
+.report ul { margin: 0 0 10px; padding-left: 22px; }
+.report li { margin: 4px 0; }
+.report .cite { font: 600 12px/1 var(--display); color: var(--muted); margin-left: 2px; }
+.rstats { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 600 18px/1.3 var(--display); color: var(--muted); }
+.rstats .warn { color: var(--yellow); }
+.rnote { font-size: 20px; }
+
+/* ---------- "why?" panel: click a checked cell on the watch screen ---------- */
+.cell.has { cursor: pointer; }
+.cell.has:hover { outline: 3px solid var(--chalk); outline-offset: 2px; }
+.why-back { position: fixed; inset: 0; z-index: 20; background: rgb(0 0 0 / .5); display: flex; justify-content: flex-end; }
+.why {
+  width: min(680px, 100%); height: 100%; overflow-y: auto; background: var(--tarmac); border-left: 1px solid var(--line);
+  padding: 28px 34px 40px; font-size: 20px; line-height: 1.45; box-shadow: -12px 0 40px rgb(0 0 0 / .35);
+}
+.why-close { float: right; background: none; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font: 600 20px var(--display); padding: 6px 14px; cursor: pointer; }
+.why h3 { font: 700 34px/1.1 var(--display); margin: 4px 0 12px; }
+.why h4 { font: 600 18px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 24px 0 8px; }
+.why .verdict-line { font: 700 28px/1.2 var(--display); }
+.why .verdict-line small { font: 500 20px var(--body); color: var(--muted); margin-left: 8px; }
+.why .alarm { display: inline-block; margin-top: 8px; font: 700 17px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; padding: 7px 10px; border-radius: 3px; background: var(--red); color: var(--on-flag); }
+.why .entry-title { font: 600 22px/1.3 var(--display); margin-top: 18px; }
+.why p { margin: 0; }
+.why .q { font-style: italic; }
+.why .q::before { content: "“"; } .why .q::after { content: "”"; }
+.why ul { margin: 0; padding-left: 0; list-style: none; }
+.why li { border-left: 4px solid var(--line); padding: 4px 0 4px 12px; margin: 8px 0; }
+.why li b { font: 600 17px var(--display); color: var(--muted); display: block; }
+.why .src { margin-top: 28px; font-size: 16px; color: var(--muted); }
+
+@media (max-height: 900px) {
+  .lane { padding: 2px 0; } .cells { padding-top: 20px; }
+  .cell { height: 40px; } .activity { margin-top: 4px; } .sup { margin-top: 4px; }
+}
+@media (max-width: 860px) {
+  body { overflow: auto; }
+  .screen { position: absolute; padding: 64px 16px 56px; overflow-y: auto; }
+  .panes, .evo { grid-template-columns: 1fr; }
+  .results { grid-template-columns: 1fr; }
+  .board { gap: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="chrome">
+  <button class="wordmark" id="homeMark" type="button" title="Back to the start (Home or Esc)">PitStop <span>× GEPA</span></button>
+  <span class="fixture" id="fixtureBadge" hidden title="This snapshot was generated offline by a scripted model. Do not present it as a real run.">Fixture data, not a real run</span>
+  <button class="mode" id="modeBtn" title="Switch between replaying the recorded run and a live run (L)">Demo</button>
+</div>
+
+<!-- 1. start -->
+<section class="screen" id="s-start" aria-label="Start">
+  <p class="kicker">Three research agents · one supervisor each side</p>
+  <h1 class="headline">What should the agents research?</h1>
+  <form class="chat" id="chat">
+    <input id="goal" autocomplete="off" aria-label="Research goal">
+    <button id="go" type="submit">Start</button>
+  </form>
+  <div class="spawn" id="spawn"></div>
+  <div class="err" id="startErr" role="alert"></div>
+</section>
+
+<!-- 2. watch -->
+<section class="screen" id="s-watch" aria-label="Agents running">
+  <div class="watch-head">
+    <div>
+      <p class="kicker" id="watchKicker">Same agents · two supervisors</p>
+      <h2 class="headline">Which supervisor catches the drift?</h2>
+    </div>
+    <div class="waiting" id="waiting" hidden>Waiting on the model…</div>
+  </div>
+  <div class="panes">
+    <div class="pane" id="pane-a"><div class="pane-body"></div><div class="flow-layer" aria-hidden="true"></div></div>
+    <div class="pane" id="pane-b"><div class="pane-body"></div><div class="flow-layer" aria-hidden="true"></div></div>
+  </div>
+  <div class="verdict" id="verdict"></div>
+  <div class="results" id="results"></div>
+</section>
+
+<!-- 3. team reports -->
+<section class="screen" id="s-report" aria-label="Team reports">
+  <p class="kicker">The team's final report · written only from findings its supervisor didn't flag</p>
+  <h2 class="headline">What each team handed in</h2>
+  <div class="reports">
+    <article class="report" id="report-a" tabindex="0"></article>
+    <article class="report" id="report-b" tabindex="0"></article>
+  </div>
+</section>
+
+<!-- 4. prompt evolution -->
+<section class="screen" id="s-evo" aria-label="Prompt evolution">
+  <p class="kicker" id="evoKicker">GEPA rewrites the supervisor prompt</p>
+  <div class="evo">
+    <div class="chart-wrap">
+      <div class="bignum" id="bignum"></div>
+      <div class="bignum-sub" id="bignumSub"></div>
+      <svg id="chart" role="img" aria-label="Best validation score by GEPA iteration"></svg>
+    </div>
+    <div class="minimap-wrap">
+      <div class="minimap-head" id="mmHead"></div>
+      <div class="minimap" id="minimap" aria-hidden="true"></div>
+      <div class="legend"><span><i style="background:var(--yellow)"></i>new in this rewrite</span><span><i style="background:var(--line)"></i>kept</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. scoreboard -->
+<section class="screen" id="s-score" aria-label="Scoreboard">
+  <p class="kicker" id="scoreKicker">Held-out test cases</p>
+  <h2 class="headline" id="scoreHead">Accuracy</h2>
+  <div class="board" id="board"></div>
+  <div class="baseline-rule"></div>
+  <p class="note foot" id="scoreFoot"></p>
+</section>
+
+<div class="why-back" id="whyBack" hidden><aside class="why" id="why" role="dialog" aria-modal="true" aria-label="Why the supervisor said this"></aside></div>
+<nav class="dots" id="dots" aria-label="Screens"></nav>
+<button class="navbtn home" id="homeBtn" type="button" title="Back to the start (Home or Esc)">⌂ Home</button>
+<button class="navbtn next" id="nextBtn" type="button">Next →</button>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const SCREENS = ["s-start", "s-watch", "s-report", "s-evo", "s-score"];
+const FIRE_CONF = 0.75;      // the eval/GEPA firing rule: DRIFTING at confidence >= 0.75
+const TICK_MS = 2000;        // demo replay: one agent step per tick
+const POLL_MS = 1500;
+const PANES = {
+  a: { title: "Nano", sub: "original prompt" },
+  b: { title: "Nano + GEPA", sub: "optimized prompt" },
+};
+const DEFAULT_GOAL = "Produce a comparative analysis of NVIDIA and AMD's AI-related business performance, supported by financial filings and recent earnings information.";
+
+const S = {
+  screen: 0, live: new URLSearchParams(location.search).get("mode") === "live",
+  snap: null, swarm: null, shown: null, liveRun: null, liveErr: null,
+  replayToken: 0, evoToken: 0, reportToken: 0, lastChange: 0, flowSeen: {},
+};
+
+/* ---------------- navigation ---------------- */
+function go(i) {
+  i = Math.max(0, Math.min(SCREENS.length - 1, i));
+  S.screen = i;
+  closeWhy();
+  if (i === 0) {  // home: stop any replay/animation and reset the start screen
+    S.replayToken++; S.evoToken++; S.reportToken++;
+    $("spawn").innerHTML = ""; $("startErr").textContent = "";
+  }
+  SCREENS.forEach((id, k) => $(id).classList.toggle("on", k === i));
+  [...$("dots").children].forEach((b, k) => b.setAttribute("aria-current", k === i ? "step" : "false"));
+  $("nextBtn").hidden = i === SCREENS.length - 1;
+  $("homeBtn").hidden = i === 0;
+  if (SCREENS[i] === "s-start") setTimeout(() => { $("goal").focus(); $("goal").setSelectionRange(0, 0); $("goal").scrollLeft = 0; }, 50);
+  if (SCREENS[i] === "s-watch") startWatch();
+  if (SCREENS[i] === "s-report") playReport();
+  if (SCREENS[i] === "s-evo") playEvo();
+  if (SCREENS[i] === "s-score") playScore();
+}
+$("dots").innerHTML = SCREENS.map((id, k) => `<button type="button" aria-label="Screen ${k + 1}"></button>`).join("");
+[...$("dots").children].forEach((b, k) => b.addEventListener("click", () => go(k)));
+$("nextBtn").addEventListener("click", () => go(S.screen + 1));
+$("homeBtn").addEventListener("click", () => go(0));
+$("homeMark").addEventListener("click", () => go(0));
+document.addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (!$("whyBack").hidden) { if (e.key === "Escape") closeWhy(); return; }
+  if (e.target.tagName === "INPUT") return;
+  if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); go(S.screen + 1); }
+  else if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); go(S.screen - 1); }
+  else if (e.key === "Home" || e.key === "Escape") { e.preventDefault(); go(0); }
+  else if (e.key === "r" || e.key === "R") go(S.screen);
+  else if (e.key === "l" || e.key === "L") setMode(!S.live);
+});
+
+function setMode(live) {
+  S.live = live;
+  const b = $("modeBtn");
+  b.textContent = live ? "Live" : "Demo";
+  b.classList.toggle("live", live);
+  const u = new URL(location.href);
+  live ? u.searchParams.set("mode", "live") : u.searchParams.delete("mode");
+  history.replaceState(null, "", u);
+  $("fixtureBadge").hidden = live || S.snap?.swarm?.source !== "offline-fixture";
+}
+$("modeBtn").addEventListener("click", () => setMode(!S.live));
+
+/* ---------------- 1. start ---------------- */
+const shortLabel = (a) => a.label || a.agent_id;
+
+async function spawnAgents(agents) {
+  $("spawn").innerHTML = agents.map((a) => `<span class="agent">${esc(shortLabel(a))}</span>`).join("");
+  for (const el of $("spawn").children) { await sleep(220); el.classList.add("in"); }
+  await sleep(900);
+}
+
+$("chat").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("startErr").textContent = "";
+  const goal = $("goal").value.trim() || DEFAULT_GOAL;
+  const homeTok = S.replayToken;  // going Home while the agents spawn cancels the hop to screen 2
+  $("go").disabled = true;
+  try {
+    if (S.live) {
+      // a goal other than the default gets its own team, planned before the run starts (a few seconds)
+      $("spawn").innerHTML = `<span class="note">Planning the research team…</span>`;
+      const r = await fetch("/api/live/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ objective: goal }) });
+      const body = await r.json().catch(() => ({}));
+      let agents = body.agents;
+      if (r.status === 409 && await attachLive()) {
+        // a live run is already going (e.g. started before a reload): show that one
+        agents = (await fetchLive())?.agents;
+      } else if (!r.ok) {
+        $("spawn").innerHTML = "";
+        throw new Error(body.error || `Couldn't start a live run (HTTP ${r.status}).`);
+      } else {
+        S.liveRun = body.run_id; S.liveErr = null; S.swarm = null;
+      }
+      await spawnAgents(agents?.length ? agents : [{ label: "Agent 1" }, { label: "Agent 2" }, { label: "Agent 3" }]);
+    } else {
+      if (!S.snap?.swarm) throw new Error("There's no recorded run in the snapshot yet. Export one with python -m finresearch.demo.export.");
+      await spawnAgents(S.snap.swarm.agents);
+    }
+    if (homeTok === S.replayToken) go(1);
+  } catch (err) {
+    $("startErr").textContent = err.message;
+  } finally {
+    $("go").disabled = false;
+  }
+});
+
+/* ---------------- 2. watch ---------------- */
+// "Caught" = first DRIFTING verdict at confidence >= FIRE_CONF, the rule GEPA optimized and screen 4 scores.
+const fires = (d) => d.status === "DRIFTING" && d.confidence >= FIRE_CONF;
+
+function firstCatch(decisions, agentId) {
+  return decisions.find((d) => d.agent_id === agentId && fires(d)) ?? null;
+}
+const checkStep = (a, d) => (d.phase === "final" ? a.max_steps : d.step);
+// "Caught" = the first alarm at or after the step where drift was injected. Earlier alarms on that lane
+// (and any alarm on a lane with no injected drift) are "extra": unlabeled, possibly real, never a catch.
+function driftCatch(decisions, a) {
+  return decisions.find((d) => d.agent_id === a.agent_id && fires(d) && checkStep(a, d) >= a.drift_at_step) ?? null;
+}
+function laneSlots(a, dec) {
+  const mine = dec.filter((d) => d.agent_id === a.agent_id);
+  const slots = [];
+  for (let i = 0; i < a.max_steps; i++) {
+    slots.push({ label: String(i + 1), step: i, d: mine.find((d) => d.step === i && d.phase === "pre_action") });
+    mine.filter((d) => d.step === i && d.phase === "post_correction")
+      .forEach((d) => slots.push({ label: "↩", step: i, d, post: true }));
+  }
+  slots.push({ label: "Fin", fin: true, d: mine.find((d) => d.phase === "final") });
+  return slots;
+}
+
+// After the supervisor in charge corrected an agent: did its re-plan come back on track?
+function correctionOutcome(dec, agentId) {
+  const post = dec.filter((d) => d.agent_id === agentId && d.phase === "post_correction" && !d.failed);
+  if (!post.length) return "";
+  return post[post.length - 1].status === "ON_TRACK" ? "corrected → back on track" : "corrected, still drifting";
+}
+
+const readCount = (view, key) => paneEvents(view, key).filter((e) => FLOW[e.type]).length;
+
+// healthy lanes (no injected drift) that the supervisor fired on
+const extraAlarms = (sw, decisions) => sw.agents.filter((a) => decisions.some((d) => d.agent_id === a.agent_id
+  && fires(d) && (a.drift_at_step == null || checkStep(a, d) < a.drift_at_step))).length;
+
+function paneHTML(key, sw, view) {
+  const dec = view.decisions[key] ?? [];
+  const p = PANES[key];
+  const sup = sw.supervisors?.[key];
+  const caughtAny = sw.agents.map((a) => firstCatch(dec, a.agent_id)).filter(Boolean);
+  const drifted = sw.agents.filter((a) => a.drift_at_step != null);
+  const mainCatch = drifted.length ? driftCatch(dec, drifted[0]) : caughtAny[0];
+  const fa = extraAlarms(sw, dec);
+  const inCharge = sw.in_charge === key || sw.in_charge === "both";
+  const fix = inCharge && drifted.length ? correctionOutcome(dec, drifted[0].agent_id) : "";
+  const faText = fa ? `<span class="fa" title="An alarm on an agent with no injected drift (or before it started). Unlabeled: it may still be real; click the cell to see why.">${fa} extra alarm${fa > 1 ? "s" : ""}</span>` : "";
+  const flag = mainCatch
+    ? `<div class="pane-flag t-DRIFTING">Caught at step ${mainCatch.phase === "final" ? "Fin" : mainCatch.step + 1}<small>${fix || esc(mainCatch.drift_type?.replace(/_/g, " ") ?? "")}${fa ? " · " : ""}${faText}</small></div>`
+    : `<div class="pane-flag">${view.done ? "No alarm" : "Watching"}<small>${faText || (view.done ? "after the injection" : "&nbsp;")}</small></div>`;
+  const lanes = sw.agents.map((a) => {
+    const caught = a.drift_at_step != null ? driftCatch(dec, a) : firstCatch(dec, a.agent_id);
+    const cells = laneSlots(a, dec).map((slot) => {
+      const d = slot.d;
+      const cls = ["cell", d ? `${d.failed ? "FAILED" : d.status} has` : "pending"];
+      if (d && caught && d === caught) cls.push("catch");
+      if (!slot.post && !slot.fin && a.drift_at_step != null && slot.step === a.drift_at_step) cls.push("onset");
+      if (slot.post) cls.push("post", ...(inCharge ? ["corrected"] : []));
+      const attrs = d ? ` role="button" tabindex="0" data-pane="${key}" data-idx="${d.index}" aria-label="Why: ${d.failed ? "no verdict" : esc(STATUS_WORD[d.status])}"` : "";
+      return `<div class="${cls.join(" ")}"${attrs}>${slot.label}</div>`;
+    }).join("");
+    return `<div class="lane" data-agent="${esc(a.agent_id)}"><div class="lane-name">${esc(shortLabel(a))}</div>
+      <div class="lane-body"><div class="cells">${cells}</div>${activityHTML(a, view, key)}</div></div>`;
+  }).join("");
+  const role = sw.in_charge === "both" ? " · corrects drift"
+    : sw.in_charge ? (inCharge ? " · in charge, corrects drift" : " · watching only") : "";
+  return `<div class="pane-top"><div class="pane-title">${esc(p.title)}<small>${esc(p.sub)}${role}</small></div>${flag}</div>
+    <div class="sup">Supervisor<span class="read">${readCount(view, key)} trace events read</span></div><div class="fan"></div><div class="lanes">${lanes}</div>`;
+}
+
+// Single runs share one event log between the panes; paired runs (each supervisor with its own agents) don't.
+const paneEvents = (src, k) => (Array.isArray(src?.events) ? src.events : src?.events?.[k] ?? []);
+
+function activityHTML(agent, view, key) {
+  // Latest thing the agent did, one line: the query it proposed.
+  const evs = paneEvents(view, key).filter((e) => e.agent_id === agent.agent_id);
+  const last = [...evs].reverse().find((e) => e.query);
+  if (!last) return `<div class="activity">${view.started ? "starting…" : "&nbsp;"}</div>`;
+  return `<div class="activity"><span class="q">${esc(last.query)}</span></div>`;
+}
+
+function verdictText(sw, view) {
+  const drifted = sw.agents.find((a) => a.drift_at_step != null);
+  if (!drifted) return "";
+  const faA = extraAlarms(sw, view.decisions.a ?? []), faB = extraAlarms(sw, view.decisions.b ?? []);
+  const fa = faA === faB ? (faA ? ` · ${faA} extra alarm${faA > 1 ? "s" : ""} each` : "")
+    : ` · extra alarms: ${faA} original, ${faB} GEPA`;
+  return catchText(sw, view, drifted) + `<span class="fa-sum">${fa}</span>`;
+}
+
+function catchText(sw, view, drifted) {
+  const a = driftCatch(view.decisions.a ?? [], drifted), b = driftCatch(view.decisions.b ?? [], drifted);
+  const at = (d) => (d.phase === "final" ? drifted.max_steps : d.step);
+  if (a && b) {
+    const diff = at(a) - at(b);
+    if (diff > 0) return `<span style="color:var(--green)">GEPA prompt caught it ${diff} step${diff > 1 ? "s" : ""} earlier</span>`;
+    if (diff < 0) return `Original prompt caught it ${-diff} step${diff < -1 ? "s" : ""} earlier`;
+    return "Both caught it at the same step";
+  }
+  // Without a catch we can't tell "missed it" from "the agent never drifted" (e.g. an earlier correction
+  // stuck), so say only what happened: who raised an alarm after the injection.
+  if (b) return `<span style="color:var(--green)">Only the GEPA prompt raised an alarm after the injection</span>`;
+  if (a) return "Only the original prompt raised an alarm after the injection";
+  return "Neither raised an alarm after the injection";
+}
+
+function resultsHTML(sw) {
+  return sw.agents.map((a) => {
+    const r = (a.final_report || "No report.").replace(/\s+/g, " ").trim();
+    return `<div class="result"><b>${esc(shortLabel(a))}</b><span>${esc(r)}</span></div>`;
+  }).join("");
+}
+
+function paneBody(k) { return $(`pane-${k}`).querySelector(".pane-body"); }
+
+function renderWatch(sw, view) {
+  S.watch = { sw, view };
+  for (const k of ["a", "b"]) {
+    paneBody(k).innerHTML = paneHTML(k, sw, view);
+    const el = $(`pane-${k}`);
+    el.classList.toggle("running", view.started && !view.done);
+    const drifted = sw.agents.find((a) => a.drift_at_step != null);
+    el.classList.toggle("caught", !!(drifted && driftCatch(view.decisions[k] ?? [], drifted)));
+  }
+  const tok = S.replayToken;
+  requestAnimationFrame(() => { if (tok === S.replayToken) { flowTraces("a", sw, view); flowTraces("b", sw, view); } });
+  $("verdict").innerHTML = view.done ? verdictText(sw, view) : "";
+  $("verdict").classList.toggle("in", view.done);
+  // paired runs hand in a team report per side (next screen); a single run shows its agents' reports here
+  $("results").innerHTML = view.done && sw.mode !== "pair" ? resultsHTML(sw) : "";
+  $("results").classList.toggle("in", view.done && sw.mode !== "pair");
+}
+
+function watchKicker(sw, how) {
+  $("watchKicker").textContent = (sw?.mode === "pair"
+    ? "Same task · each supervisor runs its own three agents"
+    : "Same agents · two supervisors") + ` · ${how}`;
+}
+
+async function startWatch() {
+  const token = ++S.replayToken;
+  S.flowSeen = {};
+  for (const k of ["a", "b"]) $(`pane-${k}`).querySelector(".flow-layer").innerHTML = "";
+  if (S.live) return followLive(token);
+  const sw = S.snap?.swarm;
+  if (!sw) {
+    paneBody("a").innerHTML = `<p class="note">No recorded run in the snapshot.</p>`; paneBody("b").innerHTML = "";
+    return;
+  }
+  $("waiting").hidden = true;
+  watchKicker(sw, "recorded run, sped up");
+  // Replay: one tick per step (all agents advance together), then the final check.
+  const maxSteps = Math.max(...sw.agents.map((a) => a.max_steps));
+  const view = { events: { a: [], b: [] }, decisions: { a: [], b: [] }, started: true, done: false };
+  renderWatch(sw, view);
+  for (let t = 0; t <= maxSteps; t++) {
+    await sleep(t === 0 ? 500 : TICK_MS);
+    if (token !== S.replayToken) return;
+    const inTick = (x) => {
+      const a = sw.agents.find((g) => g.agent_id === x.agent_id);
+      const s = x.phase === "final" ? a.max_steps : x.step;
+      return s <= t;
+    };
+    view.events = { a: paneEvents(sw, "a").filter((e) => e.step <= t), b: paneEvents(sw, "b").filter((e) => e.step <= t) };
+    view.decisions = { a: (sw.decisions.a ?? []).filter(inTick), b: (sw.decisions.b ?? []).filter(inTick) };
+    renderWatch(sw, view);
+  }
+  await sleep(700);
+  if (token !== S.replayToken) return;
+  view.done = true;
+  renderWatch(sw, view);
+}
+
+async function fetchLive() {
+  const r = await fetch(`/api/live/${encodeURIComponent(S.liveRun)}`, { cache: "no-store" });
+  return r.ok ? r.json() : null;
+}
+
+async function followLive(token) {
+  watchKicker(S.watch?.sw, "live on Crusoe");
+  for (const k of ["a", "b"]) paneBody(k).innerHTML = "";
+  $("verdict").innerHTML = $("results").innerHTML = "";
+  $("verdict").classList.remove("in"); $("results").classList.remove("in");
+  if (!S.liveRun) {
+    paneBody("a").innerHTML = `<p class="note">Start a live run from the first screen.</p>`; paneBody("b").innerHTML = "";
+    return;
+  }
+  let lastSize = -1;
+  S.lastChange = Date.now();
+  while (token === S.replayToken) {
+    try {
+      const sw = await fetchLive();
+      if (token !== S.replayToken) return;
+      if (sw) {
+        watchKicker(sw, "live on Crusoe");
+        const size = paneEvents(sw, "a").length + paneEvents(sw, "b").length
+          + (sw.decisions.a?.length ?? 0) + (sw.decisions.b?.length ?? 0);
+        if (size !== lastSize) { lastSize = size; S.lastChange = Date.now(); }
+        if (sw.agents?.length) renderWatch(sw, { events: sw.events, decisions: sw.decisions, started: true, done: !sw.in_progress });
+        if (sw.error) { $("waiting").hidden = false; $("waiting").textContent = `Live run failed: ${sw.error}`; return; }
+        if (!sw.in_progress) { $("waiting").hidden = true; return; }
+      }
+    } catch { /* server hiccup: keep polling */ }
+    $("waiting").hidden = Date.now() - S.lastChange < 20000;
+    $("waiting").textContent = "Waiting on the model…";
+    await sleep(POLL_MS);
+  }
+}
+
+/* ---------------- trace flow: the agents' events rising into their supervisor ---------------- */
+// Each new trace event becomes a labelled chip that travels from its agent's lane up into the supervisor
+// that reads it; a correction travels the other way. Capped per lane per update so a burst stays legible.
+const FLOW = { plan: "plan", tool_call: "search", tool_response: "result", finding: "finding", agent_message: "report", error: "error" };
+const CHIPS_PER_LANE = 2;
+
+function flowTraces(key, sw, view) {
+  const seen = (S.flowSeen[key] ??= new Set());
+  const fresh = paneEvents(view, key).filter((e) => !seen.has(e.event_id));
+  fresh.forEach((e) => seen.add(e.event_id));
+  if (!fresh.length || SCREENS[S.screen] !== "s-watch" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const pane = $(`pane-${key}`), layer = pane.querySelector(".flow-layer"), sup = pane.querySelector(".sup");
+  if (!sup) return;
+  const box = pane.getBoundingClientRect(), sr = sup.getBoundingClientRect();
+  const hub = { x: sr.left + sr.width / 2 - box.left, y: sr.top + sr.height / 2 - box.top };
+  let delay = 0;
+  for (const a of sw.agents) {
+    const name = pane.querySelector(`.lane[data-agent="${CSS.escape(a.agent_id)}"] .lane-name`);
+    if (!name) continue;
+    const r = name.getBoundingClientRect();
+    const lane = { x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top };
+    const mine = fresh.filter((e) => e.agent_id === a.agent_id);
+    for (const e of mine.filter((x) => FLOW[x.type]).slice(-CHIPS_PER_LANE)) {
+      flowChip(layer, FLOW[e.type], e.type, lane, hub, delay); delay += 160;
+    }
+    if (sw.in_charge === key || sw.in_charge === "both") {
+      for (const e of mine.filter((x) => x.type === "supervisor_message")) {
+        flowChip(layer, "correction", "correction", hub, lane, delay + 500); delay += 160;
+      }
+    }
+  }
+}
+
+function flowChip(layer, label, kind, from, to, delay) {
+  const el = document.createElement("span");
+  el.className = `flow-chip k-${kind}`;
+  el.textContent = label;
+  el.style.left = `${from.x}px`; el.style.top = `${from.y}px`;
+  layer.appendChild(el);
+  const dx = to.x - from.x, dy = to.y - from.y;
+  const at = (f, sc) => `translate(calc(-50% + ${dx * f}px), calc(-50% + ${dy * f}px)) scale(${sc})`;
+  el.animate([
+    { transform: at(0, .8), opacity: 0 },
+    { transform: at(.08, 1), opacity: 1, offset: .12 },
+    { transform: at(.92, .9), opacity: 1, offset: .88 },
+    { transform: at(1, .6), opacity: 0 },
+  ], { duration: 1300, delay, easing: "cubic-bezier(.45,0,.25,1)", fill: "both" })
+    .finished.then(() => el.remove(), () => el.remove());
+}
+
+/* ---------------- team report screen ---------------- */
+// Each side's final financial report (finresearch/agents/synthesizer.py): written only from findings its
+// supervisor did not flag, every figure checked against a finding in code.
+function md(text) {
+  const inline = (x) => x.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+    .replace(/\[((?:F\d+|[A-Za-z0-9_-]+-e\d{3})(?:\s*[,;]\s*(?:F\d+|[A-Za-z0-9_-]+-e\d{3}))*)\]/g, '<sup class="cite">$1</sup>');
+  let html = "", list = false;
+  for (const raw of esc(text).split("\n")) {
+    const l = raw.trim();
+    if (/^[-*] /.test(l)) { if (!list) { html += "<ul>"; list = true; } html += `<li>${inline(l.slice(2))}</li>`; continue; }
+    if (list) { html += "</ul>"; list = false; }
+    if (!l) continue;
+    const h = l.match(/^#{1,4}\s+(.*)$/);
+    html += h ? `<h4>${inline(h[1])}</h4>` : `<p>${inline(l)}</p>`;
+  }
+  return html + (list ? "</ul>" : "");
+}
+
+function reportHTML(key, sw) {
+  const p = PANES[key];
+  const head = `<div class="pane-title">${esc(p.title)}<small>${esc(p.sub)}</small></div>`;
+  const tr = sw?.team_report?.[key];
+  if (!tr) {
+    const ar = sw?.agent_reports?.[key] ?? Object.fromEntries((sw?.agents ?? []).map((a) => [a.agent_id, a.final_report]));
+    const items = (sw?.agents ?? []).filter((a) => ar[a.agent_id])
+      .map((a) => `<h4>${esc(shortLabel(a))}</h4><p>${esc(ar[a.agent_id])}</p>`).join("");
+    const wait = S.live && sw?.in_progress && !sw?.error;
+    if (S.live && sw?.error) return head + `<p class="note rnote">The live run failed: ${esc(sw.error)}</p>`;
+    return head + `<p class="note rnote">${wait ? "The agents are still working; the report comes when they finish." :
+      `No team report for this run${items ? ". Each agent's own report:" : "."}`}</p>${wait ? "" : items}`;
+  }
+  if (tr.error && !tr.markdown) return head + `<p class="note rnote">The report agent failed: ${esc(tr.error)}</p>`;
+  const unv = tr.unverified_figures?.length ?? 0;
+  const stats = [`${tr.findings_included} findings used`, `${tr.findings_excluded} left out (flagged by the supervisor)`,
+    unv ? `${unv} figure${unv > 1 ? "s" : ""} not found in any finding` : "every figure traced to a finding"];
+  return head + `<div class="rstats">${stats.map((x, i) => `<span${i === 2 && unv ? ' class="warn"' : ""}>${esc(x)}</span>`).join("")}</div>
+    <h3>${esc(tr.title)}</h3><div class="md">${md(tr.markdown)}</div>`;
+}
+
+async function playReport() {
+  const token = ++S.reportToken;
+  const paint = (sw) => { for (const k of ["a", "b"]) $(`report-${k}`).innerHTML = reportHTML(k, sw); };
+  if (!S.live) return paint(S.snap?.swarm);
+  paint(S.watch?.sw);
+  while (token === S.reportToken && S.liveRun) {  // live: keep polling until both reports are in
+    try {
+      const sw = await fetchLive();
+      if (token !== S.reportToken) return;
+      if (sw) { paint(sw); if (!sw.in_progress || sw.error) return; }
+    } catch { /* keep polling */ }
+    await sleep(2000);
+  }
+}
+
+/* ---------------- "why?" panel ---------------- */
+// Reads the supervisor's curated run timeline (finresearch/timeline.py), built for both supervisors.
+const STATUS_WORD = { ON_TRACK: "On track", UNCERTAIN: "Uncertain", DRIFTING: "Drifting" };
+const FAILED_WHY = {
+  call_failed: "The model call failed (Crusoe rate limit or connection error), so this check has no verdict.",
+  invalid_json: "The model's reply wasn't valid JSON, so this check has no verdict.",
+};
+
+function openWhy(pane, idx) {
+  const { sw, view } = S.watch ?? {};
+  const d = view?.decisions?.[pane]?.find((x) => x.index === idx);
+  if (!d) return;
+  const agent = sw.agents.find((a) => a.agent_id === d.agent_id);
+  const visible = new Set((view.decisions[pane] ?? []).map((x) => x.index));
+  const entries = (sw.timeline?.[pane] ?? []).filter((e) => visible.has(e.decision_index));
+  const entry = entries.find((e) => e.decision_index === idx && e.kind !== "drift_response")
+    ?? entries.find((e) => e.decision_index === idx);
+  const response = entry?.kind === "drift_flagged" ? entries.find((e) => e.responds_to === entry.entry_id) : null;
+  // plans at this step in order: the first was judged pre_action, each later one after a correction
+  const evs = paneEvents(sw, pane);
+  const plans = evs.filter((e) => e.agent_id === d.agent_id && e.step === d.step && e.type === "plan");
+  const corrections = evs.filter((e) => e.agent_id === d.agent_id && e.step === d.step && e.type === "supervisor_message");
+  const postIdx = d.phase === "post_correction" ? view.decisions[pane].filter((x) => x.agent_id === d.agent_id
+    && x.step === d.step && x.phase === "post_correction" && x.index <= d.index).length : 0;
+  const plan = plans[postIdx];
+  const sentBefore = postIdx ? corrections[postIdx - 1] : null;   // the correction this re-plan answers
+  const sentAfter = d.phase === "pre_action" && (sw.in_charge === pane || sw.in_charge === "both") ? corrections[0] : null;
+  const query = entry?.blocked_query ?? (d.phase === "final" ? null : plan?.query);
+  const evidence = entry?.evidence?.length ? entry.evidence
+    : (d.evidence_event_ids ?? []).map((id) => evs.find((e) => e.event_id === id) ?? { event_id: id });
+  const where = d.phase === "final" ? "Final check" : d.phase === "post_correction" ? `Step ${d.step + 1}, after correction` : `Step ${d.step + 1}`;
+  const drift = d.drift_type && d.drift_type !== "none" ? d.drift_type.replace(/_/g, " ") : "";
+  $("why").innerHTML = `<button class="why-close" type="button" id="whyClose">✕ Close</button>
+    <p class="kicker">${esc(PANES[pane].title)} · ${esc(PANES[pane].sub)}</p>
+    <h3>${esc(shortLabel(agent ?? { agent_id: d.agent_id }))} · ${where}</h3>
+    ${d.failed ? `<div class="verdict-line">No verdict</div><p>${FAILED_WHY[d.failed] ?? FAILED_WHY.call_failed}</p>` :
+      `<div class="verdict-line t-${d.status}">${STATUS_WORD[d.status]}<small>${Math.round(d.confidence * 100)}% confident${drift ? ` · ${esc(drift)}` : ""}</small></div>`}
+    ${fires(d) ? `<span class="alarm">Alarm fired</span>` : ""}
+    ${entry ? `<div class="entry-title">${esc(entry.title)}</div>` : ""}
+    ${sentBefore ? `<h4>Correction the agent received</h4><p>${esc(sentBefore.message ?? sentBefore.summary)}</p>` : ""}
+    ${query ? `<h4>${sentBefore ? "Agent's new query" : "Agent's next query"}</h4><p class="q">${esc(query)}</p>` : ""}
+    ${d.failed ? "" : `<h4>Supervisor's reasoning</h4><p>${esc(entry?.detail || d.explanation || "No explanation given.")}</p>`}
+    ${evidence.length ? `<h4>Evidence it cited</h4><ul>${evidence.map((ev) =>
+      `<li><b>${esc(ev.type ?? "event")}${ev.step != null ? ` · step ${ev.step + 1}` : ""}</b>${esc(ev.summary || ev.event_id)}</li>`).join("")}</ul>` : ""}
+    ${sentAfter ? `<h4>What the supervisor did</h4><p>Blocked this query before it was sent and told the agent to return to its directive. The agent re-planned (the ↩ cell).</p>`
+      : response ? `<h4>Afterwards</h4><p>${esc(response.title)}</p>` : ""}
+    <p class="src">From the supervisor's run timeline.</p>`;
+  $("whyBack").hidden = false;
+  $("whyClose").addEventListener("click", closeWhy);
+  $("whyClose").focus();
+}
+function closeWhy() { $("whyBack").hidden = true; }
+$("whyBack").addEventListener("click", (e) => { if (e.target === $("whyBack")) closeWhy(); });
+$("s-watch").addEventListener("click", (e) => {
+  const c = e.target.closest(".cell.has");
+  if (c) openWhy(c.dataset.pane, Number(c.dataset.idx));
+});
+$("s-watch").addEventListener("keydown", (e) => {
+  const c = e.target.closest?.(".cell.has");
+  if (c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); e.stopPropagation(); openWhy(c.dataset.pane, Number(c.dataset.idx)); }
+});
+
+/* ---------------- 3. prompt evolution ---------------- */
+const fmt3 = (x) => x.toFixed(3);
+
+function renderMinimap(cand) {
+  const lines = cand?.lines ?? [];
+  const maxLen = Math.max(60, ...lines.map((l) => l.text.length));
+  $("minimap").innerHTML = lines.map((l) => {
+    if (!l.text.trim()) return `<i class="gap"></i>`;
+    const w = Math.max(6, Math.round((Math.min(l.text.length, maxLen) / maxLen) * 100));
+    return `<i class="${l.added ? "add" : ""}" style="width:${w}%"></i>`;
+  }).join("");
+  const kb = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
+  $("mmHead").innerHTML = `Supervisor prompt<small>${kb(cand?.chars ?? 0)} characters</small>`;
+}
+
+function chartGeom(g) {
+  const svg = $("chart");
+  const W = svg.clientWidth || 800, H = svg.clientHeight || 360;
+  const pad = { l: 66, r: Math.min(230, W * 0.24), t: 20, b: 50 };
+  const scores = [g.seed_score, ...g.candidates.map((c) => c.val_score)];
+  const lo = Math.floor((Math.min(...scores) - 0.02) * 50) / 50, hi = Math.ceil((Math.max(...scores) + 0.02) * 50) / 50;
+  const n = Math.max(1, g.iterations_run);
+  const x = (it) => pad.l + (it / n) * (W - pad.l - pad.r);
+  const y = (s) => pad.t + (1 - (s - lo) / (hi - lo)) * (H - pad.t - pad.b);
+  return { svg, W, H, pad, lo, hi, n, x, y };
+}
+
+function drawChart(g, upto) {
+  // upto = how many iterations of the run are revealed so far (animation)
+  const { svg, W, H, pad, lo, hi, n, x, y } = chartGeom(g);
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const yTicks = [];
+  for (let v = lo; v <= hi + 1e-9; v += (hi - lo) / 4) yTicks.push(v);
+  let html = yTicks.map((v) => `<line class="axis" x1="${pad.l}" x2="${W - pad.r}" y1="${y(v)}" y2="${y(v)}" opacity=".5"/>
+    <text class="tick" x="${pad.l - 10}" y="${y(v) + 6}" text-anchor="end">${v.toFixed(2)}</text>`).join("");
+  const xEvery = n > 20 ? 5 : n > 10 ? 3 : 1;
+  for (let it = 0; it <= n; it += xEvery) html += `<text class="tick" x="${x(it)}" y="${H - pad.b + 30}" text-anchor="middle">${it}</text>`;
+  html += `<text class="tick" x="${x(n) + 18}" y="${H - pad.b + 30}" text-anchor="start">loops</text>`;
+  // rejected attempts: faint marks on the axis
+  html += (g.rejected_iterations ?? []).filter((it) => it <= upto).map((it) =>
+    `<line class="rej" x1="${x(it)}" x2="${x(it)}" y1="${H - pad.b - 12}" y2="${H - pad.b}"/>`).join("");
+  // best-so-far step line
+  const pts = (g.best_so_far ?? []).filter((p) => p.iteration <= upto);
+  if (pts.length) {
+    let d = `M${x(pts[0].iteration)},${y(pts[0].score)}`;
+    for (let i = 1; i < pts.length; i++) d += ` H${x(pts[i].iteration)} V${y(pts[i].score)}`;
+    html += `<path class="best" d="${d}"/>`;
+  }
+  // every accepted candidate as a dot; ones below the best so far are faint
+  let best = g.seed_score;
+  for (const c of [...g.candidates].sort((p, q) => p.iteration - q.iteration)) {
+    if (c.iteration > upto) continue;
+    const low = c.val_score < best - 1e-9;
+    best = Math.max(best, c.val_score);
+    html += `<circle class="dot${low ? " low" : ""}" cx="${x(c.iteration)}" cy="${y(c.val_score)}" r="${low ? 6 : 9}"/>`;
+  }
+  // after the last real point: a dashed, explicitly unmeasured "more loops?" stub
+  if (upto >= n && pts.length) {
+    const last = pts[pts.length - 1], x0 = x(n), y0 = y(last.score);
+    const x1 = W - 20, y1 = Math.max(pad.t + 40, y0 - (H - pad.t - pad.b) * 0.22);
+    html += `<path class="more" d="M${x0},${y0} L${x1},${y1}"/>
+      <text class="more-label" x="${x1}" y="${y1 - 34}" text-anchor="end">more loops?</text>
+      <text class="more-note" x="${x1}" y="${y1 - 10}" text-anchor="end">not measured</text>`;
+  }
+  svg.innerHTML = html;
+}
+
+async function playEvo() {
+  const token = ++S.evoToken;
+  const g = S.snap?.gepa;
+  if (!g || !g.candidates?.length) { $("bignum").textContent = "No GEPA run in the snapshot"; return; }
+  const ordered = [...g.candidates].sort((p, q) => p.iteration - q.iteration || p.idx - q.idx);
+  const seed = ordered.find((c) => c.parent == null) ?? ordered[0];
+  const bestAt = (it) => ordered.filter((c) => c.iteration <= it).reduce((b, c) => (c.val_score > b.val_score ? c : b), seed);
+  const final = bestAt(g.iterations_run);
+  const accepted = g.candidates.filter((c) => c.parent != null).length;
+  $("evoKicker").textContent = `GEPA rewrites the supervisor prompt · ${g.model?.split("/").pop() ?? "Nano"}`;
+  $("bignumSub").textContent = `Validation score of the best prompt so far · ${g.iterations_run} loop${g.iterations_run === 1 ? "" : "s"}, ${accepted} rewrites kept${g.status === "in_progress" ? " · run still going" : ""}`;
+  const setBig = (c) => {
+    $("bignum").innerHTML = `<span class="from">${fmt3(g.seed_score)}</span><span class="arrow">→</span><span class="to">${fmt3(c.val_score)}</span>`;
+  };
+  // Reveal the run loop by loop; the minimap tracks the best prompt so far.
+  const step = Math.max(160, Math.min(450, 4200 / Math.max(1, g.iterations_run)));
+  let shown = null;
+  for (let it = 0; it <= g.iterations_run; it++) {
+    if (token !== S.evoToken) return;
+    const b = bestAt(it);
+    if (b !== shown) { shown = b; renderMinimap(b); setBig(b); }
+    drawChart(g, it);
+    await sleep(it === 0 ? 400 : step);
+  }
+  if (token !== S.evoToken) return;
+  renderMinimap(final); setBig(final); drawChart(g, g.iterations_run);
+}
+addEventListener("resize", () => {
+  if (SCREENS[S.screen] === "s-evo" && S.snap?.gepa) drawChart(S.snap.gepa, S.snap.gepa.iterations_run);
+});
+
+/* ---------------- 4. scoreboard ---------------- */
+const pct = (x) => `${Math.round(x * 100)}%`;
+
+function playScore() {
+  const sc = S.snap?.scores;
+  if (!sc?.arms?.length) { $("board").innerHTML = `<p class="note">No scores in the snapshot.</p>`; return; }
+  $("scoreKicker").textContent = `Held-out ${sc.split ?? "test"} cases`;
+  $("scoreHead").textContent = "Accuracy";
+  $("board").innerHTML = sc.arms.map((a) => {
+    const role = a.key === "nano_gepa" ? "hero" : a.key === "super" ? "ref" : "";
+    if (a.pending) {
+      return `<div class="arm pending"><div class="pct">pending</div><div class="bar-box"><div class="bar"></div></div>
+        <div class="name">${esc(a.label)}<small>${esc(a.sublabel ?? "")}</small></div><div class="sub">results not in yet<br>&nbsp;</div></div>`;
+    }
+    const sub = `drift caught ${pct(a.drift_recall)}<br>${a.false_alarms} false alarm${a.false_alarms === 1 ? "" : "s"}`;
+    return `<div class="arm ${role}" data-h="${a.accuracy}"><div class="pct">${pct(a.accuracy)}</div><div class="bar-box"><div class="bar"></div></div>
+      <div class="name">${esc(a.label)}<small>${esc(a.sublabel ?? "")}</small></div><div class="sub">${sub}</div></div>`;
+  }).join("");
+  const real = sc.arms.filter((a) => !a.pending);
+  const ns = [...new Set(real.map((a) => a.n))], ts = [...new Set(real.map((a) => a.trials))];
+  $("scoreFoot").textContent = `Accuracy = the supervisor fires on drift cases and stays quiet on healthy ones (DRIFTING at ≥ 75% confidence).${ns.length === 1 ? ` ${ns[0]} judgments per bar${ts.length === 1 && ts[0] ? ` (${ts[0]} trials)` : ""}, same test cases for every bar.` : ""} GEPA never saw these cases.`;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelectorAll(".arm[data-h] .bar").forEach((el) => { el.style.height = `${el.closest(".arm").dataset.h * 100}%`; });
+  }));
+}
+
+// Re-attach to a live run the server is already running (page reloaded mid-demo, or started elsewhere).
+async function attachLive() {
+  try {
+    const h = await (await fetch("/api/health", { cache: "no-store" })).json();
+    if (h.live_running) { S.liveRun = h.live_running; return true; }
+  } catch { /* server not reachable: nothing to attach to */ }
+  return false;
+}
+
+/* ---------------- boot ---------------- */
+(async function boot() {
+  setMode(S.live);
+  try {
+    const r = await fetch("/api/snapshot", { cache: "no-store" });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `HTTP ${r.status}`);
+    S.snap = await r.json();
+  } catch (err) {
+    $("startErr").textContent = `Couldn't load the demo snapshot: ${err.message}`;
+  }
+  // a FIXTURE objective must never be sent to a live run
+  $("goal").value = (S.snap?.swarm?.source !== "offline-fixture" && S.snap?.swarm?.objective) || DEFAULT_GOAL;
+  setMode(S.live);
+  if (S.live && await attachLive()) return go(1);
+  go(0);
+})();
+</script>
+</body>
+</html>

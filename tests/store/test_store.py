@@ -163,14 +163,14 @@ def _meta(store, key):
 
 
 def test_migrations_cover_every_version_step():
-    assert SCHEMA_VERSION == 4
+    assert SCHEMA_VERSION == 5
     assert sorted(MIGRATIONS) == list(range(2, SCHEMA_VERSION + 1))
 
 
 def test_fresh_db_matches_migrated_db(tmp_path):
     old = _make_v1_db(tmp_path / "old.db")
     assert _columns(Store(old)) == _columns(Store(tmp_path / "new.db"))
-    assert Store(old).schema_version() == SCHEMA_VERSION == 4
+    assert Store(old).schema_version() == SCHEMA_VERSION == 5
 
 
 @pytest.mark.parametrize("strip", [["    INSERT INTO meta VALUES ('schema_version', '1');\n"],
@@ -348,3 +348,107 @@ def test_nested_transactions_commit_together(tmp_path):
         assert c.in_transaction
     assert _meta(s, "a") == "1"
     assert not s.connect().in_transaction
+
+
+# -- v5: scan state, span links, run tags, indexes ------------------------------------------------------------
+
+# schema.sql as released at v4 (kept verbatim: the v5 step must upgrade exactly this shape).
+V4_SCHEMA = """
+CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS runs (
+    id TEXT PRIMARY KEY, workflow TEXT, goal TEXT, criticality TEXT, sensitivity TEXT,
+    fix_mode TEXT, started_at REAL, ended_at REAL, status TEXT, model TEXT, base_url TEXT,
+    prompt_versions TEXT, pitstop_version TEXT, adapter TEXT, price_known INTEGER DEFAULT 1, budget_usd REAL);
+CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY, run_id TEXT, ts REAL, agent TEXT, kind TEXT, name TEXT,
+    payload TEXT, cost_usd REAL, parent_id INTEGER);
+CREATE TABLE IF NOT EXISTS drifts (
+    id INTEGER PRIMARY KEY, run_id TEXT, workflow TEXT, ts REAL, level TEXT, kind TEXT,
+    drift_type TEXT, evidence TEXT, action TEXT, status TEXT DEFAULT 'open', last_seen REAL,
+    occurrences INTEGER NOT NULL DEFAULT 1);
+CREATE TABLE IF NOT EXISTS ledger (
+    id INTEGER PRIMARY KEY, ts REAL, run_id TEXT, workflow TEXT, meter TEXT, model TEXT,
+    base_url TEXT, prompt_tokens INTEGER, completion_tokens INTEGER, usd REAL, state TEXT);
+CREATE TABLE IF NOT EXISTS prompts (
+    name TEXT, version INTEGER, text TEXT, sha TEXT, source TEXT, created_at REAL,
+    active INTEGER, PRIMARY KEY(name, version));
+-- alerts: kind immediate | digest | test; status pending | sent | failed; error is an exception type name or
+-- "HTTP <status>", never a message, URL or body (they can hold secrets).
+CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY, drift_id INTEGER, level TEXT, channel TEXT, kind TEXT,
+    ts REAL, status TEXT, error TEXT);
+CREATE INDEX IF NOT EXISTS idx_events_run ON events(run_id);
+CREATE INDEX IF NOT EXISTS idx_drifts_wf_status ON drifts(workflow, status);
+CREATE INDEX IF NOT EXISTS idx_ledger_ts ON ledger(ts);
+CREATE INDEX IF NOT EXISTS idx_alerts_drift ON alerts(drift_id, channel);
+-- schema_version is written by Store._migrate: the latest version on a fresh DB, else after the migration steps.
+"""
+
+
+def _make_v4_db(path):
+    conn = sqlite3.connect(path)
+    conn.executescript(V4_SCHEMA + """
+        INSERT INTO meta VALUES ('schema_version', '4');
+        INSERT INTO runs(id, workflow, adapter) VALUES ('old', 'wf', 'wrap');
+        INSERT INTO events(run_id, kind) VALUES ('old', 'llm_call');
+    """)
+    conn.commit()
+    conn.close()
+    return path
+
+
+def test_v4_db_migrates_to_v5(tmp_path):
+    path = _make_v4_db(tmp_path / "v4.db")
+    for _ in range(2):  # idempotent
+        store = Store(path)
+        assert store.schema_version() == SCHEMA_VERSION == 5
+    cols = _columns(store)
+    assert [c[1] for c in cols["runs"]][-2:] == ["scanned_at", "fallback_from"]
+    assert [c[1] for c in cols["events"]][-2:] == ["span_id", "parent_span_id"]
+    assert [c[1] for c in cols["l2_state"]] == ["workflow", "metric", "state", "updated_at"]
+    assert [c[1] for c in cols["l2_state"] if c[5]] == ["workflow", "metric"]  # the primary key
+    run = store.connect().execute("SELECT adapter, scanned_at, fallback_from FROM runs WHERE id='old'").fetchone()
+    assert tuple(run) == ("wrap", None, None)
+    names = {name for name, _t, _s in _indexes(store)}
+    assert {"idx_runs_wf_started", "idx_runs_scan", "idx_ledger_run"} <= names
+
+
+def test_fresh_and_migrated_schemas_match(tmp_path):
+    new = Store(tmp_path / "new.db")
+    for old in (Store(_make_v4_db(tmp_path / "v4.db")), Store(_make_v1_db(tmp_path / "v1.db"))):
+        assert _columns(old) == _columns(new)  # PRAGMA table_info of every table
+        assert _indexes(old) == _indexes(new)
+
+
+def test_v5_step_is_idempotent_on_its_own():
+    """The step creates its table and indexes on a DB that schema.sql never saw, and can run twice."""
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(V4_SCHEMA)
+    for _ in range(2):
+        MIGRATIONS[5](conn)
+    assert {r[0] for r in conn.execute("SELECT name FROM sqlite_master")} >= {
+        "l2_state", "idx_runs_wf_started", "idx_runs_scan", "idx_ledger_run"}
+
+
+def test_close_local_and_open_connections(tmp_path):
+    import threading
+
+    store = Store(tmp_path / "pitstop.db")
+    store.connect()
+    before = store.open_connections()
+    assert before >= 1
+    seen = []
+
+    def worker():
+        store.connect()
+        seen.append(store.open_connections())
+        store.close_local()
+        seen.append(store.open_connections())
+
+    t = threading.Thread(target=worker)
+    t.start()
+    t.join()
+    assert seen == [before + 1, before]
+    store.close_local()
+    assert store.open_connections() == before - 1
+    assert store.connect().execute("SELECT 1").fetchone()[0] == 1  # reopens on demand

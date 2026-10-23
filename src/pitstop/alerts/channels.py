@@ -26,9 +26,13 @@ NOT_CONFIGURED = "not configured"
 
 
 class ChannelError(Exception):
-    def __init__(self, kind: str):
+    """`retryable` is set when the channel itself knows whether a retry may help (SMTP: see `_smtp_retryable`);
+    None leaves it to the dispatcher's rule for the kind."""
+
+    def __init__(self, kind: str, *, retryable: bool | None = None):
         super().__init__(kind)
         self.kind = kind
+        self.retryable = retryable
 
 
 def _http_client() -> httpx.Client:
@@ -37,6 +41,19 @@ def _http_client() -> httpx.Client:
 
 def _smtp(host: str, port: int) -> smtplib.SMTP:
     return smtplib.SMTP(host, port, timeout=10)
+
+
+def _smtp_retryable(e: BaseException) -> bool:
+    """A retry may pass after a dropped connection or a 4xx (transient) reply. Anything else is final: a 5xx reply
+    (auth, sender, recipients, data, a refused greeting), refused recipients, a missing feature, a generic
+    SMTPException. SMTPException subclasses OSError, so it is checked first."""
+    if isinstance(e, smtplib.SMTPServerDisconnected):
+        return True
+    if isinstance(e, smtplib.SMTPResponseException):
+        return isinstance(e.smtp_code, int) and 400 <= e.smtp_code < 500
+    if isinstance(e, smtplib.SMTPException):
+        return False
+    return isinstance(e, OSError)  # timeouts, refused or reset connections, DNS failures
 
 
 _sending = threading.local()
@@ -162,7 +179,7 @@ class Email:
                     smtp.login(s.username, password)
                 smtp.send_message(msg)
         except Exception as e:
-            raise ChannelError(type(e).__name__) from None
+            raise ChannelError(type(e).__name__, retryable=_smtp_retryable(e)) from None
 
 
 _CLASSES = {"pagerduty": PagerDuty, "opsgenie": Opsgenie, "slack": Slack, "email": Email, "webhook": Webhook}

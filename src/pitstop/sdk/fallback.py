@@ -1,5 +1,5 @@
-"""Per-workflow fallback state. A P1 breakage or refusal spike right after a model or provider change engages
-the workflow's pinned `fallback_model`; from then on its agent-meter calls go to that model until the state is
+"""Per-workflow fallback state. A P1 breakage or refusal spike right after a model change engages the workflow's
+pinned `fallback_model` (a base_url-only change does not); from then on its agent-meter calls go to that model until the state is
 cleared (`pitstop fallback clear <workflow>`). The state is sticky across runs and processes: it lives in the
 store's `meta` table under `fallback:<workflow>` as JSON `{"model", "since", "drift_id", "change"}`."""
 from __future__ import annotations

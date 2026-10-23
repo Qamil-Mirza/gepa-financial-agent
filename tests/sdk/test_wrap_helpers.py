@@ -162,6 +162,59 @@ def test_streaming_response_charged_worst_case(tmp_path):
     assert ev["payload"]["usage_estimated"] == "worst_case" and ev["cost_usd"] == pytest.approx(WORST)
 
 
+def test_unentered_streaming_response_releases_reservation(tmp_path):
+    """A with_streaming_response manager sends its request only when entered: never entered, it is released when
+    garbage collected, like a stream helper's manager. Entered, it is still charged its full reservation."""
+    import gc
+
+    from openai._response import ResponseContextManager
+
+    _init(tmp_path)
+    seen = []
+    w = pitstop.wrap(openai_client(_chat_handler(seen)))
+    manager = w.chat.completions.with_streaming_response.create(model=MODEL, messages=MSGS)
+    assert isinstance(manager, ResponseContextManager)
+    [row] = _ledger_rows()
+    assert row["state"] == "reserved" and (row["prompt_tokens"], row["completion_tokens"]) == (100, 4096)
+    del manager
+    gc.collect()
+    assert [r["state"] for r in _ledger_rows()] == ["released"]
+    assert seen == [] and _events() == []
+    with w.chat.completions.with_streaming_response.create(model=MODEL, messages=MSGS) as resp:
+        assert resp.parse().choices[0].message.content == "hi"
+    assert [r["state"] for r in _ledger_rows()] == ["released", "settled"]
+    assert _ledger_rows()[1]["usd"] == pytest.approx(WORST)
+
+
+async def test_async_unentered_streaming_response_releases_reservation(tmp_path):
+    import gc
+    import warnings
+
+    _init(tmp_path)
+    seen = []
+    w = pitstop.wrap(openai_client(_chat_handler(seen), async_=True))
+    manager = w.chat.completions.with_streaming_response.create(model=MODEL, messages=MSGS)
+    assert [r["state"] for r in _ledger_rows()] == ["reserved"]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)  # the SDK's own never-awaited request coroutine
+        del manager
+        gc.collect()
+    assert [r["state"] for r in _ledger_rows()] == ["released"]
+    assert seen == [] and _events() == []
+
+
+def test_streaming_response_enter_error_releases(tmp_path):
+    import openai
+
+    _init(tmp_path)
+    handler = _recording([], lambda body: json_response({"error": {"message": "nope"}}, status=500))
+    w = pitstop.wrap(openai_client(handler))
+    with pytest.raises(openai.InternalServerError):
+        with w.chat.completions.with_streaming_response.create(model=MODEL, messages=MSGS):
+            pass
+    assert [r["state"] for r in _ledger_rows()] == ["released"] and _events() == []
+
+
 async def test_async_raw_response_is_metered(tmp_path):
     _init(tmp_path)
     seen = []
@@ -547,6 +600,23 @@ def test_chat_stream_helper_enter_error_releases(tmp_path):
     assert [r["state"] for r in _ledger_rows()] == ["released"]
 
 
+async def test_async_enter_error_releases(tmp_path):
+    """Async twins of the sync enter-error tests: a stream helper and a streaming response whose request fails
+    when the manager is entered release their reservations."""
+    import openai
+
+    _init(tmp_path)
+    handler = _recording([], lambda body: json_response({"error": {"message": "nope"}}, status=500))
+    w = pitstop.wrap(openai_client(handler, async_=True))
+    with pytest.raises(openai.InternalServerError):
+        async with w.chat.completions.stream(model=MODEL, messages=MSGS):
+            pass
+    with pytest.raises(openai.InternalServerError):
+        async with w.chat.completions.with_streaming_response.create(model=MODEL, messages=MSGS):
+            pass
+    assert [r["state"] for r in _ledger_rows()] == ["released", "released"] and _events() == []
+
+
 async def test_async_stream_helper_never_entered_releases(tmp_path):
     import gc
     import warnings
@@ -592,6 +662,6 @@ def test_chat_stream_helper_caller_stream_options_keeps_usage(tmp_path):
     with w.chat.completions.stream(model=MODEL, messages=MSGS, stream_options={"include_usage": True}) as s:
         final = s.get_final_completion()
     assert (final.usage.prompt_tokens, final.usage.completion_tokens) == (21, 2)
-    assert [e.type for e in w.chat.completions.stream(model=MODEL, messages=MSGS,
-                                                      stream_options={"include_usage": True}).__enter__()
-            ].count("chunk") == 4  # the caller's usage chunk is not hidden
+    with w.chat.completions.stream(model=MODEL, messages=MSGS, stream_options={"include_usage": True}) as s:
+        types = [e.type for e in s]
+    assert types.count("chunk") == 4  # the caller's usage chunk is not hidden

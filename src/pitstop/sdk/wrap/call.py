@@ -9,7 +9,9 @@ import json
 import logging
 import math
 import time
-from typing import Any
+from contextlib import contextmanager
+from contextvars import ContextVar
+from typing import Any, Iterator, Literal
 
 from ...userconfig import ConfigInvalid
 from ...budget.ledger import Reservation
@@ -27,25 +29,60 @@ log = logging.getLogger("pitstop")
 # succeeded without it. Process-level: later stream calls to these endpoints are sent without the injection.
 _NO_STREAM_OPTIONS: set[str] = set()
 
-Mode = str  # "normal" | "raw" (with_raw_response) | "streaming" (with_streaming_response)
+Mode = Literal["normal", "raw", "streaming"]  # "raw": with_raw_response; "streaming": with_streaming_response
+
+
+class MeteredCell:
+    """Set by `metered_cell()` around a framework's model call; `metered` turns True when a wrapped call made inside
+    it records its `llm_call` event (any meter). Shared by every context copied from the one that set it."""
+    __slots__ = ("metered",)
+
+    def __init__(self) -> None:
+        self.metered = False
+
+
+_metered_cell: ContextVar[MeteredCell | None] = ContextVar("pitstop_metered_cell", default=None)
+
+
+@contextmanager
+def metered_cell() -> Iterator[MeteredCell]:
+    """A fresh MeteredCell for the block: an adapter wraps one model call in it and, when the cell stays unmarked,
+    knows no `pitstop.wrap`-ed client metered that call (and may record it as observed)."""
+    cell = MeteredCell()
+    token = _metered_cell.set(cell)
+    try:
+        yield cell
+    finally:
+        try:
+            _metered_cell.reset(token)
+        except ValueError:  # exited from another Context: leave that context's cell alone
+            pass
 
 
 # -- post-call hooks (L0 detection) --------------------------------------------------------------------------
 
 
-def _after_llm_call(ctx: RunContext | None, obs: Observed) -> None:
+def _refused(obs: Observed) -> bool:
+    """Whether the reply is a refusal. A provider-declared refusal (Anthropic's stop_reason "refusal") counts
+    whatever the text says."""
+    from ...detect.l0 import is_refusal
+
+    return bool(obs.refused or is_refusal(obs.content, len(obs.tool_calls)))
+
+
+def _after_llm_call(ctx: RunContext | None, obs: Observed, refused: bool) -> None:
     """Post-call L0 checks: build the call record, update the run's history and refusal count, record findings
-    as drifts."""
-    from ...detect.l0 import LLMCallRecord, check_llm_call, is_refusal
+    as drifts. `refused` is `_refused(obs)`, computed once for the event and for detection."""
+    from ...detect.l0 import LLMCallRecord, check_llm_call
 
     failures = 0
     for tc in obs.tool_calls:
+        if _g(tc, "kind") is not None:  # a custom or hosted call: its arguments are not JSON by design
+            continue
         try:
             json.loads(_g(tc, "arguments"))
         except Exception:
             failures += 1
-    # A provider-declared refusal (Anthropic's stop_reason "refusal") counts whatever the text says.
-    refused = obs.refused or is_refusal(obs.content, len(obs.tool_calls))
     record = LLMCallRecord(failures, len(obs.tool_calls), refused)
     if ctx is None:
         findings = check_llm_call([], record, "normal", 1 if record.refused else 0)
@@ -56,6 +93,34 @@ def _after_llm_call(ctx: RunContext | None, obs: Observed) -> None:
             findings = check_llm_call(ctx.llm_history, record, ctx.spec.sensitivity, ctx.refusals)
             ctx.llm_history.append(record)
     apply_findings(ctx, findings)
+
+
+def _after_settle(ctx: RunContext, usd: float) -> None:
+    """The spend-rate P0 (`pitstop.detect.spend`): add a settled agent-meter call to the run's spend and, past N x
+    the workflow's baseline, apply one `spend_spike` (P0, halt) per run. The halt is pending: the call that
+    settled returns normally and the run's next call raises. Runs outside any store transaction."""
+    from ...detect import spend
+    from ..context import UNSET
+
+    with ctx.lock:
+        ctx.spend_usd += usd
+        run_usd, baseline = ctx.spend_usd, ctx.spend_baseline
+        if ctx.spend_spiked:
+            return
+    if baseline is UNSET:  # once per run: the first settle reads the store; a failed read is retried next time
+        baseline = spend.baseline_run_cost(get_runtime().store, ctx.spec.name, before=ctx.started_at)
+        with ctx.lock:
+            if ctx.spend_baseline is UNSET:
+                ctx.spend_baseline = baseline
+            baseline = ctx.spend_baseline
+    finding = spend.check_spend(run_usd, baseline, ctx.spec.sensitivity)
+    if finding is None:
+        return
+    with ctx.lock:
+        if ctx.spend_spiked:
+            return
+        ctx.spend_spiked = True
+    apply_findings(ctx, [finding])
 
 
 def _on_budget_exceeded(ctx: RunContext | None, exc: BudgetExceeded) -> None:
@@ -88,6 +153,8 @@ def _fallback_from(ctx: RunContext | None, meter: str, kwargs: dict) -> str | No
     requested = kwargs.get("model")
     if requested == target or _safe(lambda: fallback.active(get_runtime().store, ctx.spec.name)) is None:
         return None
+    if requested is None:
+        return "(unset)"  # no model kwarg (a client-side default, say): never the string "None"
     return requested if isinstance(requested, str) else str(requested)
 
 
@@ -118,6 +185,7 @@ class _Call:
         self.got_result = False
         self.closed = False
         self.obs = Observed()
+        self.cell = _metered_cell.get()  # the adapter's per-model-call cell, marked when this call is recorded
 
     @classmethod
     def begin(cls, client: Any, shape: Shape, kwargs: dict, mode: Mode = "normal",
@@ -226,11 +294,16 @@ class _Call:
                 cost = self.res.usd
         else:
             cost = _safe(lambda: self._unmetered_cost(prompt, completion, cached))
-        _safe(lambda: self._record(cost, estimated))
+        # A response charged worst case was never read: it is not known to be a refusal.
+        refused = not self.worst_case and _safe(lambda: _refused(self.obs)) is True
+        _safe(lambda: self._record(cost, estimated, prompt, completion, refused))
         # Only the agent's own calls feed L0 detection, and only with what the response showed.
         if self.meter == "agent" and not self.worst_case:
             obs = self.obs
-            _safe(lambda: _after_llm_call(self.ctx, obs))
+            _safe(lambda: _after_llm_call(self.ctx, obs, refused))
+        # Every metered agent call counts toward the spend spike, a worst-case charge included.
+        if self.meter == "agent" and self.ctx is not None and self.res is not None and cost is not None:
+            _safe(lambda: _after_settle(self.ctx, cost))
 
     def _tokens(self) -> tuple[int, int, int, bool | str]:
         if self.worst_case:
@@ -258,12 +331,20 @@ class _Call:
     def _unmetered_cost(self, prompt: int, completion: int, cached: int) -> float:
         return cost_usd(price_for(self.model, self._rt().config.prices)[0], prompt, completion, cached)
 
-    def _record(self, cost: float | None, estimated: bool | str) -> None:
+    def _record(self, cost: float | None, estimated: bool | str, prompt: int, completion: int,
+                refused: bool) -> None:
+        """Write the `llm_call` event (its tokens are the ones settled, or estimated) and the run's tags: the first
+        agent call sets model, base_url and adapter (an adapter that tagged the run first keeps its tag), and a
+        call redirected to the fallback model records the first model it replaced. Marks the adapter's
+        MeteredCell, if one was set when the call began."""
         from ... import __version__
 
+        if self.cell is not None:
+            self.cell.metered = True
         o = self.obs
         payload: dict[str, Any] = {"tool_calls": o.tool_calls, "finish_reason": o.finish_reason,
-                                   "content_chars": o.content_chars, "meter": self.meter}
+                                   "content_chars": o.content_chars, "meter": self.meter,
+                                   "prompt_tokens": prompt, "completion_tokens": completion, "refused": refused}
         if estimated:
             payload["usage_estimated"] = estimated  # True (character estimate) or "worst_case"
         if self.unmetered:
@@ -288,9 +369,12 @@ class _Call:
             if first:
                 # price_known only ever drops: an earlier unknown-priced call (any meter) keeps the run's 0
                 c.execute(
-                    "UPDATE runs SET model=?, base_url=?, adapter='wrap', pitstop_version=?,"
+                    "UPDATE runs SET model=?, base_url=?, adapter=COALESCE(adapter, 'wrap'), pitstop_version=?,"
                     " price_known=CASE WHEN ? THEN price_known ELSE 0 END WHERE id=?",
                     (self.model, normalize_base_url(self.base_url), __version__, known is not False, ctx.run_id),
                 )
             elif known is False:  # any meter: an unknown-priced call makes the run's cost a lower bound
                 c.execute("UPDATE runs SET price_known=0 WHERE id=?", (ctx.run_id,))
+            if self.fallback_from is not None:  # set only on agent-meter calls (_fallback_from)
+                c.execute("UPDATE runs SET fallback_from=COALESCE(fallback_from, ?) WHERE id=?",
+                          (self.fallback_from, ctx.run_id))

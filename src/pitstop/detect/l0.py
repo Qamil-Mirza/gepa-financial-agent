@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from ..sdk.context import Sensitivity, WorkflowSpec
-from ..supervisor.signals import jaccard
+from .text import jaccard
 
 THRESHOLDS: dict[Sensitivity, dict] = {
     "low": dict(loop_window=6, loop_repeats=4, near_dup_jaccard=0.95, parse_fail_rate=0.20,

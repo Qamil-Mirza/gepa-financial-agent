@@ -1,11 +1,11 @@
-"""GEPA patched into PitStop's swarm supervisor (`src/pitstop`).
+"""GEPA patched into PitStop's swarm supervisor (`examples/financial-research/finresearch`).
 
-The candidate is PitStop's supervisor system prompt (`pitstop.config.PROMPTS / "supervisor_v0.txt"` is the seed). Every candidate is
-scored through PitStop's own code path, unchanged: `Supervisor.from_text` -> `render_user_message` (which appends
-PitStop's fixed OUTPUT_CONTRACT) -> one chat call at temperature 0, max_tokens 2000 -> `parse_and_validate` (drops
-invented evidence ids, downgrades DRIFTING without valid evidence) -> PitStop's alert rule (DRIFTING at
-confidence >= AlertPolicy().high). Only the transport is ours: `CrusoeLLM` sends the identical request through
-`CrusoeClient`, which adds 429/5xx backoff and cost accounting.
+The candidate is PitStop's supervisor system prompt (`finresearch.config.PROMPTS / "supervisor_v0.txt"` is the seed).
+Every candidate is scored through PitStop's own code path, unchanged: `Supervisor.from_text` -> `render_user_message`
+(which appends PitStop's fixed OUTPUT_CONTRACT) -> one chat call at temperature 0, max_tokens 2000 ->
+`parse_and_validate` (drops invented evidence ids, downgrades DRIFTING without valid evidence) -> PitStop's alert rule
+(DRIFTING at confidence >= AlertPolicy().high). Only the transport is ours: `CrusoeLLM` sends the identical request
+through `CrusoeClient`, which adds 429/5xx backoff and cost accounting.
 
 Data is PitStop's hard-pairs set (`benchmarks/hard_pairs/data/{train,val,test}.jsonl`, split by company: train NVIDIA, val
 Broadcom, test AMD). GEPA reflects on train and selects on val; nothing here reads test.
@@ -20,11 +20,11 @@ from pathlib import Path
 from typing import Any, Callable
 
 from pitstop import llm as llm_mod
-from pitstop import schemas
-from pitstop.config import PROMPTS
+from finresearch import schemas
+from finresearch.config import PROMPTS
 from pitstop.correct.client import ModelClient
-from pitstop.supervisor import policy
-from pitstop.supervisor import supervisor as sup_mod
+from finresearch.supervisor import policy
+from finresearch.supervisor import supervisor as sup_mod
 
 HARD_PAIRS_DATA = Path(__file__).resolve().parents[1] / "hard_pairs" / "data"
 SEED_PROMPT = PROMPTS / "supervisor_v0.txt"
@@ -38,7 +38,7 @@ class HardCase:
     label: str  # "drift" | "ok"
     expect_type: str  # PitStop DriftType value, "none" for ok twins
     why: str  # labeler's statement of the decisive detail; reflector-only
-    input: Any  # pitstop.schemas.SupervisorInput
+    input: Any  # finresearch.schemas.SupervisorInput
 
 
 def load_hard_cases(split: str, data_dir: Path = HARD_PAIRS_DATA) -> list[HardCase]:

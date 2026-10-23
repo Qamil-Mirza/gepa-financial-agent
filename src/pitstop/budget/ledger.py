@@ -6,7 +6,8 @@ The check against every applicable budget and the insert of the `reserved` row h
 jointly reserve past a limit. Ledger writes therefore refuse to run inside another transaction (they would
 become a savepoint without the write lock, and an outer rollback would erase a reservation whose call ran). After the call, `settle` replaces the estimate with the actual cost;
 on failure `release` frees it. A reservation left `reserved` by a process that died mid-call keeps counting
-until `release_stale` (`pitstop budget reconcile --release`) frees it.
+until `release_stale` (`pitstop budget reconcile --release`) frees it. Once a budget is used up, `exhausted`
+names it, so a new run is refused at its start instead of at its first call.
 
 Scopes are derived at query time (the ledger table has no scope column):
   global:<budget>   rows whose base_url matches the BudgetSpec's (all rows if it has none), every meter
@@ -126,6 +127,26 @@ class Ledger:
             conn.executemany("UPDATE ledger SET state='released' WHERE id=? AND state='reserved'",
                              [(r["id"],) for r in rows])
         return rows
+
+    def exhausted(self, *, workflow: str, workflow_budget_usd: float | None,
+                  base_url: str | None) -> BudgetExceeded | None:
+        """The first budget a new run of `workflow` would find used up (spent >= limit), as the exception to
+        raise, else None. Checked in order: the workflow's own budget (when set), every global budget without a
+        base_url, then the global budgets for `base_url` (none when it is None). Read-only."""
+        checks: list[tuple[str, float]] = []
+        if workflow_budget_usd is not None:
+            checks.append((f"workflow:{workflow}", workflow_budget_usd))
+        checks += [(f"global:{b.name}", b.limit_usd) for b in self.config.budgets if b.base_url is None]
+        if base_url is not None:
+            url = normalize_base_url(base_url)
+            checks += [(f"global:{b.name}", b.limit_usd) for b in self.config.budgets
+                       if b.base_url is not None and normalize_base_url(b.base_url) == url]
+        conn, now = self.store.connect(), self._now()
+        for scope, limit in checks:
+            spent = self._spent(conn, scope, now)
+            if spent >= limit - _EPS:
+                return BudgetExceeded(scope, limit, spent)
+        return None
 
     def spent(self, scope: str) -> float:
         """Settled + reserved USD for `scope` in its current period window."""

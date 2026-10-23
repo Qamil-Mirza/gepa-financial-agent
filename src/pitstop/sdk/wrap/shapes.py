@@ -76,7 +76,10 @@ class Observed:
     """Everything one response or stream showed."""
 
     content: str | None = None
-    tool_calls: list[dict] = field(default_factory=list)  # [{"name", "arguments": raw str}]
+    # [{"name", "arguments": raw str}]; a call whose arguments are not JSON by design also has "kind": "custom" (a
+    # Responses custom tool's free-form input) or "hosted" (a tool the provider runs; arguments ""). L0 never
+    # counts those as parse failures.
+    tool_calls: list[dict] = field(default_factory=list)
     finish_reason: str | None = None
     refused: bool = False  # provider-declared refusal (e.g. Anthropic stop_reason "refusal")
     prompt_tokens: int | None = None  # None = usage not seen -> settle by estimate
@@ -256,11 +259,25 @@ CHAT: Shape = _ChatShape()
 
 _TERMINAL = frozenset({"response.completed", "response.incomplete", "response.failed"})
 _UNFINISHED = frozenset({"queued", "in_progress"})
+# With `previous_response_id` or `conversation`, the provider bills the earlier turns as input, but they are not in
+# the request: the prompt estimate adds this many tokens for them, which covers most conversations; a longer history
+# can still be under-reserved, and the call settles from the provider's real usage.
+PRIOR_CONTEXT_TOKENS = 32_000
+# Output items for tools the provider runs itself. Recorded as tool calls named by their type (an mcp_call by its
+# own `name`), with arguments "".
+_HOSTED_CALLS = frozenset({"web_search_call", "file_search_call", "code_interpreter_call", "computer_call",
+                           "mcp_call", "image_generation_call", "local_shell_call"})
+
+
+def _hosted_name(item: Any, kind: str) -> str:
+    name = _g(item, "name") if kind == "mcp_call" else None
+    return name if isinstance(name, str) and name else kind
 
 
 class _ResponsesShape:
     """`responses.create` / `parse` / `stream`: instructions + input in, output items out. Streams always end in a
-    terminal event (`response.completed`) that carries usage, so nothing is injected."""
+    terminal event (`response.completed`) that carries usage, so nothing is injected. Function, custom and hosted
+    tool calls are all tool calls for L0; a message's `refusal` content part makes the call refused."""
 
     name = "responses"
 
@@ -280,7 +297,9 @@ class _ResponsesShape:
                 total += _content_chars(_g(item, "content"))
                 # function_call / function_call_output items carry text outside `content`
                 total += _text_len(_g(item, "arguments")) + _content_chars(_g(item, "output"))
-        return math.ceil((total + _tools_chars(kwargs)) / 4)
+        # Truthiness, not `is not None`: openai's NOT_GIVEN / omit sentinels are falsy.
+        prior = PRIOR_CONTEXT_TOKENS if kwargs.get("previous_response_id") or kwargs.get("conversation") else 0
+        return math.ceil((total + _tools_chars(kwargs)) / 4) + prior
 
     def max_output_tokens(self, kwargs: dict) -> int:
         return _max_tokens(kwargs, "max_output_tokens")
@@ -306,12 +325,22 @@ class _ResponsesShape:
                 name, args = _g(item, "name"), _g(item, "arguments")
                 obs.chars += _text_len(name) + _text_len(args)
                 calls.append({"name": name, "arguments": args})
+            elif kind == "custom_tool_call":
+                name, args = _g(item, "name"), _g(item, "input")
+                obs.chars += _text_len(name) + _text_len(args)
+                calls.append({"name": name, "arguments": args, "kind": "custom"})
+            elif kind in _HOSTED_CALLS:
+                calls.append({"name": _hosted_name(item, kind), "arguments": "", "kind": "hosted"})
             elif kind == "message":
                 for part in _g(item, "content") or []:
+                    part_type = _g(part, "type")
                     text = _g(part, "text")
-                    if _g(part, "type") == "output_text" and isinstance(text, str):
+                    if part_type == "output_text" and isinstance(text, str):
                         obs.chars += len(text)
                         texts.append(text)
+                    elif part_type == "refusal":
+                        obs.refused = True
+                        obs.chars += _text_len(_g(part, "refusal"))
         obs.content = "".join(texts) if texts else None
         obs.tool_calls, obs.finish_reason = calls, _g(resp, "status")
 
@@ -324,20 +353,32 @@ class _ResponsesShape:
                 obs.stream_text(text)
         elif kind == "response.output_item.added":
             item = _g(event, "item")
-            if _g(item, "type") == "function_call":
+            item_type = _g(item, "type")
+            if item_type in ("function_call", "custom_tool_call"):
                 entry = obs.stream_tool(_g(event, "output_index", 0))
-                name, args = _g(item, "name"), _g(item, "arguments")
+                custom = item_type == "custom_tool_call"
+                if custom:
+                    entry["kind"] = "custom"
+                name, args = _g(item, "name"), _g(item, "input" if custom else "arguments")
                 if isinstance(name, str) and not entry["name"]:
                     obs.chars += len(name)
                     entry["name"] = name
                 if isinstance(args, str) and args:
                     obs.chars += len(args)
                     entry["arguments"] += args
-        elif kind == "response.function_call_arguments.delta":
+            elif item_type in _HOSTED_CALLS:
+                entry = obs.stream_tool(_g(event, "output_index", 0))
+                entry.update(name=_hosted_name(item, item_type), kind="hosted")
+        elif kind in ("response.function_call_arguments.delta", "response.custom_tool_call_input.delta"):
             args = _g(event, "delta")
             if isinstance(args, str):
                 obs.chars += len(args)
                 obs.stream_tool(_g(event, "output_index", 0))["arguments"] += args
+        elif kind == "response.refusal.delta":
+            obs.refused = True
+            obs.chars += _text_len(_g(event, "delta"))
+        elif kind == "response.refusal.done":
+            obs.refused = True
         elif kind in _TERMINAL:
             resp = _g(event, "response")
             self._usage(_g(resp, "usage"), obs)
@@ -376,7 +417,11 @@ class _CompletionsShape:
         if isinstance(prompt, str):
             return math.ceil(len(prompt) / 4)
         if isinstance(prompt, (list, tuple)):
-            return math.ceil(sum(_text_len(p) for p in prompt) / 4)
+            # A token-id prompt is already in tokens: list[int] is its length, list[list[int]] the sum of theirs.
+            if prompt and all(_int(p) is not None for p in prompt):
+                return len(prompt)
+            token_ids = sum(len(p) for p in prompt if isinstance(p, (list, tuple)))
+            return math.ceil(sum(_text_len(p) for p in prompt) / 4) + token_ids
         return 0
 
     def max_output_tokens(self, kwargs: dict) -> int:

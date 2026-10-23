@@ -8,9 +8,10 @@ path and switch the mode, so `client.with_raw_response.chat.completions.create` 
 
 A "manager" kind method (the SDK's stream helpers, `chat.completions.stream` and `responses.stream`) reserves when
 it is called and returns a manager proxy; entering it sends the request and yields a stream proxy that passes
-every event through unchanged, and the call settles when the manager exits. A "runner" kind method (anthropic's
-`beta.messages.tool_runner`) returns the SDK's runner pointed at a wrapped client, so each of its model calls is
-metered as a call of its own.
+every event through unchanged, and the call settles when the manager exits. A `with_streaming_response` call
+returns the SDK's response manager, proxied the same way: entered, it is charged its reservation; never entered,
+it is released when garbage collected. A "runner" kind method (anthropic's `beta.messages.tool_runner`) returns
+the SDK's runner pointed at a wrapped client, so each of its model calls is metered as a call of its own.
 """
 from __future__ import annotations
 
@@ -276,7 +277,11 @@ def _parse_raw(result: Any) -> Any:
 
 def _deliver(call: _Call, result: Any, parsed: Any = _UNSET) -> Any:
     """Hand the provider's result to the caller: complete it now, or wrap a stream that settles at its end.
-    Returns the result itself, or the stream proxy (then the proxy owns closing the call)."""
+    Returns the result itself, or the stream (or response manager) proxy, which then owns closing the call."""
+    if call.mode == "streaming":
+        manager = _response_manager(result, call)
+        if manager is not None:
+            return manager  # nothing was sent yet: no result until the manager is entered
     call.got_result = True
     if call.retried:
         call.retry_succeeded()
@@ -565,6 +570,64 @@ class _ManagerBase:
                 self._pitstop_call.close()
         except Exception:
             pass
+
+
+def _response_manager(result: Any, call: _Call) -> Any:
+    """A `with_streaming_response` result (the SDK's ResponseContextManager, which sends the request when entered)
+    proxied, or None for a result of any other shape (then charged the reservation at return)."""
+    if hasattr(result, "__aenter__"):
+        return _AsyncResponseManager(result, call, None)
+    if hasattr(result, "__enter__"):
+        return _SyncResponseManager(result, call, None)
+    return None
+
+
+class _SyncResponseManager(_ManagerBase):
+    """A `with_streaming_response` manager. Entering it sends the request and settles the call at its full
+    reservation (the body is the caller's to read, so its usage is never seen); a request that fails releases it,
+    and a manager that is never entered releases it when garbage collected (`_ManagerBase.__del__`)."""
+
+    def __enter__(self):
+        call = self._pitstop_call
+        try:
+            response = self._pitstop_inner.__enter__()
+        except BaseException as e:
+            _safe(functools.partial(_billed_error, call, e))
+            call.close()
+            raise
+        self._pitstop_stream = response
+        call.got_result = True
+        call.close()  # worst case: charged the reservation
+        return response
+
+    def __exit__(self, *exc):
+        try:
+            return self._pitstop_inner.__exit__(*exc)
+        finally:
+            self._pitstop_call.close()
+
+
+class _AsyncResponseManager(_ManagerBase):
+    """Async counterpart of _SyncResponseManager."""
+
+    async def __aenter__(self):
+        call = self._pitstop_call
+        try:
+            response = await self._pitstop_inner.__aenter__()
+        except BaseException as e:
+            _safe(functools.partial(_billed_error, call, e))
+            call.close()
+            raise
+        self._pitstop_stream = response
+        call.got_result = True
+        call.close()
+        return response
+
+    async def __aexit__(self, *exc):
+        try:
+            return await self._pitstop_inner.__aexit__(*exc)
+        finally:
+            self._pitstop_call.close()
 
 
 class _SyncManager(_ManagerBase):

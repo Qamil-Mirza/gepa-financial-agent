@@ -5,7 +5,8 @@ prompt against the baseline afterwards with PitStop's own harness, e.g.
 
   uv run python -m benchmarks.calibration.optimize --model nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B --max-metric-calls 500
   uv run python -m benchmarks.hard_pairs.run_hard_cases --splits test --trials 5 \\
-      --model nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B --prompt src/pitstop/assets/prompts/gepa/<name>.txt
+      --model nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B \\
+      --prompt examples/financial-research/finresearch/assets/prompts/gepa/<name>.txt
 """
 from __future__ import annotations
 
@@ -13,7 +14,7 @@ import argparse
 import json
 from pathlib import Path
 
-from pitstop.config import PROMPTS
+from finresearch.config import PROMPTS
 from pitstop.correct.client import CrusoeClient, MockModelClient
 from pitstop.correct.gepa import CrusoeReflectionLM, OptimizeConfig, run_optimization
 from pitstop.correct.policy import Policy
@@ -72,7 +73,8 @@ def main(argv: list[str] | None = None) -> int:
     print("val score per candidate:", [round(x, 3) for x in result.get("val_aggregate_scores", [])])
 
     meta = {"name": name, "mocked": bool(args.mock), "supervisor_model": model, "run_dir": art.run_dir,
-            "seed_prompt": "src/pitstop/assets/prompts/supervisor_v0.txt", "seed_version": seed.version,
+            "seed_prompt": "examples/financial-research/finresearch/assets/prompts/supervisor_v0.txt",
+            "seed_version": seed.version,
             "best_version": art.best_policy.version, "seed_val_score": art.seed_val_score,
             "best_val_score": art.best_val_score, "num_candidates": art.num_candidates,
             "total_metric_calls": art.total_metric_calls, "val_repeats": args.val_repeats,

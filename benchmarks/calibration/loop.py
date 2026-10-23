@@ -6,8 +6,8 @@
   uv run python -m benchmarks.calibration.loop status
 
 Round artifacts go to runs/recursive/round_NN/ under the current directory (git-ignored). Promoted prompts are
-written to src/pitstop/assets/prompts/recursive/; benchmarks/calibration/state.json names the prompt the live
-supervisor should use.
+written to examples/financial-research/finresearch/assets/prompts/recursive/; benchmarks/calibration/state.json
+names the prompt the live supervisor should use.
 GEPA never reads the hard-pairs test split; only the gate does, after the candidate is fixed.
 """
 from __future__ import annotations
@@ -103,13 +103,13 @@ def cmd_calibrate(args, s: Settings, state: LoopState) -> int:
 
 
 def cmd_swarm(args, s: Settings, state: LoopState) -> int:
-    from pitstop.config import PROMPTS, SCENARIOS, load_settings
+    from finresearch.config import PROMPTS, SCENARIOS, load_settings
     from pitstop.llm import LLMClient, UsageTracker
-    from pitstop.agents.synthesizer import ReportSynthesizer
-    from pitstop.orchestrator import Swarm
-    from pitstop.research.youcom import FinanceResearchClient
-    from pitstop.schemas import Scenario
-    from pitstop.supervisor.supervisor import Supervisor
+    from finresearch.agents.synthesizer import ReportSynthesizer
+    from finresearch.orchestrator import Swarm
+    from finresearch.research.youcom import FinanceResearchClient
+    from finresearch.schemas import Scenario
+    from finresearch.supervisor.supervisor import Supervisor
 
     ps = load_settings()
     prompt = state.current_path()
@@ -133,7 +133,8 @@ def cmd_swarm(args, s: Settings, state: LoopState) -> int:
                           max_tokens=4000, usage=UsageTracker()), PROMPTS / "worker")
             swarms.append(Swarm(Scenario.model_validate_json(path.read_text()), worker_llm=worker, supervisor=sup,
                                 research=research, prompts_dir=PROMPTS / "worker", runs_dir=rd / "runs",
-                                verbose_events=False, correct_on_drift=not args.no_correct, synthesizer=synth))
+                                verbose_events=False, correct_on_drift=not args.no_correct, synthesizer=synth,
+                                watch=False))  # measure the supervisor alone (no SDK gate)
         await asyncio.gather(*(sw.run_all() for sw in swarms))
 
     asyncio.run(go())

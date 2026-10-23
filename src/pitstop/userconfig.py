@@ -7,6 +7,7 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
 from .config import pitstop_home
 
@@ -170,10 +171,20 @@ def _parse_judge(raw: object) -> JudgeSpec:
         if not isinstance(value, str):
             raise ConfigInvalid(f"judge {key} must be a string")
         fields[key] = value
+    if not _http_url(fields["base_url"]):  # the value is never echoed: it may carry credentials
+        raise ConfigInvalid("judge base_url must be an http:// or https:// URL with a host")
     timeout = _finite_nonneg(raw.get("timeout_s", default.timeout_s), "judge timeout_s")
     if not timeout > 0:
         raise ConfigInvalid("judge timeout_s must be greater than 0")
     return JudgeSpec(timeout_s=timeout, **fields)
+
+
+def _http_url(value: str) -> bool:
+    try:
+        parts = urlsplit(value)
+        return parts.scheme in ("http", "https") and bool(parts.hostname)
+    except ValueError:  # e.g. an unclosed IPv6 bracket
+        return False
 
 
 def _parse_alerts(raw: object) -> AlertsSpec:

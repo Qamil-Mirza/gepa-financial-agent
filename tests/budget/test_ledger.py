@@ -293,3 +293,37 @@ def test_release_stale_rows_returns_exactly_the_released_rows(tmp_path):
     assert set(rows[0]) == {"id", "ts", "run_id", "workflow", "meter", "model", "usd"}
     assert _states(ledger) == ["released", "reserved"]
     assert ledger.release_stale_rows(3600) == []
+
+
+def test_exhausted_checks_workflow_then_global_then_endpoint(tmp_path):
+    other = "https://api.other.example/v1"
+    ledger = _ledger(tmp_path, BudgetSpec("crusoe", 1.0, "total", CRUSOE), BudgetSpec("all", 3.0, "total", None))
+    assert ledger.exhausted(workflow="wf", workflow_budget_usd=1.0, base_url=CRUSOE) is None
+    ledger.settle(_reserve(ledger, 1.0, run_id="r1", workflow="wf", workflow_budget_usd=1.0),
+                  prompt_tokens=1_000_000, completion_tokens=0)
+    # the workflow's own budget comes first
+    err = ledger.exhausted(workflow="wf", workflow_budget_usd=1.0, base_url=CRUSOE + "/")
+    assert isinstance(err, BudgetExceeded) and err.scope == "workflow:wf"
+    assert (err.limit_usd, err.spent_usd) == (1.0, pytest.approx(1.0))
+    # no workflow budget: the endpoint budget is used up for the endpoint the run uses; nowhere else
+    assert ledger.exhausted(workflow="wf", workflow_budget_usd=None, base_url=CRUSOE).scope == "global:crusoe"
+    assert ledger.exhausted(workflow="wf", workflow_budget_usd=None, base_url=other) is None
+    assert ledger.exhausted(workflow="wf", workflow_budget_usd=None, base_url=None) is None
+    assert ledger.exhausted(workflow="wf2", workflow_budget_usd=1.0, base_url=None) is None  # another workflow
+    # a global budget without base_url comes before an endpoint budget, and refuses whatever the endpoint
+    _reserve(ledger, 2.0, base_url=other)
+    assert ledger.exhausted(workflow="wf", workflow_budget_usd=None, base_url=CRUSOE).scope == "global:all"
+    assert ledger.exhausted(workflow="wf", workflow_budget_usd=None, base_url=None).scope == "global:all"
+
+
+def test_exhausted_is_read_only_and_tolerates_slack(tmp_path):
+    ledger = _ledger(tmp_path, BudgetSpec("all", 5.0, "total", None))
+    for _ in range(50):
+        _reserve(ledger, 0.10)
+    assert ledger.exhausted(workflow="wf", workflow_budget_usd=None, base_url=None).scope == "global:all"
+    ledger.store.connect().execute("BEGIN")  # a read: fine inside a caller's transaction
+    try:
+        assert ledger.exhausted(workflow="wf", workflow_budget_usd=None, base_url=None) is not None
+    finally:
+        ledger.store.connect().execute("ROLLBACK")
+    assert len(_states(ledger)) == 50

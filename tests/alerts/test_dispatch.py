@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import signal
 import smtplib
 import subprocess
 import sys
@@ -255,6 +256,55 @@ def test_alert_body_names_model_change(tmp_path, monkeypatch):
                                                 "(model model-b at base_url https://api.example/v1).")
 
 
+def _scan_model_change(store):
+    """30 runs on m1 at ~120 tokens, then 15 on m2 at ~300, started three days ago (older than the 24 h window
+    `recent_change` looks at); then one `scan` pass."""
+    from pitstop.detect.scan import scan
+
+    from tests.detect.run_factory import make_run
+
+    t0 = time.time() - 3 * 86400
+    for i in range(45):
+        model, tokens = ("m1", 100) if i < 30 else ("m2", 280)
+        make_run(store, "wf", started_at=t0 + i * 60, ended_at=t0 + i * 60 + 5, model=model,
+                 llm_calls=((tokens + i % 3, 20, 400),))
+    return scan(store)
+
+
+def test_scan_p1_alerts_once_per_channel(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch)
+    seen = _capture(monkeypatch)
+    report = _scan_model_change(rt.store)
+    assert len(report.alarms) == 2 and {a.level for a in report.alarms} == {"P1"}  # one drift, two metrics
+    assert dispatch.wait_idle()
+    assert _hosts(seen) == ["hook.test", "hooks.slack.test"]  # P1 routes; the second alarm is deduplicated
+
+
+def test_alert_cause_uses_attribution(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "")
+    report = _scan_model_change(rt.store)
+    did = report.alarms[0].drift_id
+    alert = build_alert(rt.store, did)
+    assert alert.cause == report.alarms[-1].summary[0].upper() + report.alarms[-1].summary[1:] + "."
+    assert alert.cause.startswith("Model changed from m1 to m2 (100% of runs since ")
+    assert "What likely changed: " + alert.cause in alert.body
+    # a drift whose newest evidence has no attribution keeps the run-based cause
+    record_drift(rt.store, run_id=alert.run_id, workflow="wf", level="P1", action="record",
+                 finding=Finding("cost_or_latency_creep", "degraded", False, {"metric": "x"}))
+    assert build_alert(rt.store, did).cause == ("No model or provider change detected for this run "
+                                                "(model m2 at base_url https://a/v1).")
+
+
+def test_alert_for_refused_run_says_it_was_refused(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "")
+    with rt.store.transaction() as c:
+        c.execute("INSERT INTO runs(id, workflow, criticality, started_at, status) VALUES (?,?,?,?,?)",
+                  ("r1", "wf", "medium", time.time(), "refused"))
+    did = record_drift(rt.store, run_id="r1", workflow="wf", level="P0", action="halt",
+                       finding=Finding("budget_exhausted", "degraded", False, {"scope": "workflow:wf"}))
+    assert build_alert(rt.store, did).action == "Refused the run at its start (no model call was made)."
+
+
 def test_notify_without_channels_starts_no_work(tmp_path, monkeypatch):
     _init(tmp_path, monkeypatch, "")
     seen = _capture(monkeypatch)
@@ -398,17 +448,7 @@ EMAIL_CONFIG = ('[alerts.email]\nsmtp_host = "smtp.example.com"\nfrom_addr = "pi
                 'to = ["oncall@example.com"]\nstarttls = false\n')
 
 
-@pytest.mark.parametrize("error,attempts", [
-    (smtplib.SMTPAuthenticationError(535, b"auth failed"), 1),
-    (smtplib.SMTPRecipientsRefused({"oncall@example.com": (550, b"no such user")}), 1),
-    (smtplib.SMTPSenderRefused(553, b"bad sender", "pitstop@example.com"), 1),
-    (smtplib.SMTPDataError(554, b"rejected"), 1),
-    (smtplib.SMTPServerDisconnected("gone"), 3),
-    (TimeoutError("timed out"), 3),
-], ids=["auth", "recipients", "sender", "data", "disconnected", "timeout"])
-def test_smtp_retries_only_transient_errors(tmp_path, monkeypatch, error, attempts):
-    _init(tmp_path, monkeypatch, EMAIL_CONFIG, env=())
-    _no_backoff(monkeypatch)
+def _smtp_failing(monkeypatch, error):
     tries = []
 
     class Failing:
@@ -425,10 +465,96 @@ def test_smtp_retries_only_transient_errors(tmp_path, monkeypatch, error, attemp
             raise error
 
     monkeypatch.setattr(channels, "_smtp", Failing)
+    return tries
+
+
+@pytest.mark.parametrize("error", [
+    smtplib.SMTPException("generic"),
+    smtplib.SMTPConnectError(554, b"no service"),
+    smtplib.SMTPAuthenticationError(535, b"auth failed"),
+    smtplib.SMTPRecipientsRefused({"oncall@example.com": (550, b"no such user")}),
+    smtplib.SMTPSenderRefused(553, b"bad sender", "pitstop@example.com"),
+    smtplib.SMTPDataError(554, b"rejected"),
+], ids=["generic", "connect-5xx", "auth", "recipients", "sender", "data"])
+def test_smtp_permanent_errors_not_retried(tmp_path, monkeypatch, error):
+    _init(tmp_path, monkeypatch, EMAIL_CONFIG, env=())
+    _no_backoff(monkeypatch)
+    tries = _smtp_failing(monkeypatch, error)
     _apply(Finding("tool_call_breakage", "degraded", False, {}))  # P1: routed to email
     assert dispatch.wait_idle()
-    assert len(tries) == attempts
-    assert [r["status"] for r in _rows()] == ["failed"]
+    assert len(tries) == 1
+    assert [(r["status"], r["error"]) for r in _rows()] == [("failed", type(error).__name__)]
+
+
+@pytest.mark.parametrize("error", [
+    TimeoutError("timed out"),
+    ConnectionRefusedError("refused"),
+    smtplib.SMTPServerDisconnected("gone"),
+    smtplib.SMTPResponseException(421, b"try again later"),
+    smtplib.SMTPConnectError(421, b"too busy"),
+], ids=["timeout", "refused", "disconnected", "response-4xx", "connect-4xx"])
+def test_smtp_transient_errors_retried(tmp_path, monkeypatch, error):
+    _init(tmp_path, monkeypatch, EMAIL_CONFIG, env=())
+    _no_backoff(monkeypatch)
+    tries = _smtp_failing(monkeypatch, error)
+    _apply(Finding("tool_call_breakage", "degraded", False, {}))
+    assert dispatch.wait_idle()
+    assert len(tries) == 3  # the first try and 2 retries
+    assert [(r["status"], r["error"]) for r in _rows()] == [("failed", type(error).__name__)]
+
+
+def test_p0_with_failed_drift_write_still_pages(tmp_path, monkeypatch, caplog):
+    from pitstop.detect import drifts
+
+    _init(tmp_path, monkeypatch, "[alerts.webhook]\n[alerts.slack]\n", env=("PITSTOP_WEBHOOK_URL",
+                                                                              "SLACK_WEBHOOK_URL"))
+    seen = _capture(monkeypatch)
+
+    def broken(*a, **kw):
+        raise RuntimeError("database is locked")
+
+    monkeypatch.setattr(drifts, "record_drift", broken)
+    [applied] = _apply(_p0())
+    assert applied.drift_id is None and applied.action == "block"
+    assert dispatch.wait_idle()
+    assert _hosts(seen) == ["hook.test", "hooks.slack.test"]
+    webhook = json.loads(next(r for r in seen if r.url.host == "hook.test").content)
+    assert (webhook["level"], webhook["workflow"], webhook["drift_type"]) == ("P0", "wf", "out_of_scope_action")
+    assert webhook["drift_id"] is None and webhook["run_id"]
+    assert "could not be recorded" in webhook["what"] and "send_email" in webhook["what"]
+    rows = _rows()
+    assert sorted(r["channel"] for r in rows) == ["slack", "webhook"]
+    assert {(r["drift_id"], r["level"], r["kind"], r["status"]) for r in rows} == {(None, "P0", "immediate", "sent")}
+    _apply(_p0())  # undeduplicated: every unrecorded occurrence pages
+    assert dispatch.wait_idle() and len(seen) == 4
+    # a P1 whose write failed is not paged (it would be on its next recorded occurrence)
+    _apply(Finding("tool_call_breakage", "degraded", False, {}))
+    assert dispatch.wait_idle() and len(seen) == 4
+
+
+def test_stale_pending_row_marked_superseded(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    seen = _capture(monkeypatch)
+    did = _drift(rt, _p0(), "P0")
+    _pending_row(rt, did, "immediate", "P0", 600)  # left by a process killed mid-send
+    dispatch.notify(did)
+    assert dispatch.wait_idle() and len(seen) == 1
+    assert [(r["drift_id"], r["status"]) for r in _rows()] == [(did, "superseded"), (did, "sent")]
+
+
+def test_cause_ignores_fallback_runs_after_clear(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "")
+    now = time.time()
+    with rt.store.transaction() as c:
+        for rid, model, ts, fallback_from in (("r1", "model-a", now - 100, None), ("r2", "model-b", now - 50, None),
+                                              ("r3", "pinned", now - 30, "model-b"), ("r4", "model-b", now - 10, None)):
+            c.execute("INSERT INTO runs(id, workflow, criticality, started_at, model, base_url, fallback_from)"
+                      " VALUES (?,?,?,?,?,?,?)", (rid, "wf", "medium", ts, model, "https://api.example/v1",
+                                                  fallback_from))
+    # the fallback was engaged (r3 ran on the pinned model) and has since been cleared: no state in meta
+    did = record_drift(rt.store, run_id="r4", workflow="wf", level="P1", action="record",
+                       finding=Finding("tool_call_breakage", "degraded", False, {"failures": 3}))
+    assert "model changed from model-a to model-b" in build_alert(rt.store, did).cause
 
 
 def test_digest_counts_only_sent_drifts(tmp_path, monkeypatch):
@@ -444,6 +570,19 @@ def test_digest_counts_only_sent_drifts(tmp_path, monkeypatch):
         lambda r: seen.append(r) or httpx.Response(200))))
     assert dispatch.run_digest() == (1, {"webhook": "sent"})
     assert dispatch.last_digest_ts(rt.store) is not None
+
+
+def _wait_child(pid: int, timeout: float) -> int:
+    """The forked child's exit code. A child still running at the deadline is killed and the test fails."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        done, status = os.waitpid(pid, os.WNOHANG)
+        if done:
+            return os.waitstatus_to_exitcode(status)
+        time.sleep(0.05)
+    os.kill(pid, signal.SIGKILL)
+    os.waitpid(pid, 0)
+    pytest.fail(f"forked child {pid} did not exit within {timeout} s")
 
 
 @pytest.mark.skipif(not hasattr(os, "fork"), reason="needs os.fork")
@@ -468,7 +607,25 @@ def test_forked_child_can_send(tmp_path, monkeypatch):
             code = 0 if dispatch.wait_idle(5) else 2
         finally:
             os._exit(code)
-    _, status = os.waitpid(pid, 0)
-    assert os.waitstatus_to_exitcode(status) == 0
+    assert _wait_child(pid, timeout=10.0) == 0
     assert [(r["status"], r["drift_id"]) for r in _rows()] == [("sent", 1), ("sent", 2)]
     assert rt.store is get_runtime().store
+
+
+def test_alert_worker_closes_its_connection(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    seen = _capture(monkeypatch)
+    rt.store.connect()  # this thread's own connection stays open
+    before = rt.store.open_connections()
+    _apply(_p0())
+    assert dispatch.wait_idle() and len(seen) == 1
+    assert rt.store.open_connections() == before
+
+    def broken(store, drift_id):
+        store.connect()
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(dispatch, "build_alert", broken)  # a failing job closes its connection too
+    _apply(Finding("unproductive_loop", "off_task", True, {}))
+    assert dispatch.wait_idle()
+    assert rt.store.open_connections() == before
