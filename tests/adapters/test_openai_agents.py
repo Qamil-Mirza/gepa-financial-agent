@@ -417,3 +417,27 @@ def test_checked_invoker_keeps_signature():
     guard(Agent(name="a", instructions="x", tools=[search]))
     assert search.on_invoke_tool is not original
     assert inspect.signature(search.on_invoke_tool) == inspect.signature(original)
+
+
+@pytest.mark.parametrize("shared", [False, True])
+async def test_overlapping_runs_leave_no_stale_name(tmp_path, shared):
+    """Two runs overlapping in one scope (A starts, B starts, A ends, B ends): no name outlives both, whether each
+    run has its own Hooks or they share one; an inner agent's end still gives the name back to the outer one."""
+    _init(tmp_path)
+    ha = Hooks()
+    hb = ha if shared else Hooks()
+    a, b = Agent(name="A"), Agent(name="B")
+    with pitstop.workflow("wf", criticality="medium") as ctx:
+        await ha.on_agent_start(None, a)
+        await hb.on_agent_start(None, b)
+        assert ctx.agent == "B"
+        await ha.on_agent_end(None, a, "out")
+        assert ctx.agent == "B"
+        await hb.on_agent_end(None, b, "out")
+        assert ctx.agent is None
+        await ha.on_agent_start(None, a)  # nested: B runs inside A and hands the name back
+        await hb.on_agent_start(None, b)
+        await hb.on_agent_end(None, b, "out")
+        assert ctx.agent == "A"
+        await ha.on_agent_end(None, a, "out")
+        assert ctx.agent is None

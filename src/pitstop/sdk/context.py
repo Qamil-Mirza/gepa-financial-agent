@@ -38,6 +38,7 @@ _FIX_MODES = ("manual", "auto", None)
 _GATE_ERROR_POLICIES = ("block", "allow", None)
 
 HISTORY_MAX = 64  # per-agent tool history and per-run LLM history are capped at this many recent calls
+_MAX_FRAMEWORK_DEPTH = 64  # live framework agents kept per scope (push_framework_agent); the outermost goes first
 UNSET = object()  # RunContext.spend_baseline before the run's first settle computed it (None: no baseline)
 
 
@@ -103,6 +104,9 @@ class RunContext:
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
     # Agents named by a framework hook (see set_framework_agent): id(base frame) -> (base frame, name).
     framework_agents: dict = field(default_factory=dict, repr=False, compare=False)
+    # Framework agents live per scope (see push_framework_agent): id(base frame) -> (base frame, name before the
+    # first, [live agent names, innermost last]).
+    framework_stacks: dict = field(default_factory=dict, repr=False, compare=False)
 
     def tool_history_for(self, agent: str | None) -> deque:
         hist = self.tool_history.get(agent)
@@ -144,6 +148,47 @@ class RunContext:
                 self.framework_agents.pop(id(base), None)
             else:
                 self.framework_agents[id(base)] = (base, name)  # holds the frame: its id is never reused meanwhile
+
+    def push_framework_agent(self, name: str) -> None:
+        """A framework agent started in the calling task's scope: name it (as set_framework_agent) and keep it on
+        the scope's stack of live framework agents, shared by every hook object of the run."""
+        base = self._frame()
+        with self.lock:
+            entry = self.framework_stacks.get(id(base))
+            if entry is None or entry[0] is not base:
+                named = self.framework_agents.get(id(base))
+                before = named[1] if named is not None and named[0] is base else None
+                entry = self.framework_stacks[id(base)] = (base, before, [])
+            live = entry[2]
+            live.append(name)
+            del live[:-_MAX_FRAMEWORK_DEPTH]
+            self.framework_agents[id(base)] = (base, name)
+
+    def pop_framework_agent(self, name: str | None) -> None:
+        """A framework agent of the calling task's scope ended (or handed off): drop it from the scope's stack and,
+        when the scope's name is still its own, name the innermost agent still live there (the name before the
+        first one when none is). An agent that ended out of order never comes back as the name. An agent the stack
+        does not hold only has its name removed (when it is still the scope's)."""
+        base = self._frame()
+        with self.lock:
+            named = self.framework_agents.get(id(base))
+            current = named[1] if named is not None and named[0] is base else None
+            entry = self.framework_stacks.get(id(base))
+            live = entry[2] if entry is not None and entry[0] is base else []
+            if name not in live:
+                if name is not None and current == name:
+                    self.framework_agents.pop(id(base), None)
+                return
+            del live[len(live) - 1 - live[::-1].index(name)]
+            nxt = live[-1] if live else entry[1]
+            if not live:
+                self.framework_stacks.pop(id(base), None)
+            if current != name:
+                return
+            if nxt is None:
+                self.framework_agents.pop(id(base), None)
+            else:
+                self.framework_agents[id(base)] = (base, nxt)
 
     def _frame(self) -> _AgentFrame | None:
         cur = _agent_var.get()
