@@ -10,8 +10,8 @@ scanned.
 Each alarm is handled after its run's transaction commits: `attribute` names the run tags that changed around the
 alarm's change point, the drift is the metric's drift type at `classify`'s level, raised by `escalate_for_change`
 when a model, base_url or prompt_versions change explains it, and is recorded with action `record`. P0/P1 drifts
-are sent through `pitstop.alerts.dispatch.notify`, which reads the SDK runtime's store: pass that store (the CLI
-does) for alerts to find the drift.
+are sent through `pitstop.alerts.dispatch.notify` with this pass's own `store`, so the alert is built from and
+recorded in the store that holds the drift (channels and routes still come from the SDK runtime's config).
 
 Observe only: `scan` never raises. A corrupt `l2_state` row restarts that detector (one warning). A run that
 fails is logged; a store error (locked, I/O) ends the pass and leaves the run for the next one, any other error
@@ -179,7 +179,7 @@ def _record(store, p: _Pending) -> ScanAlarm:
         try:
             from ..alerts.dispatch import notify
 
-            notify(drift_id)
+            notify(drift_id, store=store)
         except Exception as e:
             log.warning("pitstop: scan could not queue the alert for drift %s (%s)", drift_id, type(e).__name__)
     return ScanAlarm(p.workflow, p.metric, p.spec.drift_type, level.value, drift_id, summary)

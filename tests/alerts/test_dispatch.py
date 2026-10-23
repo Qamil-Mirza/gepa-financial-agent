@@ -503,6 +503,29 @@ def test_smtp_transient_errors_retried(tmp_path, monkeypatch, error):
     assert [(r["status"], r["error"]) for r in _rows()] == [("failed", type(error).__name__)]
 
 
+@pytest.mark.parametrize(("codes", "tries_expected"), [((450, 451), 3), ((450, 550), 1)], ids=["all-4xx", "mixed"])
+def test_recipients_refused_all_4xx_is_retryable(tmp_path, monkeypatch, codes, tries_expected):
+    _init(tmp_path, monkeypatch, EMAIL_CONFIG, env=())
+    _no_backoff(monkeypatch)
+    refused = {f"u{i}@x": (code, b"x") for i, code in enumerate(codes)}
+    tries = _smtp_failing(monkeypatch, smtplib.SMTPRecipientsRefused(refused))
+    _apply(Finding("tool_call_breakage", "degraded", False, {}))
+    assert dispatch.wait_idle()
+    assert len(tries) == tries_expected
+
+
+def test_ssl_cert_verification_error_not_retried(tmp_path, monkeypatch):
+    import ssl
+
+    _init(tmp_path, monkeypatch, EMAIL_CONFIG, env=())
+    _no_backoff(monkeypatch)
+    tries = _smtp_failing(monkeypatch, ssl.SSLCertVerificationError("bad cert"))
+    _apply(Finding("tool_call_breakage", "degraded", False, {}))
+    assert dispatch.wait_idle()
+    assert len(tries) == 1
+    assert [(r["status"], r["error"]) for r in _rows()] == [("failed", "SSLCertVerificationError")]
+
+
 def test_p0_with_failed_drift_write_still_pages(tmp_path, monkeypatch, caplog):
     from pitstop.detect import drifts
 
@@ -621,11 +644,102 @@ def test_alert_worker_closes_its_connection(tmp_path, monkeypatch):
     assert dispatch.wait_idle() and len(seen) == 1
     assert rt.store.open_connections() == before
 
+    ran = []
+
     def broken(store, drift_id):
+        ran.append(drift_id)
         store.connect()
         raise RuntimeError("boom")
 
     monkeypatch.setattr(dispatch, "build_alert", broken)  # a failing job closes its connection too
     _apply(Finding("unproductive_loop", "off_task", True, {}))
     assert dispatch.wait_idle()
+    assert len(ran) == 1  # the failing job did run
     assert rt.store.open_connections() == before
+
+
+def _insert_run(rt, rid, model, ts, *, adapter=None, status="ok", base_url="https://api.example/v1"):
+    with rt.store.transaction() as c:
+        c.execute("INSERT INTO runs(id, workflow, criticality, started_at, model, base_url, adapter, status)"
+                  " VALUES (?,?,?,?,?,?,?,?)", (rid, "wf", "medium", ts, model, base_url, adapter, status))
+
+
+def test_otel_only_workflow_alert_names_model_change(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "")
+    now = time.time()
+    _insert_run(rt, "o1", "m1", now - 100, adapter="otel")
+    _insert_run(rt, "o2", "m2", now - 10, adapter="otel")
+    did = record_drift(rt.store, run_id="o2", workflow="wf", level="P1", action="record",
+                       finding=Finding("tool_call_breakage", "degraded", False, {"failures": 3}))
+    assert "changed from m1 to m2" in build_alert(rt.store, did).cause
+
+
+def test_sdk_run_cause_ignores_otel_history(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "")
+    now = time.time()
+    _insert_run(rt, "o1", "m-otel", now - 100, adapter="otel")
+    _insert_run(rt, "s2", "m2", now - 10, adapter="wrap")
+    did = record_drift(rt.store, run_id="s2", workflow="wf", level="P1", action="record",
+                       finding=Finding("tool_call_breakage", "degraded", False, {"failures": 3}))
+    assert build_alert(rt.store, did).cause.startswith("No model or provider change detected")
+
+
+def test_refused_run_cause_names_budget(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "")
+    _insert_run(rt, "r1", None, time.time(), status="refused")
+    did = record_drift(rt.store, run_id="r1", workflow="wf", level="P0", action="halt",
+                       finding=Finding("budget_exhausted", "degraded", False,
+                                       {"scope": "workflow:wf", "limit_usd": 5.0, "spent_usd": 5.2,
+                                        "refused": True}))
+    assert build_alert(rt.store, did).cause == "Budget workflow:wf is used up (5.20 of 5.00 USD)."
+
+
+def test_unrecorded_p0_sends_before_recording(tmp_path, monkeypatch):
+    import sqlite3
+
+    rt = _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    sent_at = []
+
+    def handler(request):
+        sent_at.append(time.time())
+        return httpx.Response(200)
+
+    monkeypatch.setattr(channels, "_http_client", lambda: httpx.Client(transport=httpx.MockTransport(handler)))
+    blocker = sqlite3.connect(rt.store.path, isolation_level=None)
+    blocker.execute("BEGIN IMMEDIATE")  # the alerts table cannot be written
+    try:
+        start = time.time()
+        dispatch.notify_unrecorded(workflow="wf", run_id=None, drift_type="out_of_scope_action", level="P0",
+                                   evidence={"tool": "send_email"})
+        deadline = start + 1.0
+        while not sent_at and time.time() < deadline:
+            time.sleep(0.01)
+        assert sent_at and sent_at[0] - start < 1.0
+    finally:
+        blocker.execute("ROLLBACK")
+        blocker.close()
+    assert dispatch.wait_idle(30)
+
+
+def test_notify_unrecorded_store_refused_branch(tmp_path, monkeypatch, caplog):
+    """The store refuses the alerts row (and the run read): the page still goes out, and the failure is logged."""
+    rt = _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    seen = _capture(monkeypatch)
+
+    class Refusing:
+        def connect(self):
+            raise RuntimeError("database is locked")
+
+        def transaction(self, **kw):
+            raise RuntimeError("database is locked")
+
+        def close_local(self):
+            pass
+
+    with caplog.at_level(logging.WARNING, logger="pitstop"):
+        dispatch.notify_unrecorded(workflow="wf", run_id="r1", drift_type="out_of_scope_action", level="P0",
+                                   evidence={}, store=Refusing())
+        assert dispatch.wait_idle()
+    assert len(seen) == 1 and "the store could not be read" in json.loads(seen[0].content)["cause"]
+    assert sum("could not record the unrecorded" in r.getMessage() for r in caplog.records) == 1
+    assert _rows() == [] and rt.store is get_runtime().store
