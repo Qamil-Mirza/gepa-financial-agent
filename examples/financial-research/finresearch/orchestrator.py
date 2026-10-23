@@ -128,9 +128,13 @@ class Swarm:
         if verbose_events:
             self.collector.subscribe(self._print_event)
         self.board: list[SwarmMessage] = []
+        # the gated research tool is decorated once per swarm, not per call
+        self._research_tool = (pitstop.tool(side_effects=True, name=RESEARCH_TOOL)(research.research)
+                               if watch else None)
         self.workers = [
             ResearchWorker(spec, swarm_objective=scenario.swarm_objective, llm=worker_llm,
-                           research=research, collector=self.collector, prompts_dir=prompts_dir, watched=watch)
+                           research=research, collector=self.collector, prompts_dir=prompts_dir, watched=watch,
+                           research_call=self._research_tool)
             for spec in scenario.agents
         ]
 

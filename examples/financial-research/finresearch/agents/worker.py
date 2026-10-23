@@ -51,9 +51,13 @@ class ResearchWorker:
         collector: TrajectoryCollector,
         prompts_dir: Path,
         watched: bool = True,
+        research_call=None,
     ):
         self.spec = spec
         self.watched = watched  # False: call research directly, never as a PitStop tool
+        # the gated research call, built once (the Swarm passes its own, shared by every worker)
+        self._research_call = research_call or (
+            pitstop.tool(side_effects=True, name="youcom_research")(research.research) if watched else None)
         self.id = spec.agent_id
         self.objective = swarm_objective
         self.llm = llm
@@ -91,7 +95,7 @@ class ResearchWorker:
         if s.corrections:
             user += f"\n\n{s.corrections[-1]}"
         if s.blocked:
-            user += (f"\n\nPitStop blocked your last research call ({s.blocked}). "
+            user += (f"\n\nPitStop blocked this research call: {s.blocked}\n"
                      "Re-plan: ask a question that serves your directive.")
         if s.step >= self.spec.max_steps - 1 and s.research_calls > 0:
             user += "\n\nThis is your last turn: you must choose finish."
@@ -133,9 +137,7 @@ class ResearchWorker:
         )
         s.queries.append(proposal.query)
         # a side-effect tool: on the swarm's workflow, PitStop's L1 gate judges the call against this agent's directive
-        research = self.research.research
-        if self.watched:
-            research = pitstop.tool(side_effects=True, name="youcom_research")(research)
+        research = self._research_call or self.research.research
         try:
             res = await research(proposal.query)
         except YouComError as e:

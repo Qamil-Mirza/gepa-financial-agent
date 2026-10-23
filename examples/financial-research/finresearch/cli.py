@@ -199,7 +199,9 @@ def main() -> None:
     r.add_argument("--correct-on-drift", action="store_true",
                    help="with --legacy-supervisor: at an intervention point, block the query and send a correction")
     r.add_argument("--max-corrections", type=int, default=2,
-                   help="corrections per agent before --halt-on-drift (if set) halts it")
+                   help="with --legacy-supervisor --correct-on-drift: most corrections sent to one agent before "
+                        "--halt-on-drift (if set) halts it (default: 2)")
+    r.add_argument("--prompt", nargs="?", const="", help=argparse.SUPPRESS)  # deprecated alias, rejected below
     r.add_argument("--no-report", action="store_true", help="skip the final report agent")
     m = sub.add_parser("compare")
     m.add_argument("--run-dir", required=True); m.add_argument("--agent")
@@ -216,6 +218,14 @@ def main() -> None:
     d.add_argument("--snapshot", help="default: demo/snapshot.json")
     args = p.parse_args()
     if args.cmd == "run":
+        if args.prompt is not None:
+            r.error("--prompt was replaced by --legacy-supervisor PROMPT")
+        if args.offline:
+            unsupported = [f for f, on in (("--no-report", args.no_report), ("--mode replay", args.mode == "replay"),
+                                           ("--cache-dir", args.cache_dir),
+                                           ("--max-research-calls", args.max_research_calls)) if on]
+            if unsupported:
+                r.error(f"--offline does not support {unsupported[0]}")
         legacy_only = [f for f, on in (("--model", args.model), ("--shadow-prompt", args.shadow_prompt),
                                        ("--halt-on-drift", args.halt_on_drift),
                                        ("--correct-on-drift", args.correct_on_drift)) if on]

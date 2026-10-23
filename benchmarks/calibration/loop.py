@@ -17,6 +17,7 @@ import argparse
 import asyncio
 import json
 import os
+import sys
 from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
@@ -158,9 +159,13 @@ def cmd_swarm(args, s: Settings, state: LoopState) -> int:
                                 research=research, prompts_dir=PROMPTS / "worker", runs_dir=rd / "runs",
                                 verbose_events=False, correct_on_drift=not args.no_correct, synthesizer=synth,
                                 watch=False))  # measure the supervisor alone (no SDK gate)
-        await asyncio.gather(*(sw.run_all() for sw in swarms))
+        return await asyncio.gather(*(sw.run_all() for sw in swarms))
 
-    asyncio.run(go())
+    halted = [r for r in asyncio.run(go()) if r.halted is not None]
+    if halted:
+        for r in halted:
+            print(f"swarm run {r.run_id} halted: {r.halted}", file=sys.stderr)
+        return 1
     (rd / "swarm.json").write_text(json.dumps({"supervisor_model": args.supervisor_model, "prompt": state.current,
                                                "prompt_version": sup.prompt_version, "scenarios": args.scenarios,
                                                "correct_on_drift": not args.no_correct, "report": not args.no_report,
