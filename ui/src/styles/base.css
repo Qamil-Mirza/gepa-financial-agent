@@ -481,7 +481,7 @@ pre {
 .error-state {
   max-width: 560px;
   padding: var(--space-4) var(--space-5);
-  border: 1px solid color-mix(in oklch, var(--p0) 35%, var(--line));
+  border: 1px solid color-mix(in oklab, var(--p0) 35%, var(--line)); /* oklab: an oklch mix of hue 18 and hue 250 lands on purple */
   border-radius: var(--radius);
   background: var(--surface);
   display: grid;

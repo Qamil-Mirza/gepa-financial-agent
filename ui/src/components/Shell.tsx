@@ -4,20 +4,13 @@ import { Link, NavLink, Outlet } from "react-router";
 import { ApiError, getHealth, type Health } from "../api/client";
 import { usePoll, type Poll } from "../api/poll";
 import { PATHS } from "../routes";
+import { timeAgo } from "../time";
 import { FlagGlyph } from "./Flag";
 import { ThemeToggle } from "./ThemeToggle";
 
 const HEALTH_EVERY_MS = 30_000;
 
 type Tone = "ok" | "warn" | "off" | "unknown";
-
-function timeAgo(epochS: number, nowMs = Date.now()): string {
-  const s = Math.max(0, Math.round(nowMs / 1000 - epochS));
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.round(s / 60)} min ago`;
-  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
-  return `${Math.round(s / 86400)} d ago`;
-}
 
 export function workerStatus(poll: Pick<Poll<Health>, "data" | "error">): { tone: Tone; label: string; detail?: string } {
   if (poll.error) {

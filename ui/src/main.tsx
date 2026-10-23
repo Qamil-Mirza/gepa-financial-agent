@@ -5,6 +5,7 @@ import "@fontsource/instrument-sans/700.css";
 import "@fontsource/newsreader/500.css";
 import "./styles/tokens.css";
 import "./styles/base.css";
+import "./styles/pitwall.css";
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
