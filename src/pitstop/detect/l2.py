@@ -3,9 +3,9 @@ values.
 
 The first `WARMUP` values only learn the baseline mean and std (Welford); then the baseline is frozen, so `n` never
 passes `WARMUP`. Each later value is standardized, `z = (x - mean) / std`, and feeds the sums
-`s_hi = max(0, s_hi + z - k)` and `s_lo = max(0, s_lo - z - k)`. A sum above `h` in one of the metric's allowed
-directions is an `Alarm`, after which the detector resets and relearns. `(k, h)` come from the workflow's
-sensitivity. Pure: no store access (the scan persists `to_json()` in `l2_state`).
+`s_hi = max(0, s_hi + z - k)` and `s_lo = max(0, s_lo - z - k)`; the sum of a direction the metric does not alarm
+in stays 0. A sum above `h` is an `Alarm`, after which the detector resets and relearns. `(k, h)` come from the
+workflow's sensitivity. Pure: no store access (the scan persists `to_json()` in `l2_state`).
 
 The std is the sample std times `1 + 2 / sqrt(2 (n - 1))` (about two standard errors of a sample std: 30 runs
 often underestimate it, and an underestimated std is the main source of false alarms), then floored by the metric's
@@ -72,12 +72,14 @@ class Cusum:
         std = max(math.sqrt(self.m2 / (self.n - 1)) * (1 + 2 / math.sqrt(2 * (self.n - 1))), floor)
         z = (x - self.mean) / std
         k, h = PARAMS[sensitivity]
-        hi, lo = max(0.0, self.s_hi + z - k), max(0.0, self.s_lo - z - k)
+        # a direction the metric does not alarm in keeps its sum at 0, so persisted state never grows unbounded
+        hi = max(0.0, self.s_hi + z - k) if "up" in spec.directions else 0.0
+        lo = max(0.0, self.s_lo - z - k) if "down" in spec.directions else 0.0
         self.hi_since = None if hi == 0 else ts if self.s_hi == 0 else self.hi_since
         self.lo_since = None if lo == 0 else ts if self.s_lo == 0 else self.lo_since
         self.s_hi, self.s_lo = hi, lo
         for direction, s, since in (("up", hi, self.hi_since), ("down", lo, self.lo_since)):
-            if direction in spec.directions and s > h:
+            if s > h:
                 alarm = Alarm(direction, since, self.mean, std, x)
                 self._reset()
                 return alarm

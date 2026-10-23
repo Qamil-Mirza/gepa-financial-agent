@@ -17,9 +17,10 @@ A metric is left out when the run has no data for it: no `tool_call` events, no 
 `cost_usd`), no non-null value (the means), or no end time. A `refused` run (it never started) or a `dropped` one
 (a partial OTel trace) has no metrics at all.
 
-`METRICS` gives each metric its drift type, its alarming directions and its std floor for L2: 0.05 absolute for
-the rates; 5% of the baseline mean, but at least `min_floor` (1 call / 1 token / 1 char / $0.0001 / 0.1 s), for
-the rest."""
+`METRICS` gives each metric its drift type, its alarming directions and its std floor for L2: 0.15 absolute for
+the rates, so on a zero baseline one fully failed run (rate 1.0, z = 6.67) does not alarm at normal or low
+sensitivity but two in a row do (high alarms on the first); 5% of the baseline mean, but at least `min_floor`
+(1 call / 1 token / 1 char / $0.0001 / 0.1 s), for the rest."""
 from __future__ import annotations
 
 import json
@@ -39,8 +40,8 @@ class MetricSpec:
 
 
 METRICS: dict[str, MetricSpec] = {
-    "tool_error_rate": MetricSpec("tool_call_breakage", ("up",), 0.05, False),
-    "refusal_rate": MetricSpec("refusal_spike", ("up",), 0.05, False),
+    "tool_error_rate": MetricSpec("tool_call_breakage", ("up",), 0.15, False),
+    "refusal_rate": MetricSpec("refusal_spike", ("up",), 0.15, False),
     "tokens_per_call": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True, 1.0),
     "llm_calls": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True, 1.0),
     "cost_usd": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True, 0.0001),

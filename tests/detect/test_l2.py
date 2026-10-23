@@ -73,17 +73,43 @@ def test_down_ignored_when_only_up():
     first = _warm(c, rng, UP)
     for i in range(50):
         assert c.update(rng.gauss(5, 1), first + i, UP, "normal") is None
+        assert c.s_lo == 0.0 and c.lo_since is None  # a disallowed direction's sum never grows
 
 
 def test_floor_prevents_zero_std_alarm():
     spec, c = METRICS["tool_error_rate"], Cusum()
     for i in range(WARMUP):
         assert c.update(0.0, float(i), spec, "normal") is None
-    assert c.update(0.02, 100.0, spec, "normal") is None  # z = 0.02 / 0.05 floor = 0.4 < k
+    assert c.update(0.02, 100.0, spec, "normal") is None  # z = 0.02 / 0.15 floor = 0.13 < k
+    # z = 0.5 / 0.15 = 3.33 per run: s_hi = 2.83, 5.67, 8.5 > h on the third
     alarms = [c.update(0.5, 101.0 + i, spec, "normal") for i in range(3)]
     fired = [a for a in alarms if a is not None]
-    assert len(fired) == 1 and fired[0].direction == "up" and fired[0].baseline_std == 0.05
+    assert len(fired) == 1 and fired[0].direction == "up" and fired[0].baseline_std == 0.15
     assert fired[0].at == 101.0 and fired[0].value == 0.5
+
+    assert alarms[2] is fired[0]
+
+
+def _zero_rate_baseline(sensitivity) -> Cusum:
+    c = Cusum()
+    for i in range(WARMUP):
+        assert c.update(0.0, float(i), METRICS["tool_error_rate"], sensitivity) is None
+    return c
+
+
+def test_single_failed_run_does_not_alarm_at_normal():
+    # one run whose only tool call failed: z = 1 / 0.15 = 6.67, s_hi = 6.17 < h; a second one: 12.33 > h
+    for sens in ("normal", "low"):
+        c = _zero_rate_baseline(sens)
+        assert c.update(1.0, 100.0, METRICS["tool_error_rate"], sens) is None
+        alarm = c.update(1.0, 101.0, METRICS["tool_error_rate"], sens)
+        assert alarm is not None and alarm.at == 100.0, sens
+
+
+def test_single_failed_run_alarms_at_high():
+    c = _zero_rate_baseline("high")
+    alarm = c.update(1.0, 100.0, METRICS["tool_error_rate"], "high")  # 6.17 > h = 6
+    assert alarm is not None and alarm.at == 100.0
 
 
 def test_absolute_floor_on_zero_baseline():

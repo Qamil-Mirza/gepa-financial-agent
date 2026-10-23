@@ -26,8 +26,8 @@ def _llm(content_chars=400, prompt=100, completion=20, refused=False, meter="age
 
 def test_metric_table():
     assert METRICS == {
-        "tool_error_rate": MetricSpec("tool_call_breakage", ("up",), 0.05, False),
-        "refusal_rate": MetricSpec("refusal_spike", ("up",), 0.05, False),
+        "tool_error_rate": MetricSpec("tool_call_breakage", ("up",), 0.15, False),
+        "refusal_rate": MetricSpec("refusal_spike", ("up",), 0.15, False),
         "tokens_per_call": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True, 1.0),
         "llm_calls": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True, 1.0),
         "cost_usd": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True, 0.0001),
