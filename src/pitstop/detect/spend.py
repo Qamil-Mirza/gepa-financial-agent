@@ -20,11 +20,13 @@ MIN_BASELINE_USD = 0.01
 
 def baseline_run_cost(store, workflow: str, *, before: float) -> float | None:
     """The median settled agent-meter USD per run over the last BASELINE_RUNS `ok` runs of `workflow` that started
-    before `before`; None when fewer than MIN_BASELINE_RUNS qualify."""
+    before `before`; None when fewer than MIN_BASELINE_RUNS qualify. Runs observed through OpenTelemetry (adapter
+    `otel`) never count: their spend is never in the ledger, so they would read as $0 runs."""
     rows = store.connect().execute(
         "SELECT (SELECT COALESCE(SUM(l.usd), 0) FROM ledger l"
         "        WHERE l.run_id = r.id AND l.meter = 'agent' AND l.state = 'settled') AS usd"
         " FROM runs r WHERE r.workflow = ? AND r.status = 'ok' AND r.started_at < ?"
+        " AND (r.adapter IS NULL OR r.adapter != 'otel')"
         " ORDER BY r.started_at DESC LIMIT ?", (workflow, before, BASELINE_RUNS)).fetchall()
     if len(rows) < MIN_BASELINE_RUNS:
         return None

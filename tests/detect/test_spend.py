@@ -82,6 +82,17 @@ def test_baseline_ignores_runs_not_ok_and_judge_spend(tmp_path):
     assert baseline_run_cost(rt.store, "wf", before=0.0) is None  # only runs started before `before`
 
 
+def test_baseline_ignores_otel_runs(tmp_path):
+    rt = _init(tmp_path)
+    _history(MIN_BASELINE_RUNS, 0.02)
+    now = time.time()
+    with rt.store.transaction() as c:  # observed OTel runs are `ok` with no ledger rows: never a $0 baseline
+        for i in range(15):
+            c.execute("INSERT INTO runs(id, workflow, started_at, ended_at, status, adapter) VALUES (?,?,?,?,?,?)",
+                      (f"otel-{i:032x}", "wf", now + i, now + i, "ok", "otel"))
+    assert baseline_run_cost(rt.store, "wf", before=now + 100) == pytest.approx(0.02)
+
+
 # -- the inline P0 ----------------------------------------------------------------------------------------
 
 

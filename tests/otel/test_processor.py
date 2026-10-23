@@ -101,14 +101,17 @@ def test_tool_error_and_root_error(home):
     assert kinds["tool_result"]["error"] == "TimeoutError"
 
 
+AGENT = {"gen_ai.operation.name": "invoke_agent"}
+
+
 def test_workflow_name_resolution(home):
     tracer, _, _ = _tracing(workflow="from-arg")
-    with tracer.start_as_current_span("root-a", attributes={"pitstop.workflow": "from-attr"}):
+    with tracer.start_as_current_span("root-a", attributes={**AGENT, "pitstop.workflow": "from-attr"}):
         pass
-    with tracer.start_as_current_span("root-b"):
+    with tracer.start_as_current_span("root-b", attributes=AGENT):
         pass
     tracer2, _, _ = _tracing()
-    with tracer2.start_as_current_span("root-c"):
+    with tracer2.start_as_current_span("root-c", attributes=AGENT):
         pass
     assert [r["workflow"] for r in _runs()] == ["from-attr", "from-arg", "root-c"]
 
@@ -191,7 +194,7 @@ def test_processor_survives_bad_attributes_and_store_errors(home, monkeypatch, c
     with tracer.start_as_current_span("root2"):
         with tracer.start_as_current_span("chat", attributes=CHAT):
             pass
-        for _ in range(2):  # no finding: apply_findings logs its own failed drift writes
+        for _ in range(3):  # a loop finding whose drift write fails too
             _tool(tracer)
     warnings =[r for r in caplog.records if r.levelno >= logging.WARNING]
     assert len(warnings) == 1, [r.getMessage() for r in warnings]
@@ -212,15 +215,32 @@ def test_processor_never_raises_from_entry_points(home, monkeypatch):
     proc.shutdown()
 
 
+def test_trace_without_genai_spans_writes_nothing(home):
+    tracer, _, proc = _tracing(workflow="w")
+    with tracer.start_as_current_span("GET /health"):
+        with tracer.start_as_current_span("db.query"):
+            pass
+    assert _runs() == [] and proc._traces == {}
+    assert _db().execute("SELECT COUNT(*) FROM events").fetchone()[0] == 0
+
+
 def test_open_traces_bounded(home, monkeypatch, caplog):
+    from opentelemetry.trace import set_span_in_context
+
     monkeypatch.setattr(processor_mod, "MAX_OPEN_TRACES", 2)
     tracer, _, proc = _tracing(workflow="w")
     caplog.set_level(logging.WARNING, logger="pitstop")
-    roots = [tracer.start_span(f"r{i}") for i in range(4)]
+    roots = []
+    for i in range(4):
+        roots.append(tracer.start_span(f"r{i}"))
+        if i != 1:  # r1 has no GenAI span: no run row to close when it is dropped
+            tracer.start_span("chat", context=set_span_in_context(roots[-1]), attributes=CHAT).end()
     assert len(proc._traces) == 2
     for r in roots:
         r.end()
-    assert [r["status"] for r in _runs()] == ["running", "running", "ok", "ok"]
+    runs = _runs()
+    assert [r["status"] for r in runs] == ["dropped", "ok", "ok"]
+    assert runs[0]["ended_at"] is not None
     assert len([r for r in caplog.records if "open traces" in r.getMessage()]) == 1
     assert proc._traces == {}
 

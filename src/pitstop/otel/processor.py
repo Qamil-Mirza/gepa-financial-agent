@@ -1,8 +1,10 @@
 """`SpanProcessor`: read the GenAI spans an app already traces with OpenTelemetry (Langfuse, Logfire, OpenLLMetry,
 OpenInference...) into PitStop's runs and events, run the L0 checks on them and put each verdict back on the trace.
 
-One run per trace (id `otel-<32-hex trace id>`, adapter `otel`), opened when the trace's local root span starts (no
-parent, or a remote one) and closed when it ends (`ok`, or `error` when the root's status is ERROR). The workflow name
+One run per trace (id `otel-<32-hex trace id>`, adapter `otel`). The trace is followed from its local root span (no
+parent, or a remote one); its run row is written at the trace's first GenAI span (llm, tool or agent), with the root's
+start time, so a trace of plain spans (an HTTP health check) writes nothing. The run closes when the root ends (`ok`, or
+`error` when the root's status is ERROR); a trace dropped past MAX_OPEN_TRACES closes as `dropped`. The workflow name
 is the root's `pitstop.workflow` attribute (set at span start), else `SpanProcessor(workflow=...)`, else the root
 span's name. LLM spans become `llm_call` events (the same payload keys as `wrap`, plus `source: "otel"`), tool spans
 `tool_call` and `tool_result` events, agent spans `agent` events; each event carries its span id and parent span id
@@ -19,6 +21,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
+import time
 from collections import OrderedDict, deque
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -47,6 +50,8 @@ class _Trace:
     root: Any  # the live root span: verdict events can only go on a span that has not ended
     root_span_id: int
     spec: WorkflowSpec
+    started_at: float | None  # the root's start (s): the run's started_at, written with its first GenAI span
+    inserted: bool = False  # the run row was written: only then is it finalized
     spans: dict[int, tuple[int | None, str | None]] = field(default_factory=dict)  # span -> (parent, agent name)
     tool_history: dict[str | None, deque] = field(default_factory=dict)
     llm_history: deque = field(default_factory=lambda: deque(maxlen=HISTORY_MAX))
@@ -113,11 +118,11 @@ class SpanProcessor(_SdkSpanProcessor):
 
     # -- internals -----------------------------------------------------------------------------------------------
 
-    def _warn(self, key: str, msg: str) -> None:
-        """Log `msg` with its traceback once per processor and key; later failures only at debug level."""
+    def _warn(self, key: str, msg: str, exc_info: bool = True) -> None:
+        """Log `msg` (with the current traceback) once per processor and key; later failures only at debug level."""
         first = key not in self._warned
         self._warned.add(key)
-        log.log(logging.WARNING if first else logging.DEBUG, msg, exc_info=True)
+        log.log(logging.WARNING if first else logging.DEBUG, msg, exc_info=exc_info)
 
     def _spec(self, name: str) -> WorkflowSpec:
         spec = self._specs.get(name)
@@ -134,7 +139,7 @@ class SpanProcessor(_SdkSpanProcessor):
         parent_id = parent.span_id if parent is not None else None
         attrs = span.attributes or {}
         local_root = parent is None or parent.is_remote
-        new, dropped = False, None
+        dropped = None
         with self._lock:
             trace = self._traces.get(trace_id)
             if trace is None and not local_root:
@@ -142,33 +147,37 @@ class SpanProcessor(_SdkSpanProcessor):
             if trace is None:
                 name = attrs.get("pitstop.workflow")
                 name = name[:200] if isinstance(name, str) and name else self.workflow or span.name or "otel"
-                trace = _Trace(f"otel-{trace_id:032x}", span, span_id, self._spec(name))
+                trace = _Trace(f"otel-{trace_id:032x}", span, span_id, self._spec(name), _seconds(span.start_time))
                 self._traces[trace_id] = trace
-                new = True
                 if len(self._traces) > MAX_OPEN_TRACES:
                     dropped = self._traces.popitem(last=False)[1]
             if len(trace.spans) < MAX_SPANS_PER_TRACE:
                 view = read_span(span.name, attrs, False)
                 agent = (view.agent_name or span.name) if view.kind == "agent" else None
                 trace.spans[span_id] = (parent_id, agent)
-        if not new:
+        if dropped is None:
             return
-        if dropped is not None and "bound" not in self._warned:
+        if "bound" not in self._warned:
             self._warned.add("bound")
             log.warning("pitstop: more than %d open traces; the oldest (%s) is no longer followed",
                         MAX_OPEN_TRACES, dropped.run_id)
-        self._insert_run(trace, _seconds(span.start_time))
+        if dropped.inserted:
+            self._write("UPDATE runs SET ended_at=?, status=? WHERE id=?", (time.time(), "dropped", dropped.run_id))
 
-    def _insert_run(self, trace: _Trace, started_at: float | None) -> None:
+    def _ensure_run(self, trace: _Trace) -> None:
+        """Write the trace's run row at its first GenAI span (again after a failed write; INSERT OR IGNORE)."""
         from .. import __version__
 
+        if trace.inserted:
+            return
         s = trace.spec
         try:
             with get_runtime().store.transaction() as c:
                 c.execute("INSERT OR IGNORE INTO runs(id, workflow, goal, criticality, sensitivity, fix_mode,"
                           " started_at, status, pitstop_version, adapter) VALUES (?,?,?,?,?,?,?,?,?,?)",
                           (trace.run_id, s.name, s.goal, s.criticality, s.sensitivity, s.effective_fix_mode,
-                           started_at, "running", __version__, "otel"))
+                           trace.started_at, "running", __version__, "otel"))
+            trace.inserted = True
         except Exception:
             self._warn("store", "pitstop: could not write an OpenTelemetry trace to the store; ignored")
 
@@ -187,7 +196,7 @@ class SpanProcessor(_SdkSpanProcessor):
                 self._record(trace, span, read_span(span.name, span.attributes or {}, error))
             except Exception:
                 self._warn("end", "pitstop: could not read an OpenTelemetry span; ignored")
-        if is_root:
+        if is_root and trace.inserted:
             self._write("UPDATE runs SET ended_at=?, status=? WHERE id=?",
                         (_seconds(span.end_time), "error" if error else "ok", trace.run_id))
 
@@ -212,6 +221,7 @@ class SpanProcessor(_SdkSpanProcessor):
     def _record(self, trace: _Trace, span: ReadableSpan, view: SpanView) -> None:
         if view.kind == "other":
             return
+        self._ensure_run(trace)
         span_id = span.context.span_id
         parent_id = span.parent.span_id if span.parent is not None else None
         agent = self._agent_of(trace, span_id, parent_id)
@@ -230,8 +240,11 @@ class SpanProcessor(_SdkSpanProcessor):
         if findings:
             from ..sdk.actions import apply_findings
 
-            apply_findings(None, findings, run_id=trace.run_id, spec=trace.spec, observe_only=True,
-                           verdict_span=trace.root)
+            applied = apply_findings(None, findings, run_id=trace.run_id, spec=trace.spec, observe_only=True,
+                                     verdict_span=trace.root, quiet=True)
+            if any(a.drift_id is None for a in applied):
+                self._warn("store", "pitstop: could not write an OpenTelemetry trace to the store; ignored",
+                           exc_info=False)
 
     def _llm(self, trace: _Trace, span: ReadableSpan, view: SpanView, agent: str | None, link: tuple) -> list:
         from ..budget.prices import cost_usd, price_for

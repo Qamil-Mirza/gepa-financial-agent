@@ -25,7 +25,7 @@ class Applied(NamedTuple):
 
 def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None = None,
                    spec: WorkflowSpec | None = None, observe_only: bool = False,
-                   verdict_span: Any = None) -> list[Applied]:
+                   verdict_span: Any = None, quiet: bool = False) -> list[Applied]:
     """Classify each finding (level, action), then record it. A "halt" action (a budget hit or spend spike, any
     criticality), or a P0 on a high workflow, sets a pending halt that the next boundary raises, and records a
     `halt` event marked `pending`. A P1 breakage or refusal spike on a workflow that pins a `fallback_model`, in a
@@ -47,7 +47,9 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
     returns at once (the alert is sent once per drift and channel, again on escalation to P0). A P0 whose drift
     write failed still pages, through `dispatch.notify_unrecorded` (undeduplicated). Every applied finding then adds
     a `pitstop.verdict` event to `verdict_span`, or to the current OTel span when it is None (best effort, a no-op
-    without opentelemetry). The OTel processor passes the trace's root span: its current span is not the right one."""
+    without opentelemetry). The OTel processor passes the trace's root span: its current span is not the right one.
+    `quiet=True` logs a failed drift write at debug level instead of warning, for a caller that reports store
+    failures itself (the OTel processor warns once per processor; the Applied's drift_id None tells it)."""
     from ..detect import drifts
     from ..detect.urgency import Level, action_for, classify
     from .guard import _one_line
@@ -68,8 +70,8 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
             drift_id = drifts.record_drift(get_runtime().store, run_id=run_id, workflow=workflow, finding=f,
                                            level=level, action=action)
         except Exception:
-            log.warning("pitstop: could not record a %s drift; its action still applies", f.drift_type,
-                        exc_info=True)
+            log.log(logging.DEBUG if quiet else logging.WARNING,
+                    "pitstop: could not record a %s drift; its action still applies", f.drift_type, exc_info=True)
             drift_id = None
         if engage is not None:
             _safe(lambda: _engage_fallback(ctx, f.drift_type, drift_id, *engage))
