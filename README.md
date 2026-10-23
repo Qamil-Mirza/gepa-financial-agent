@@ -190,6 +190,20 @@ $ uv run pitstop alerts digest                # open P2/P3 drifts not yet sent; 
 $ uv run pitstop alerts digest --force        # send now regardless of the last digest
 ```
 
+### What changed?
+
+`pitstop explain <drift-id>` (L5 attribution) compares the drift's workflow runs just before a point in time with the runs from that point on, and names the run tags that changed: `model`, `base_url`, `prompt_versions`, `pitstop_version` and `adapter`. The point is the change point in the drift's newest evidence (`change_at`) when it names one, else when the drift was first recorded. Up to 50 runs are compared on each side, the nearest to the point; `refused` and `dropped` runs are left out. A tag value counts as a change when it has at least half of the runs after and at most 10% of the runs before; a value that was already common, or that only some runs after use, is not a change.
+
+```text
+$ uv run pitstop explain 7
+model changed from m1 to m2 (100% of runs since 2026-10-22T14:05Z)
+┃ tag   ┃ before ┃ after ┃ share before ┃ share after ┃
+│ model │ m1     │ m2    │ 0%           │ 100%        │
+tokens_per_call mean: 120 over 30 runs before, 240 over 20 runs after
+```
+
+Times are UTC. `prompt_versions` reads as the run's prompt versions in JSON with sorted keys (`{"researcher": 1}`), and a tag with no value before reads `(unset)`. When no tag changed, it prints `no run tag changed around <time>; likely an input or upstream shift`; with no earlier runs, `no runs before <time> to compare`. The mean line appears when the drift's evidence names a metric (`metric`); otherwise it prints how many runs were compared. An unknown drift id exits 1.
+
 ## OpenAI Agents SDK
 
 Install `pip install "pitstop[openai-agents]"`. Guard the agent's tools, pass the run hooks, and give the SDK a wrapped client:

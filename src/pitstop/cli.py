@@ -21,7 +21,7 @@ from rich.console import Console
 from rich.markup import escape
 from rich.table import Table
 
-from .cli_report import budget_rows, drift_rows, workflow_rows
+from .cli_report import budget_rows, drift_rows, explain_target, workflow_rows
 from .sdk.runtime import get_runtime
 from .userconfig import ALERT_CHANNELS, ConfigInvalid
 
@@ -91,6 +91,37 @@ def cmd_drifts(args) -> None:
         t.add_row(str(r["id"]), r["level"], str(r["workflow"]), r["drift_type"], r["action"], str(r["count"]),
                   _fmt_ts(r["first_seen"]), _fmt_ts(r["last_seen"]))
     console.print(t)
+
+
+def _num(v: float | None) -> str:
+    return "-" if v is None else f"{v:.4g}"
+
+
+def cmd_explain(args) -> None:
+    """L5 attribution for one drift: compares the workflow's runs before and after the drift's change point (an L2
+    drift's `change_at`, else when the drift was first recorded); exits 1 for an unknown drift id."""
+    from .detect.attribution import attribute
+
+    rt = _runtime()
+    target = explain_target(rt.store, args.drift_id)
+    if target is None or target["workflow"] is None:
+        console.print(f"no drift {args.drift_id}" if target is None else f"drift {args.drift_id} has no workflow")
+        sys.exit(1)
+    a = attribute(rt.store, target["workflow"], target["at"], metric=target["metric"])
+    console.print(escape(a.summary), soft_wrap=True)
+    if a.changes:
+        t = Table(title=f"Run tags that changed ({escape(a.workflow)})")
+        for col in ("tag", "before", "after", "share before", "share after"):
+            t.add_column(col)
+        for c in a.changes:
+            t.add_row(c.tag, escape("(unset)" if c.before is None else c.before), escape(c.after),
+                      f"{c.share_before:.0%}", f"{c.share_after:.0%}")
+        console.print(t)
+    if a.metric is not None:
+        console.print(f"{escape(a.metric)} mean: {_num(a.before_mean)} over {a.n_before} runs before, "
+                      f"{_num(a.after_mean)} over {a.n_after} runs after", soft_wrap=True)
+    else:
+        console.print(f"runs compared: {a.n_before} before, {a.n_after} after")
 
 
 def cmd_budget(args) -> None:
@@ -209,6 +240,8 @@ def main() -> None:
     sub.add_parser("status")
     g = sub.add_parser("drifts")
     g.add_argument("--workflow"); g.add_argument("--all", action="store_true", help="include resolved drifts")
+    e = sub.add_parser("explain", help="which run tags changed around a drift (L5 attribution)")
+    e.add_argument("drift_id", type=int, help="a drift id from `pitstop drifts --all`")
     b = sub.add_parser("budget")
     bsub = b.add_subparsers(dest="budget_cmd")  # optional: bare `pitstop budget` shows the budgets
     rc = bsub.add_parser("reconcile", help="list (or --release) old reservations, left by processes that died"
@@ -228,8 +261,8 @@ def main() -> None:
     ad = asub.add_parser("digest", help="send the digest of open P2/P3 drifts (once per 24 h; run it from cron)")
     ad.add_argument("--force", action="store_true", help="send even if the last digest was under 24 h ago")
     args = p.parse_args()
-    handler = {"status": cmd_status, "drifts": cmd_drifts, "budget": cmd_budget, "fallback": cmd_fallback,
-               "alerts": cmd_alerts}[args.cmd]
+    handler = {"status": cmd_status, "drifts": cmd_drifts, "budget": cmd_budget, "explain": cmd_explain,
+               "fallback": cmd_fallback, "alerts": cmd_alerts}[args.cmd]
     handler(args)
 
 

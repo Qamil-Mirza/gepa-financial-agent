@@ -1,6 +1,8 @@
-"""Pure row builders for `pitstop status`, `pitstop drifts` and `pitstop budget` (the CLI renders them)."""
+"""Pure row builders for `pitstop status`, `pitstop drifts`, `pitstop budget` and `pitstop explain` (the CLI
+renders them)."""
 from __future__ import annotations
 
+import json
 from datetime import datetime, tzinfo
 
 from .detect.drifts import list_drifts
@@ -68,3 +70,23 @@ def _action(store, d: dict) -> str:
 
 def _last_seen(d: dict) -> float:
     return d["last_seen"] if d.get("last_seen") is not None else d["ts"]
+
+
+def explain_target(store, drift_id: int) -> dict | None:
+    """What `pitstop explain` attributes for a drift: `{"workflow", "at", "metric"}`, None for an unknown id.
+
+    `at` is the newest evidence entry's `detail.change_at` when it is a number (L2 drifts), else the drift's `ts`;
+    `metric` is that entry's `detail.metric` when it is a string."""
+    d = store.connect().execute("SELECT workflow, ts, evidence FROM drifts WHERE id = ?", (drift_id,)).fetchone()
+    if d is None:
+        return None
+    try:
+        evidence = json.loads(d["evidence"]) if d["evidence"] else []
+    except ValueError:
+        evidence = []
+    evidence = evidence if isinstance(evidence, list) else []
+    detail = evidence[-1].get("detail") if evidence and isinstance(evidence[-1], dict) else None
+    detail = detail if isinstance(detail, dict) else {}
+    change_at, metric = detail.get("change_at"), detail.get("metric")
+    at = change_at if isinstance(change_at, (int, float)) and not isinstance(change_at, bool) else d["ts"]
+    return {"workflow": d["workflow"], "at": float(at), "metric": metric if isinstance(metric, str) else None}

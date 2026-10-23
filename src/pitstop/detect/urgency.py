@@ -35,6 +35,13 @@ def classify(drift_type: str, criticality: Criticality, side_effects: bool) -> L
     return row[criticality]
 
 
+def escalate_for_change(level: Level, criticality: Criticality) -> Level:
+    """The level of a drift whose L5 attribution names a model, base_url or prompt_versions change: at least P1 on
+    high/medium workflows and P2 on low ones (spec 5). Never lowers `level`."""
+    floor = Level.P2 if criticality == "low" else Level.P1
+    return min(level, floor, key=lambda lv: lv.value)  # "P0" < "P1" < ...: the more urgent; `level` on a tie
+
+
 def action_for(finding: Finding, level: Level, criticality: Criticality) -> Literal["block", "steer", "halt", "record"]:
     """The in-the-moment action for a finding. "fallback" is never chosen here: `pitstop.sdk.actions` upgrades a
     P1 "record" to "fallback" afterwards, when the workflow pins a fallback model and the run follows a model or
