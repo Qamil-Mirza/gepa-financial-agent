@@ -1,6 +1,7 @@
 """Turn L0 findings into actions: classify each one (level, action), record it as a drift, and set the pending
 halt that a "halt" action (a budget hit or spend spike) or a P0 on a high-criticality workflow calls for. Shared
-by `@pitstop.tool` and the wrapped clients."""
+by the tool guard, the wrapped clients and (observe-only) the sources that cannot act on the agent. Each recorded
+finding is also emitted as a `pitstop.verdict` span event (`pitstop.otel.emit`)."""
 from __future__ import annotations
 
 import json
@@ -8,7 +9,8 @@ import logging
 import time
 from typing import Any, NamedTuple
 
-from .context import RunContext, _safe
+from ..otel.emit import emit_verdict
+from .context import RunContext, WorkflowSpec, _safe
 from .runtime import get_runtime
 
 log = logging.getLogger("pitstop")
@@ -21,14 +23,20 @@ class Applied(NamedTuple):
     drift_id: int | None
 
 
-def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None = None) -> list[Applied]:
+def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None = None,
+                   spec: WorkflowSpec | None = None, observe_only: bool = False) -> list[Applied]:
     """Classify each finding (level, action), then record it. A "halt" action (a budget hit or spend spike, any
     criticality), or a P0 on a high workflow, sets a pending halt that the next boundary raises, and records a
     `halt` event marked `pending`. A P1 breakage or refusal spike on a workflow that pins a `fallback_model`, in a
     run whose model changed within the last 24 h (see `pitstop.detect.changes.recent_change`), engages the fallback
     (sticky until cleared): the drift's action is "fallback" and a `fallback` event is recorded. A base_url-only
     change does not: the pinned model id may mean nothing on the new provider, so the drift is only recorded.
-    Outside a workflow: workflow=None, criticality medium, sensitivity normal.
+    Outside a workflow (`ctx` None) `spec` supplies the workflow name and criticality; without it: workflow=None,
+    criticality medium, sensitivity normal.
+
+    `observe_only=True` is for sources that saw the call but cannot act on it (an OTel span, a framework hook after
+    the fact): the level is kept but the action is always "record", so no pending halt, fallback, steer or block.
+    The drift is still recorded and P0/P1 still alert: an alert does not act on the agent.
 
     The block/steer/halt decision never depends on the store: a failed drift or event write is logged, leaves
     drift_id None, and the action still applies. The fallback does need the store (the run's model, the previous
@@ -36,18 +44,22 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
 
     Each recorded P0/P1 occurrence is handed to `pitstop.alerts.dispatch.notify`, which queues the alert and
     returns at once (the alert is sent once per drift and channel, again on escalation to P0). A P0 whose drift
-    write failed still pages, through `dispatch.notify_unrecorded` (undeduplicated)."""
+    write failed still pages, through `dispatch.notify_unrecorded` (undeduplicated). Every applied finding then adds
+    a `pitstop.verdict` event to the current OTel span (best effort, a no-op without opentelemetry)."""
     from ..detect import drifts
     from ..detect.urgency import Level, action_for, classify
+    from .guard import _one_line
 
-    criticality = ctx.spec.criticality if ctx is not None else "medium"
-    workflow = ctx.spec.name if ctx is not None else None
+    spec = ctx.spec if ctx is not None else spec
+    criticality = spec.criticality if spec is not None else "medium"
+    workflow = spec.name if spec is not None else None
     run_id = ctx.run_id if ctx is not None else run_id
     applied: list[Applied] = []
     for f in findings:
         level = classify(f.drift_type, criticality, f.side_effects)
-        action = action_for(f, level, criticality)
-        engage = _safe(lambda: _fallback_change(ctx, f.drift_type, level)) if ctx is not None else None
+        action = "record" if observe_only else action_for(f, level, criticality)
+        engage = _safe(lambda: _fallback_change(ctx, f.drift_type, level)) \
+            if ctx is not None and not observe_only else None
         if engage is not None:
             action = "fallback"
         try:
@@ -63,7 +75,7 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
             _safe(lambda: _notify(drift_id))
         elif drift_id is None and level is Level.P0:
             _safe(lambda: _notify_unrecorded(workflow, run_id, f, level.value))
-        if ctx is not None and (action == "halt" or (level is Level.P0 and criticality == "high")):
+        if ctx is not None and not observe_only and (action == "halt" or (level is Level.P0 and criticality == "high")):
             reason = None
             with ctx.lock:  # one check-and-set per run, shared with the tool's steer-limit halt
                 if ctx.halt_reason is None:
@@ -73,6 +85,8 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
             if reason is not None:
                 payload = {"reason": reason, "drift_id": drift_id, "pending": True}
                 _safe(lambda: _halt_event(ctx, f.drift_type, payload))
+        _safe(lambda: emit_verdict(run_id=run_id, drift_type=f.drift_type, level=level.value, action=action,
+                                   drift_id=drift_id, reason=f"{f.drift_type}: {_one_line(f.evidence)}"))
         applied.append(Applied(f, level, action, drift_id))
     return applied
 
