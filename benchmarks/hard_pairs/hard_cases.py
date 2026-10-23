@@ -19,7 +19,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from pitstop.schemas import (
+from finresearch.schemas import (
     Budget, EventType, ProposedAction, SupervisorInput, SwarmMessage, TrajectoryEvent,
 )
 

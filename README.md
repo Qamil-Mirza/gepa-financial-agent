@@ -14,7 +14,7 @@ Keep your agents on the racing line: drift detection and GEPA-powered prompt cor
 
 Agents drift in two ways. They go **off-task**: chasing a stale directive, looping, or reporting a figure their evidence does not support. Or they **degrade**: still on the right task, but quality, tool calls or cost quietly get worse after a model, provider or prompt change. Some drift needs action within seconds (an off-task call to a tool with side effects), some can wait for a weekly fix. Existing observability tools stop at the alert; PitStop is meant to also steer the agent back in the moment and rewrite the prompt that caused the drift.
 
-> **Status: pre-release.** Today the repo contains the drop-in Python SDK (drift detection, steering and hard dollar budgets), the CLI to inspect it, the PitStop research-swarm runtime with its drift supervisor, the GEPA calibration tooling and benchmarks. The local dashboard and agent-prompt correction are on the [Roadmap](#roadmap).
+> **Status: pre-release.** Today the repo contains the drop-in Python SDK (drift detection, steering and hard dollar budgets), the CLI to inspect it, the research-swarm example with its drift supervisor ([examples/financial-research](examples/financial-research/README.md)), the GEPA calibration tooling and benchmarks. The local dashboard and agent-prompt correction are on the [Roadmap](#roadmap).
 
 ## Quickstart (run the example)
 
@@ -24,29 +24,29 @@ You need [uv](https://docs.astral.sh/uv/) and Python 3.11 or newer.
 git clone https://github.com/Qamil-Mirza/gepa-financial-agent.git
 cd gepa-financial-agent
 uv sync
-uv run pitstop demo
+uv run finresearch demo
 ```
 
-Then open http://127.0.0.1:8770. The demo works offline: it replays a bundled snapshot of a real paired run, in which two Nemotron Nano supervisors (the original prompt and the GEPA-rewritten prompt) each watch and correct their own three research agents. Use `--port` if 8770 is taken, for example `uv run pitstop demo --port 8771`.
+Then open http://127.0.0.1:8770. `finresearch` is the research-swarm example's CLI ([examples/financial-research](examples/financial-research/README.md)), installed by `uv sync` next to `pitstop`. The demo works offline: it replays a bundled snapshot of a real paired run, in which two Nemotron Nano supervisors (the original prompt and the GEPA-rewritten prompt) each watch and correct their own three research agents. Use `--port` if 8770 is taken, for example `uv run finresearch demo --port 8771`.
 
 **With keys (paid calls).** To run the swarm live on Crusoe Managed Inference and the You.com Finance Research API:
 
 ```sh
 cp .env.example .env       # fill in CRUSOE_API_KEY and YDC_API_KEY
-uv run pitstop check       # one Crusoe inference call per configured model
-uv run pitstop run --correct-on-drift
+uv run finresearch check       # one Crusoe inference call per configured model
+uv run finresearch run --correct-on-drift
 ```
 
-`pitstop run` requires both keys. It makes Crusoe inference calls and up to `PITSTOP_MAX_RESEARCH_CALLS` (default 12) live You.com calls per run; cached answers are reused for free. With `--correct-on-drift`, a query the supervisor flags is blocked and the agent receives a correction instead.
+`finresearch run` requires both keys. It makes Crusoe inference calls and up to `PITSTOP_MAX_RESEARCH_CALLS` (default 12) live You.com calls per run; cached answers are reused for free. With `--correct-on-drift`, a query the supervisor flags is blocked and the agent receives a correction instead.
 
 Runs are written to `~/.pitstop/runs/<run_id>/`. Set `PITSTOP_HOME` to move the whole state directory, or `PITSTOP_RUNS_DIR` to move only the runs. Other commands:
 
 | Command | What it does |
 |---|---|
-| `uv run pitstop timeline --run-dir <run dir>` | Rebuild and print the curated drift timeline of a run (`--highlights` for flags and responses only) |
-| `uv run pitstop serve` | JSON + server-sent-events API over your runs' timelines, on port 8765 |
-| `uv run pitstop compare --run-dir <run dir> --prompt-b <prompt.txt>` | Re-judge a recorded run's exact supervisor inputs with two prompts, side by side; no new research calls (requires keys) |
-| `uv run pitstop run --shadow-prompt <prompt.txt>` | Run a second supervisor prompt on the same inputs, logged but never acting (requires keys) |
+| `uv run finresearch timeline --run-dir <run dir>` | Rebuild and print the curated drift timeline of a run (`--highlights` for flags and responses only) |
+| `uv run finresearch serve` | JSON + server-sent-events API over your runs' timelines, on port 8765 |
+| `uv run finresearch compare --run-dir <run dir> --prompt-b <prompt.txt>` | Re-judge a recorded run's exact supervisor inputs with two prompts, side by side; no new research calls (requires keys) |
+| `uv run finresearch run --shadow-prompt <prompt.txt>` | Run a second supervisor prompt on the same inputs, logged but never acting (requires keys) |
 
 ## Add PitStop to your agent
 
@@ -166,7 +166,7 @@ A process that dies mid-call leaves its worst-case reservation counting against 
 
 ### One run of the research swarm
 
-A scenario gives three research agents a shared objective. Before each agent's proposed research query is sent, the supervisor judges it. Code computes trajectory signals (for example, near-duplicate queries and steps since the last finding), a Nemotron model returns a verdict (ON_TRACK, DRIFTING or UNCERTAIN) with the evidence event ids it relied on, and code rejects evidence ids that do not exist in the trajectory. The alert policy fires on a confident DRIFTING verdict (confidence at least 0.75) or on two DRIFTING verdicts in a row at confidence at least 0.5.
+The research swarm is an example built on PitStop, in [examples/financial-research](examples/financial-research/README.md) (package `finresearch`). A scenario gives three research agents a shared objective. Before each agent's proposed research query is sent, the supervisor judges it. Code computes trajectory signals (for example, near-duplicate queries and steps since the last finding), a Nemotron model returns a verdict (ON_TRACK, DRIFTING or UNCERTAIN) with the evidence event ids it relied on, and code rejects evidence ids that do not exist in the trajectory. The alert policy fires on a confident DRIFTING verdict (confidence at least 0.75) or on two DRIFTING verdicts in a row at confidence at least 0.5.
 
 ```mermaid
 flowchart TD
@@ -182,8 +182,8 @@ flowchart TD
     F --> RS["Report synthesizer<br/>uses only unflagged findings"]
     RS --> D[("Run dir<br/>events.jsonl<br/>decisions.jsonl<br/>timeline.jsonl<br/>meta.json, report.md")]
     SUP -.-> D
-    D --> T["pitstop timeline<br/>pitstop serve"]
-    D --> UI["Demo UI<br/>(pitstop demo)"]
+    D --> T["finresearch timeline<br/>finresearch serve"]
+    D --> UI["Demo UI<br/>(finresearch demo)"]
 ```
 
 ### Calibrating the detector prompt
@@ -200,7 +200,7 @@ flowchart LR
     GATE -- "fail" --> KEEP["Keep the current prompt"]
 ```
 
-The code is in [benchmarks/calibration](benchmarks/calibration): `loop.py` runs the recursive swarm → judge → mine → optimize → gate loop, and `optimize.py` runs a single GEPA optimization whose output you compare with `benchmarks.hard_pairs.run_hard_cases`. The GEPA engine itself is in [src/pitstop/correct](src/pitstop/correct). The hackathon's GEPA prompts are in `src/pitstop/assets/prompts/gepa/`; `pitstop run` still defaults to the hand-written `supervisor_v0.txt` (pass `--prompt` to use another).
+The code is in [benchmarks/calibration](benchmarks/calibration): `loop.py` runs the recursive swarm → judge → mine → optimize → gate loop, and `optimize.py` runs a single GEPA optimization whose output you compare with `benchmarks.hard_pairs.run_hard_cases`. The GEPA engine itself is in [src/pitstop/correct](src/pitstop/correct). The hackathon's GEPA prompts are in `examples/financial-research/finresearch/assets/prompts/gepa/`; `finresearch run` still defaults to the hand-written `supervisor_v0.txt` (pass `--prompt` to use another).
 
 ## Where it's going (architecture)
 
@@ -258,22 +258,26 @@ flowchart TD
 ## Repo map
 
 ```
-src/pitstop/          the installable package and the `pitstop` CLI
+src/pitstop/          the installable package (the SDK only) and the `pitstop` CLI
   sdk/, detect/, budget/  the drop-in SDK, drift detection and urgency, the budget ledger
-  agents/             research worker agents and the report synthesizer
-  supervisor/         drift supervisor: signals, LLM verdict + evidence validation, AlertPolicy, corrections
+  alerts/, store/     alert channels and routing, the SQLite store
   correct/            the GEPA engine (pitstop.correct.gepa) and its model clients
-  research/           You.com Finance Research client with an on-disk cache
-  demo/               the GEPA comparison demo server, its static page and the bundled snapshot
-  ui/                 a prototype local run viewer (python -m pitstop.ui.server)
-  assets/             packaged prompts (baseline, GEPA, worker) and scenarios
+  llm.py              the OpenAI-compatible client used by the example and the benchmarks
+  assets/prompts/     the L1 gate prompt
 examples/quickstart/  a keyless demo agent that shows steer-then-halt
+examples/financial-research/  the research-swarm example (package `finresearch`, CLI `finresearch`), a uv workspace member
+  finresearch/agents/       research worker agents and the report synthesizer
+  finresearch/supervisor/   drift supervisor: signals, LLM verdict + evidence validation, AlertPolicy, corrections
+  finresearch/research/     You.com Finance Research client with an on-disk cache
+  finresearch/demo/         the GEPA comparison demo server, its static page and the bundled snapshot
+  finresearch/ui/           a prototype local run viewer (python -m finresearch.ui.server)
+  finresearch/assets/       prompts (baseline, GEPA, worker) and scenarios
 benchmarks/
   hard_pairs/         the labeled hard-pairs eval (18 categories, drift + healthy twins) and its runner
   calibration/        GEPA calibration of the detector prompt and the recursive loop with its gate
   held_out/           builder for the harder held-out set (unseen companies, distractors)
   synth/              the synthetic drift-trace generator (real workers, real You.com evidence)
-tests/                offline test suite: runtime, correct, benchmarks, repo hygiene
+tests/                offline test suite: SDK, correct, benchmarks, the example (tests/examples), repo hygiene
 docs/                 design specs and plans (docs/superpowers/), hackathon-era documents (docs/history/)
 ```
 
@@ -303,7 +307,7 @@ The small model with a rewritten prompt roughly matches the 4× larger model wit
 ```sh
 uv run python -m benchmarks.hard_pairs.run_hard_cases --splits test --trials 5 \
     --model nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B \
-    --prompt src/pitstop/assets/prompts/gepa/pitstop_nano_800.txt
+    --prompt examples/financial-research/finresearch/assets/prompts/gepa/pitstop_nano_800.txt
 ```
 
 Results go to `~/.pitstop/runs/eval-<prompt>-<timestamp>/`. The baseline result files are in [benchmarks/hard_pairs/results](benchmarks/hard_pairs/results). The raw hackathon traces and generated datasets are not committed; they are archived as a GitHub release asset (`pitstop-hackathon-data-2026-10-20.tar.gz`). The full hackathon write-up is in [docs/history/PITSTOP_RESULTS.md](docs/history/PITSTOP_RESULTS.md).

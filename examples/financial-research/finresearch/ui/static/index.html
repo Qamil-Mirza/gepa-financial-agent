@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PitStop pit wall</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8F%81%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: dark;
+  --asphalt: #1A1F26;
+  --tarmac: #232A33;
+  --tarmac-2: #2B333E;
+  --line: #36404C;
+  --chalk: #E6E9EC;
+  --muted: #8F9AA7;
+  --green: #2FA36B;
+  --yellow: #F0B429;
+  --red: #E0464E;
+  --kerb-white: #F3F4F6;
+  --on-flag: #10141A;
+  --focus: #7CB7FF;
+  --display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --asphalt: #EBEEF1;
+    --tarmac: #FFFFFF;
+    --tarmac-2: #F4F6F8;
+    --line: #CBD2DA;
+    --chalk: #1B2128;
+    --muted: #59636F;
+    --green: #1E8A55;
+    --yellow: #C98C0A;
+    --red: #C8323B;
+    --kerb-white: #D3D9E0;
+    --on-flag: #FFFFFF;
+    --focus: #1F6FD1;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--asphalt);
+  color: var(--chalk);
+  font: 400 15px/1.5 var(--body);
+}
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button, select, input { font: inherit; color: inherit; }
+a { color: inherit; }
+
+/* ---------- header ---------- */
+.bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
+  padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--tarmac);
+}
+.wordmark { font: 700 24px/1 var(--display); letter-spacing: 0.01em; margin-right: 8px; }
+.wordmark span { color: var(--muted); font-weight: 500; }
+.bar label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; }
+select {
+  background: var(--tarmac-2); border: 1px solid var(--line); border-radius: 4px;
+  padding: 5px 8px; color: var(--chalk); max-width: 460px;
+}
+.live { display: inline-flex; align-items: center; gap: 7px; font: 600 14px var(--display); color: var(--muted); }
+.live::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+.live.running { color: var(--green); }
+.live.running::before { background: var(--green); animation: pulse 1.6s ease-in-out infinite; }
+.live.failed { color: var(--red); }
+.live.failed::before { background: var(--red); }
+@keyframes pulse { 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .live.running::before { animation: none; } }
+.model {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid var(--line);
+  border-radius: 999px; font: 600 14px var(--display); background: var(--tarmac-2);
+}
+.model span { font: 400 13px var(--body); color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; margin-left: auto; }
+.seg button { background: none; border: 0; padding: 6px 14px; cursor: pointer; color: var(--muted); font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--chalk); color: var(--asphalt); }
+
+main { max-width: 1320px; margin: 0 auto; padding: 24px; }
+
+/* ---------- hero: objective + lap chart ---------- */
+.objective { font: 600 clamp(20px, 2.4vw, 28px)/1.2 var(--display); max-width: 60ch; margin: 0 0 6px; }
+.runline { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
+.laps {
+  background: var(--tarmac); border: 1px solid var(--line); border-radius: 6px;
+  padding: 8px 0; overflow-x: auto;
+}
+.lap-row {
+  display: grid; grid-template-columns: minmax(170px, 220px) 1fr auto; align-items: center;
+  gap: 16px; padding: 10px 18px; border-left: 4px solid transparent; cursor: pointer;
+  background: none; border-top: 0; border-right: 0; border-bottom: 0; width: 100%; text-align: left;
+}
+.lap-row + .lap-row { border-top: 1px solid var(--line); }
+.lap-row[aria-selected="true"] { border-left-color: var(--chalk); background: var(--tarmac-2); }
+.car { font: 600 17px/1.2 var(--display); }
+.car small { display: block; font: 400 13px/1.3 var(--body); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.cells { display: flex; gap: 6px; align-items: flex-end; min-height: 56px; }
+.cell {
+  position: relative; width: 52px; height: 44px; border-radius: 3px; display: grid; place-items: center;
+  font: 700 17px/1 var(--display); color: var(--on-flag); border: 0; padding: 0; cursor: pointer;
+}
+.cell span { display: block; font: 600 10.5px/1 var(--body); margin-top: 2px; }
+.cell .inner { text-align: center; }
+.cell.ON_TRACK { background: var(--green); }
+.cell.UNCERTAIN { background: repeating-linear-gradient(135deg, var(--yellow) 0 6px, color-mix(in srgb, var(--yellow) 75%, var(--tarmac)) 6px 12px); }
+.cell.DRIFTING { background: var(--red); }
+.cell.pending { background: none; border: 1px dashed var(--line); color: var(--muted); cursor: default; }
+/* the one bold element: kerb stripe marks the intervention point */
+.cell.intervention::after {
+  content: ""; position: absolute; left: -3px; right: -3px; bottom: -9px; height: 6px; border-radius: 1px;
+  background: repeating-linear-gradient(90deg, var(--red) 0 8px, var(--kerb-white) 8px 16px);
+}
+.cell.onset::before {
+  content: ""; position: absolute; top: -10px; left: 50%; width: 2px; height: 7px; background: var(--chalk); transform: translateX(-50%);
+}
+.flag-now { font: 700 18px/1 var(--display); white-space: nowrap; text-align: right; min-width: 110px; }
+.flag-now small { display: block; font: 400 12px var(--body); color: var(--muted); margin-top: 3px; }
+.t-ON_TRACK { color: var(--green); } .t-UNCERTAIN { color: var(--yellow); } .t-DRIFTING { color: var(--red); }
+.key { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: 13px; padding: 10px 18px 4px; border-top: 1px solid var(--line); margin-top: 6px; }
+.key i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 6px; }
+.key .k-kerb { height: 5px; background: repeating-linear-gradient(90deg, var(--red) 0 4px, var(--kerb-white) 4px 8px); vertical-align: 2px; }
+
+.stats { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 14px 2px 28px; color: var(--muted); font-size: 14px; }
+.stats b { color: var(--chalk); font: 600 16px var(--display); margin-right: 4px; }
+
+/* ---------- detail: agent brief + radio log ---------- */
+.detail { display: grid; grid-template-columns: 320px 1fr; gap: 28px; align-items: start; }
+@media (max-width: 860px) { .detail { grid-template-columns: 1fr; } .lap-row { grid-template-columns: 1fr; } .flag-now { text-align: left; } }
+.brief { position: sticky; top: 16px; }
+.brief h2, .log h2 { font: 600 20px/1.2 var(--display); margin: 0 0 10px; }
+.brief h3 { font: 600 15px var(--display); margin: 18px 0 6px; color: var(--muted); }
+.brief p { margin: 0; }
+.brief ul { margin: 0; padding-left: 18px; }
+.brief li { margin: 2px 0; }
+.truth { margin-top: 18px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 4px; font-size: 14px; }
+.truth b { font-family: var(--display); }
+
+.log { min-width: 0; }
+.ev { display: grid; grid-template-columns: 74px 1fr; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); scroll-margin-top: 80px; }
+.ev .when { font: 600 13px/1.4 var(--display); color: var(--muted); }
+.ev .when div { font: 400 12px var(--body); }
+.ev .kind { font: 600 13px var(--display); color: var(--muted); margin-right: 6px; }
+.ev .body { min-width: 0; overflow-wrap: anywhere; }
+.ev.hl { outline: 2px solid var(--red); outline-offset: -2px; border-radius: 3px; background: color-mix(in srgb, var(--red) 9%, transparent); }
+.ev.error .kind, .ev.error .body { color: var(--red); }
+.q { font-style: italic; }
+.q::before { content: "“"; } .q::after { content: "”"; }
+.facts { color: var(--muted); font-size: 14px; }
+.chips { display: inline-flex; flex-wrap: wrap; gap: 4px; vertical-align: middle; }
+.chip {
+  font: 500 12.5px/1 var(--body); padding: 4px 7px; border-radius: 3px; border: 1px solid var(--line);
+  background: var(--tarmac-2); cursor: pointer; color: var(--chalk);
+}
+.chip.missing { border-style: dashed; color: var(--muted); cursor: default; text-decoration: line-through; }
+details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+details ul { margin: 6px 0 0; padding-left: 18px; font-size: 14px; }
+
+.call {
+  margin: 10px 0 12px 86px; padding: 12px 14px; background: var(--tarmac); border: 1px solid var(--line);
+  border-left: 5px solid var(--muted); border-radius: 4px; scroll-margin-top: 80px;
+}
+@media (max-width: 860px) { .call { margin-left: 0; } }
+.call.ON_TRACK { border-left-color: var(--green); }
+.call.UNCERTAIN { border-left-color: var(--yellow); }
+.call.DRIFTING { border-left-color: var(--red); }
+.call.focus { box-shadow: 0 0 0 2px var(--focus); }
+.call-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.call-head strong { font: 700 18px var(--display); }
+.conf { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+.conf i { display: inline-block; width: 70px; height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.conf i b { display: block; height: 100%; background: var(--muted); }
+.conf.t-ON_TRACK i b { background: var(--green); } .conf.t-UNCERTAIN i b { background: var(--yellow); } .conf.t-DRIFTING i b { background: var(--red); }
+.call p { margin: 6px 0; max-width: 75ch; }
+.call .meta { color: var(--muted); font-size: 13px; }
+.call .issues { color: var(--yellow); font-size: 13px; margin-top: 4px; }
+.stopped { margin: 4px 0 0 86px; padding: 10px 14px; border: 1px dashed var(--red); border-radius: 4px; color: var(--red); font: 600 15px var(--display); }
+@media (max-width: 860px) { .stopped { margin-left: 0; } }
+.box {
+  margin: -12px -14px 10px -14px; padding: 8px 14px 8px; font: 700 15px var(--display); color: var(--chalk);
+  border-bottom: 1px solid var(--line); position: relative;
+}
+.box::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px;
+  background: repeating-linear-gradient(90deg, var(--red) 0 12px, var(--kerb-white) 12px 24px);
+}
+.box { padding-top: 14px; }
+.box span { font: 400 14px var(--body); color: var(--muted); }
+
+/* ---------- compare ---------- */
+.cmp-wrap { overflow-x: auto; background: var(--tarmac); border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 14px var(--display); color: var(--muted); white-space: nowrap; }
+tr.differ td { background: color-mix(in srgb, var(--yellow) 10%, transparent); }
+.v { font: 700 15px var(--display); white-space: nowrap; }
+.cmp-sum { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 0 0 14px; color: var(--muted); }
+.cmp-sum b { color: var(--chalk); font: 600 17px var(--display); margin-right: 4px; }
+.note { color: var(--muted); font-size: 13.5px; margin-top: 12px; max-width: 80ch; }
+
+.empty { padding: 48px 24px; text-align: left; max-width: 64ch; }
+.empty h2 { font: 600 22px var(--display); margin: 0 0 8px; }
+code { font: 13.5px/1.4 ui-monospace, "SF Mono", Menlo, Consolas, monospace; background: var(--tarmac-2); border: 1px solid var(--line); border-radius: 3px; padding: 1px 5px; overflow-wrap: anywhere; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wordmark">PitStop <span>pit wall</span></div>
+  <label>Run <select id="runSel" aria-label="Choose a run"></select></label>
+  <span id="live" class="live">No run</span>
+  <span id="model" class="model" hidden></span>
+  <label><input type="checkbox" id="truthToggle"> Show injected drift</label>
+  <div class="seg" role="group" aria-label="View">
+    <button id="vLive" aria-pressed="true">Run</button>
+    <button id="vCmp" aria-pressed="false">Compare prompts</button>
+  </div>
+</header>
+
+<main>
+  <section id="emptyAll" class="empty" hidden>
+    <h2>No runs yet</h2>
+    <p>Start a run in another terminal and it will appear here while it’s in progress:</p>
+    <p><code>finresearch run --halt-on-drift</code></p>
+  </section>
+
+  <section id="liveView" hidden>
+    <h1 class="objective" id="objective"></h1>
+    <p class="runline" id="runline"></p>
+    <div class="laps" id="laps" role="tablist" aria-label="Agents"></div>
+    <div class="stats" id="stats"></div>
+    <div class="detail">
+      <aside class="brief" id="brief"></aside>
+      <section class="log" id="log" aria-live="polite"></section>
+    </div>
+  </section>
+
+  <section id="cmpView" hidden></section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const STATUS_WORD = { ON_TRACK: "On track", UNCERTAIN: "Uncertain", DRIFTING: "Drifting" };
+const STATUS_SHORT = { ON_TRACK: "OK", UNCERTAIN: "?", DRIFTING: "Drift" };
+const DRIFT_WORD = {
+  none: "", goal_deviation: "goal deviation", constraint_violation: "constraint violation",
+  unproductive_loop: "unproductive loop", unsupported_conclusion: "unsupported conclusion",
+  ignored_evidence: "ignored evidence", other: "other",
+};
+const ISSUE = (i) =>
+  i.startsWith("invented_or_unseen_evidence") ? "cited an event that doesn’t exist, so it was removed"
+  : i === "drift_without_valid_evidence" ? "said drifting without valid evidence, so it was downgraded to uncertain"
+  : i === "invalid_json" ? "reply wasn’t valid JSON"
+  : i === "needed_json_retry" ? "needed a second try to return valid JSON"
+  : i === "supervisor_call_failed" ? "the model call failed"
+  : i.startsWith("agent_id_mismatch") ? "named the wrong agent"
+  : i.replace(/_/g, " ");
+// "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B" -> "Nemotron 3 Super"
+const shortModel = (m) => {
+  if (!m) return "";
+  const name = m.split("/").pop();
+  const tier = (name.match(/nano|super|ultra|lightning/i) || [""])[0];
+  const fam = /nemotron/i.test(name) ? "Nemotron " + ((name.match(/nemotron-?(\d+(?:\.\d+)?)/i) || [])[1] ?? "") : name;
+  return tier ? `${fam.trim()} ${tier[0].toUpperCase()}${tier.slice(1).toLowerCase()}` : name;
+};
+const fmtTime = (iso) => { const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }); };
+const KIND = {
+  plan: "Plan", tool_call: "Research query", tool_response: "Answer", finding: "Finding",
+  agent_message: "Report", error: "Error", progress: "Progress", citation: "Source",
+};
+
+const S = {
+  runs: [], runId: null, meta: null, events: [], decisions: [], ev: 0, dec: 0,
+  agent: null, view: "live", truth: false, compares: [], cmpName: null, cmpRows: [],
+  open: new Set(), timer: null, focusEvent: null, focusCall: null,
+};
+
+/* ---------------- data ---------------- */
+async function getJSON(url) {
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `HTTP ${r.status}`);
+  return r.json();
+}
+
+async function loadRuns(keepSelection = true) {
+  try { S.runs = await getJSON("/api/runs"); } catch { S.runs = []; }
+  const sel = $("runSel");
+  const prev = S.runId;
+  sel.innerHTML = S.runs.map((r) => `<option value="${esc(r.run_id)}">${esc(r.run_id)} (${esc([shortModel(r.supervisor_model) || "model unknown", r.status === "running" ? "live" : ""].filter(Boolean).join(", "))})</option>`).join("");
+  $("emptyAll").hidden = S.runs.length > 0;
+  if (!S.runs.length) { $("liveView").hidden = $("cmpView").hidden = true; setLive(null); return; }
+  const next = keepSelection && prev && S.runs.some((r) => r.run_id === prev) ? prev : S.runs[0].run_id;
+  sel.value = next;
+  if (next !== prev) selectRun(next);
+}
+
+function selectRun(id) {
+  clearTimeout(S.timer);
+  Object.assign(S, { runId: id, meta: null, events: [], decisions: [], ev: 0, dec: 0, agent: null, compares: [], cmpName: null, cmpRows: [], focusEvent: null, focusCall: null });
+  S.open.clear();
+  poll();
+}
+
+async function poll() {
+  const id = S.runId;
+  if (!id) return;
+  let changed = false;
+  try {
+    const d = await getJSON(`/api/runs/${encodeURIComponent(id)}?ev=${S.ev}&dec=${S.dec}`);
+    if (id !== S.runId) return;
+    if (d.events.length || d.decisions.length) changed = true;
+    if (JSON.stringify(d.meta) !== JSON.stringify(S.meta)) { S.meta = d.meta; changed = true; }
+    if (d.compares.join() !== S.compares.join()) { S.compares = d.compares; changed = true; }
+    S.events.push(...d.events); S.decisions.push(...d.decisions);
+    S.ev = d.ev_total; S.dec = d.dec_total;
+  } catch (e) {
+    $("runline").textContent = `Couldn’t read this run: ${e.message}`;
+  }
+  if (changed) render();
+  const running = S.meta?.status === "running";
+  setLive(S.meta?.status ?? "unknown");
+  S.timer = setTimeout(poll, running ? 1500 : 6000);
+}
+
+/* ---------------- derived ---------------- */
+function agentsList() {
+  const spec = S.meta?.scenario?.agents?.map((a) => a.agent_id) ?? [];
+  const seen = [...new Set([...spec, ...S.events.map((e) => e.agent_id)])];
+  return seen;
+}
+const specOf = (id) => S.meta?.scenario?.agents?.find((a) => a.agent_id === id);
+const decisionsOf = (id) => S.decisions.filter((d) => d.agent_id === id);
+const eventsOf = (id) => S.events.filter((e) => e.agent_id === id);
+const stepLabel = (d) => (d.phase === "final" ? "Fin" : String(d.step + 1));
+
+function agentOutcome(id) {
+  const ds = decisionsOf(id);
+  const last = ds[ds.length - 1];
+  const iv = ds.find((d) => d.alert_note === "INTERVENTION POINT");
+  const halted = iv && iv.phase === "pre_action" && !ds.some((d) => d.phase === "final") && S.meta?.status !== "running" && S.meta?.halt_on_drift;
+  return { last, iv, halted };
+}
+
+/* ---------------- render: run view ---------------- */
+function render() {
+  if (S.view === "cmp") return renderCompare();
+  $("cmpView").hidden = true;
+  $("liveView").hidden = false;
+  const m = S.meta;
+  $("objective").textContent = m?.scenario?.swarm_objective ?? "Waiting for the run to start…";
+  const sup = m?.supervisor;
+  const badge = $("model");
+  badge.hidden = !sup?.model;
+  if (sup?.model) { badge.innerHTML = `<span>Supervisor</span>${esc(shortModel(sup.model))}`; badge.title = sup.model; }
+  $("runline").textContent = sup
+    ? `Supervisor model ${sup.model}, prompt ${sup.prompt_version}. You.com ${m.research?.mode ?? ""} mode${m.halt_on_drift ? ", agents stop at their intervention point" : ""}.`
+    : "";
+  const agents = agentsList();
+  if (!S.agent || !agents.includes(S.agent)) S.agent = agents[0] ?? null;
+  renderLaps(agents);
+  renderStats();
+  renderBrief();
+  renderLog();
+}
+
+function renderLaps(agents) {
+  $("laps").innerHTML = agents.map((id) => {
+    const spec = specOf(id);
+    const ds = decisionsOf(id);
+    const { last, iv, halted } = agentOutcome(id);
+    const onset = S.truth && spec?.drift_injection ? spec.drift_injection.at_step : null;
+    const cells = ds.map((d, i) => {
+      const st = d.decision.status ?? "UNCERTAIN";
+      const cls = [st, d.alert_note === "INTERVENTION POINT" ? "intervention" : "", onset !== null && d.phase === "pre_action" && d.step === onset ? "onset" : ""].join(" ");
+      const label = `${d.phase === "final" ? "Final check" : "Step " + (d.step + 1)}: ${STATUS_WORD[st]}${d.alert_note === "INTERVENTION POINT" ? ", intervention point" : ""}`;
+      return `<button class="cell ${cls}" data-agent="${esc(id)}" data-call="${i}" title="${esc(label)}" aria-label="${esc(label)}"><div class="inner">${stepLabel(d)}<span>${STATUS_SHORT[st]}</span></div></button>`;
+    }).join("");
+    const running = S.meta?.status === "running" && !ds.some((d) => d.phase === "final") && !halted;
+    const pending = running ? `<span class="cell pending" aria-hidden="true">…</span>` : "";
+    const nowSt = iv ? "DRIFTING" : last?.decision.status;
+    const now = nowSt
+      ? `<div class="flag-now t-${nowSt}">${iv ? "Flagged" : STATUS_WORD[nowSt]}<small>${iv ? `at step ${iv.step + 1}${halted ? ", stopped" : ""}` : running ? "running" : "finished"}</small></div>`
+      : `<div class="flag-now">–<small>waiting</small></div>`;
+    return `<div class="lap-row" role="tab" tabindex="0" aria-selected="${id === S.agent}" data-agent="${esc(id)}">
+      <div class="car">${esc(id)}<small>${esc(spec?.directive ?? "")}</small></div>
+      <div class="cells">${cells}${pending}</div>${now}</div>`;
+  }).join("") + `<div class="key"><span><i style="background:var(--green)"></i>On track</span><span><i style="background:var(--yellow)"></i>Uncertain</span><span><i style="background:var(--red)"></i>Drifting</span><span><i class="k-kerb"></i>Intervention point</span>${S.truth ? `<span>│ marks the step where drift was injected</span>` : ""}<span>Fin is the check after the agent’s report</span></div>`;
+}
+
+function renderStats() {
+  const m = S.meta;
+  if (!m) { $("stats").innerHTML = ""; return; }
+  const u = m.supervisor?.usage ?? {};
+  const r = m.research ?? {};
+  const calls = S.decisions.length;
+  const flagged = agentsList().filter((a) => agentOutcome(a).iv).length;
+  $("stats").innerHTML = [
+    `<span><b>${calls}</b>supervisor checks</span>`,
+    `<span><b>${flagged}</b>of ${agentsList().length} agents flagged</span>`,
+    u.calls ? `<span><b>${u.mean_latency_s}s</b>mean check latency</span>` : "",
+    u.calls ? `<span><b>${((u.prompt_tokens + u.completion_tokens) / 1000).toFixed(1)}k</b>supervisor tokens</span>` : "",
+    r.mode ? `<span><b>${r.live_calls}</b>paid You.com calls, <b>${r.cache_hits}</b>cached</span>` : "",
+    r.mode ? `<span><b>$${Number(r.est_cost_usd).toFixed(2)}</b>estimated You.com spend</span>` : "",
+    m.status === "running" ? `<span>Totals update when the run finishes.</span>` : "",
+  ].join("");
+}
+
+function renderBrief() {
+  const id = S.agent;
+  if (!id) { $("brief").innerHTML = ""; return; }
+  const spec = specOf(id) ?? {};
+  const list = (xs) => (xs?.length ? `<ul>${xs.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : `<p class="facts">None</p>`);
+  const { iv } = agentOutcome(id);
+  let truth = "";
+  if (S.truth) {
+    const inj = spec.drift_injection;
+    if (inj) {
+      const delay = iv ? iv.step - inj.at_step : null;
+      truth = `<div class="truth"><b>Drift injected at step ${inj.at_step + 1}</b><br>${esc(inj.instruction)}<br><br>${
+        iv ? `Flagged at step ${iv.step + 1}${delay === 0 ? ", the same step" : delay > 0 ? `, ${delay} step${delay > 1 ? "s" : ""} later` : `, ${-delay} step${-delay > 1 ? "s" : ""} before the injection (check for a false alarm)`}.` : "Not flagged."
+      }<br><span class="facts">The worker model may ignore the instruction, so confirm in the log that it really drifted.</span></div>`;
+    } else {
+      truth = `<div class="truth"><b>No drift injected</b><br>${iv ? `Flagged at step ${iv.step + 1}. Either a false alarm or real, uninjected drift: read the evidence.` : "Not flagged."}</div>`;
+    }
+  }
+  $("brief").innerHTML = `<h2>${esc(id)}</h2>
+    <h3>Directive</h3><p>${esc(spec.directive ?? "")}</p>
+    <h3>Constraints</h3>${list(spec.constraints)}
+    <h3>Success criteria</h3>${list(spec.success_criteria)}${truth}`;
+}
+
+function renderEvidence(ids, dropped) {
+  const chips = ids.map((e) => `<button class="chip" data-ev="${esc(e)}" title="Show this event">${esc(e.split("-").pop())}</button>`);
+  const bad = (dropped ?? []).map((e) => `<span class="chip missing" title="The supervisor cited an event that doesn’t exist; it was removed">${esc(e)}</span>`);
+  return chips.length || bad.length ? `<span class="chips">${[...chips, ...bad].join("")}</span>` : `<span class="facts">none cited</span>`;
+}
+
+function renderCall(d, idx) {
+  const st = d.decision.status ?? "UNCERTAIN";
+  const drift = DRIFT_WORD[d.decision.drift_type] ?? "";
+  const conf = Math.round((d.decision.confidence ?? 0) * 100);
+  const isIv = d.alert_note === "INTERVENTION POINT";
+  const q = d.proposed?.query;
+  const box = isIv
+    ? `<div class="box">Intervention point <span>${d.phase === "pre_action" && q ? `flagged before this query was sent: <span class="q">${esc(q)}</span>` : "flagged after the final report"}</span></div>`
+    : "";
+  const issues = d.issues?.length ? `<div class="issues">Validator: ${esc(d.issues.map(ISSUE).join("; "))}.</div>` : "";
+  const where = d.phase === "final" ? "Final check" : `Check before step ${d.step + 1}${d.proposed?.action === "finish" ? " (agent wants to finish)" : ""}`;
+  return `<div class="call ${st}${S.focusCall === `${d.agent_id}:${idx}` ? " focus" : ""}" id="call-${esc(d.agent_id)}-${idx}">
+    ${box}
+    <div class="call-head"><strong class="t-${st}">${STATUS_WORD[st]}${drift ? `: ${drift}` : ""}</strong>
+      <span class="conf t-${st}"><i><b style="width:${conf}%"></b></i>${conf}% confidence</span>
+      <span class="meta">${where}</span></div>
+    <p>${esc(d.decision.explanation || "No explanation given.")}</p>
+    <div class="meta">Evidence ${renderEvidence(d.decision.evidence_event_ids ?? [], d.dropped_evidence_ids)} ${d.latency_s ? ` ${d.latency_s.toFixed(1)}s` : ""}</div>
+    ${issues}</div>`;
+}
+
+function renderEvent(e, sources) {
+  const p = e.payload ?? {};
+  let body = "";
+  switch (e.type) {
+    case "plan":
+      body = `${esc(e.summary)}${p.proposed_action === "research" && p.proposed_query ? `<div>Next: <span class="q">${esc(p.proposed_query)}</span></div>` : p.proposed_action === "finish" ? `<div class="facts">Next: finish and report</div>` : ""}`;
+      break;
+    case "tool_call":
+      body = `<span class="q">${esc(p.query)}</span>`;
+      break;
+    case "tool_response": {
+      const tags = [p.from_cache ? "replayed from cache" : p.latency_s ? `${p.latency_s}s` : "", p.fixture ? "fixture data" : "", p.retrieved_at ? `retrieved ${fmtTime(p.retrieved_at)}` : ""].filter(Boolean).join(", ");
+      const key = `src-${e.event_id}`;
+      body = `${esc(e.summary.replace(/\s*\[(cached|FIXTURE)\]/g, ""))} <span class="facts">${esc(tags)}</span>${
+        sources.length ? `<details data-key="${key}" ${S.open.has(key) ? "open" : ""}><summary>${sources.length} source${sources.length > 1 ? "s" : ""}</summary><ul>${sources.map((s) => `<li id="ev-${esc(s.event_id)}"><a href="${esc(s.payload.url)}" target="_blank" rel="noopener">${esc(s.payload.title || s.payload.url)}</a> <span class="facts">${esc(s.event_id.split("-").pop())}</span></li>`).join("")}</ul></details>` : ""
+      }`;
+      break;
+    }
+    case "finding": {
+      const facts = [p.metric, p.value, p.period].filter(Boolean).join(", ");
+      const cites = p.citation_event_ids?.length ? renderEvidence(p.citation_event_ids, []) : `<span class="t-UNCERTAIN">no source</span>`;
+      body = `${esc(p.claim ?? e.summary)}<div class="facts">${esc(facts)}${facts ? " · " : ""}cites ${cites}</div>`;
+      break;
+    }
+    case "agent_message":
+      body = p.kind === "final_report" ? `${esc(p.report || "No findings to report.")}${p.gaps ? `<div class="facts">Gaps: ${esc(p.gaps)}</div>` : ""}` : esc(e.summary);
+      break;
+    case "error":
+      body = `${esc(e.summary)}${p.error ? `<div class="facts">${esc(p.error)}</div>` : ""}`;
+      break;
+    default:
+      body = esc(e.summary);
+  }
+  return `<div class="ev ${e.type}${S.focusEvent === e.event_id ? " hl" : ""}" id="ev-${esc(e.event_id)}">
+    <div class="when">Step ${e.step + 1}<div>${esc(e.event_id.split("-").pop())}</div></div>
+    <div class="body"><span class="kind">${KIND[e.type] ?? e.type}</span>${body}</div></div>`;
+}
+
+function renderLog() {
+  const id = S.agent;
+  const log = $("log");
+  if (!id) { log.innerHTML = ""; return; }
+  const evs = eventsOf(id);
+  const ds = decisionsOf(id);
+  const sourcesBy = {};
+  evs.filter((e) => e.type === "citation").forEach((c) => (sourcesBy[c.parent_event_id] ??= []).push(c));
+  const callsAfter = {};
+  ds.forEach((d, i) => (callsAfter[d.cutoff_seq] ??= []).push([d, i]));
+  let html = `<h2>Radio log</h2>`;
+  if (!evs.length) html += `<p class="facts">No events from ${esc(id)} yet.</p>`;
+  for (const e of evs) {
+    if (e.type !== "citation" && e.type !== "progress") html += renderEvent(e, sourcesBy[e.event_id] ?? []);
+    for (const [d, i] of callsAfter[e.seq] ?? []) html += renderCall(d, i);
+  }
+  const { iv, halted } = agentOutcome(id);
+  if (halted) html += `<div class="stopped">Stopped at step ${iv.step + 1}. The flagged query was never sent, so no research call was spent on it.</div>`;
+  log.innerHTML = html;
+  log.querySelectorAll("details[data-key]").forEach((el) => el.addEventListener("toggle", () => (el.open ? S.open.add(el.dataset.key) : S.open.delete(el.dataset.key))));
+}
+
+/* ---------------- render: compare view ---------------- */
+async function renderCompare() {
+  $("liveView").hidden = true;
+  const v = $("cmpView");
+  v.hidden = false;
+  if (!S.compares.length) {
+    v.innerHTML = `<div class="empty"><h2>No prompt comparisons for this run</h2>
+      <p>Re-judge this run’s exact supervisor inputs with a second prompt. It makes no new research calls:</p>
+      <p><code>finresearch compare --run-dir runs/${esc(S.runId ?? "<run_id>")} --prompt-b prompts/supervisor_v1.txt</code></p></div>`;
+    return;
+  }
+  if (!S.cmpName || !S.compares.includes(S.cmpName)) S.cmpName = S.compares[S.compares.length - 1];
+  try { S.cmpRows = await getJSON(`/api/runs/${encodeURIComponent(S.runId)}/compare/${encodeURIComponent(S.cmpName)}`); }
+  catch (e) { v.innerHTML = `<div class="empty"><h2>Couldn’t load this comparison</h2><p>${esc(e.message)}</p></div>`; return; }
+  const rows = S.cmpRows;
+  const A = rows[0]?.a.version ?? "Prompt A", B = rows[0]?.b.version ?? "Prompt B";
+  const agree = rows.filter((r) => r.a.status === r.b.status).length;
+  const label = (r) => (r.injected ? "DRIFTING" : "ON_TRACK");
+  const hitsA = rows.filter((r) => r.a.status === label(r)).length;
+  const hitsB = rows.filter((r) => r.b.status === label(r)).length;
+  const verdict = (x) => `<span class="v t-${x.status}">${STATUS_WORD[x.status]} ${Math.round(x.confidence * 100)}%</span><div class="facts">${esc(DRIFT_WORD[x.drift_type] ?? "")}</div><div>${esc(x.explanation)}</div>`;
+  v.innerHTML = `
+    <label style="display:flex;gap:8px;align-items:center;color:var(--muted);margin-bottom:14px">Comparison
+      <select id="cmpSel">${S.compares.map((c) => `<option ${c === S.cmpName ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
+    <p class="note" style="margin:0 0 12px">Both prompts were judged by the supervisor model set when <code>compare</code> was run; this run’s own checks used ${esc(shortModel(S.meta?.supervisor?.model) || "an unknown model")}.</p>
+    <div class="cmp-sum"><span><b>${rows.length}</b>identical inputs</span><span><b>${agree}</b>same verdict</span><span><b>${rows.length - agree}</b>different verdict</span>
+      ${S.truth ? `<span><b>${hitsA}</b>${esc(A)} matches injection label</span><span><b>${hitsB}</b>${esc(B)} matches injection label</span>` : ""}</div>
+    <div class="cmp-wrap"><table><thead><tr><th>Agent</th><th>Check</th><th>Proposed query</th>${S.truth ? "<th>Injected</th>" : ""}<th>${esc(A)}</th><th>${esc(B)}</th></tr></thead><tbody>
+    ${rows.map((r) => `<tr class="${r.a.status !== r.b.status ? "differ" : ""}"><td>${esc(r.agent_id)}</td><td>${r.phase === "final" ? "Final" : `Step ${r.step + 1}`}</td>
+      <td>${r.proposed_query ? `<span class="q">${esc(r.proposed_query)}</span>` : `<span class="facts">none</span>`}</td>${S.truth ? `<td>${r.injected ? "Yes" : "No"}</td>` : ""}
+      <td>${verdict(r.a)}</td><td>${verdict(r.b)}</td></tr>`).join("")}
+    </tbody></table></div>
+    <p class="note">Highlighted rows are where the two prompts disagree. Injection labels are unverified, and one run is a small sample: report real detection performance from the held-out labeled test set.</p>`;
+  $("cmpSel").addEventListener("change", (e) => { S.cmpName = e.target.value; renderCompare(); });
+}
+
+/* ---------------- interaction ---------------- */
+function setLive(status) {
+  const el = $("live");
+  el.className = "live" + (status === "running" ? " running" : status === "failed" ? " failed" : "");
+  el.textContent = !status ? "No run" : status === "running" ? "Live" : status === "finished" ? "Finished" : status === "failed" ? "Run failed" : "Recorded";
+}
+
+function selectAgent(id) {
+  S.agent = id; S.focusEvent = null; S.focusCall = null;
+  render();
+}
+
+function focusEvent(evId) {
+  const agent = evId.replace(/-e\d+$/, "");
+  if (agent !== S.agent) S.agent = agent;
+  S.focusEvent = evId;
+  const src = S.events.find((e) => e.event_id === evId);
+  if (src?.type === "citation") S.open.add(`src-${src.parent_event_id}`);
+  render();
+  document.getElementById(`ev-${evId}`)?.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+}
+
+document.addEventListener("click", (e) => {
+  const cell = e.target.closest(".cell[data-call]");
+  if (cell) {
+    S.agent = cell.dataset.agent; S.focusCall = `${cell.dataset.agent}:${cell.dataset.call}`; S.focusEvent = null;
+    render();
+    document.getElementById(`call-${cell.dataset.agent}-${cell.dataset.call}`)?.scrollIntoView({ block: "center" });
+    return;
+  }
+  const row = e.target.closest(".lap-row");
+  if (row) return selectAgent(row.dataset.agent);
+  const chip = e.target.closest(".chip[data-ev]");
+  if (chip) return focusEvent(chip.dataset.ev);
+});
+document.addEventListener("keydown", (e) => {
+  const row = e.target.closest?.(".lap-row");
+  if (row && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); selectAgent(row.dataset.agent); }
+});
+$("runSel").addEventListener("change", (e) => selectRun(e.target.value));
+$("truthToggle").addEventListener("change", (e) => { S.truth = e.target.checked; render(); });
+$("vLive").addEventListener("click", () => { S.view = "live"; $("vLive").setAttribute("aria-pressed", "true"); $("vCmp").setAttribute("aria-pressed", "false"); render(); });
+$("vCmp").addEventListener("click", () => { S.view = "cmp"; $("vCmp").setAttribute("aria-pressed", "true"); $("vLive").setAttribute("aria-pressed", "false"); render(); });
+
+loadRuns(false);
+setInterval(() => loadRuns(true), 8000);
+</script>
+</body>
+</html>

@@ -24,7 +24,7 @@ def _rows():
 
 
 def _inp():
-    from pitstop.schemas import Budget, SupervisorInput
+    from finresearch.schemas import Budget, SupervisorInput
 
     return SupervisorInput(task_id="t", agent_id="a", swarm_objective="o", agent_directive="d", trajectory=[],
                            remaining_budget=Budget(steps_used=0, steps_max=1, research_calls_used=0,
@@ -67,7 +67,7 @@ def test_correct_client_uses_correction_meter(tmp_path):
 
 
 def test_supervisor_calls_use_watch_meter(tmp_path):
-    from pitstop.supervisor.supervisor import Supervisor
+    from finresearch.supervisor.supervisor import Supervisor
 
     _init(tmp_path)
     llm = LLMClient(MODEL, client=FakeAsyncOpenAI([make_response("not json")] * 4))
@@ -86,7 +86,7 @@ def test_supervisor_calls_use_watch_meter(tmp_path):
 
 
 def test_supervisor_propagates_budget_exceeded(tmp_path):
-    from pitstop.supervisor.supervisor import Supervisor
+    from finresearch.supervisor.supervisor import Supervisor
 
     _init(tmp_path, '[budgets.all]\nlimit_usd = 0.000001\nperiod = "total"\n')
     sup = Supervisor.from_text(LLMClient(MODEL, client=FakeAsyncOpenAI([make_response("{}")])), "sys")

@@ -9,14 +9,16 @@ uv sync
 cp .env.example .env   # then fill in the keys you need
 ```
 
+The repo is a [uv workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/): the root project is the `pitstop` package, and `examples/financial-research` (package `finresearch`, distribution `pitstop-financial-research`) is a workspace member that depends on it. `uv sync` installs both, editable, with the `pitstop` and `finresearch` console scripts. The `pitstop` wheel ships only the SDK; code for the example goes in `examples/financial-research`, and `pitstop` must never import `finresearch`. After changing a dependency in either `pyproject.toml`, run `uv lock` and commit `uv.lock` (CI runs `uv sync --locked`).
+
 Never commit `.env` or any API key. If you do, revoke the key immediately.
 
 ## Repo map
 
-- `src/pitstop`: the installable package (runtime, CLI, demo server and `pitstop.correct`, the GEPA engine).
-- `examples`: runnable demos (`quickstart` shows the SDK with no keys).
+- `src/pitstop`: the installable package: the SDK, the `pitstop` CLI and `pitstop.correct` (the GEPA engine).
+- `examples`: runnable demos (`quickstart` shows the SDK with no keys; `financial-research` is the research swarm and the GEPA demo page, a workspace member with the `finresearch` CLI).
 - `benchmarks`: eval sets and detector calibration tooling (`hard_pairs`, `calibration`, `held_out`, `synth`).
-- `tests`: the offline test suite (`runtime`, `correct`, `benchmarks`, repo hygiene).
+- `tests`: the offline test suite (`sdk`, `detect`, `budget`, `alerts`, `store`, `correct`, `benchmarks`, `examples/financial_research`, repo hygiene).
 - `docs`: design specs and plans under `docs/superpowers/`; hackathon-era documents under `docs/history/`.
 
 ## Tests and lint

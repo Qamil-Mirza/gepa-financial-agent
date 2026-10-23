@@ -21,7 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from pitstop import llm as llm_mod
-from pitstop.config import PROMPTS
+from finresearch.config import PROMPTS
 from pitstop.correct.client import CrusoeClient
 from pitstop.correct.settings import Settings
 
@@ -78,10 +78,10 @@ def correction_effect(runs: list[Path], client: CrusoeClient, workers: int) -> d
 
 
 async def regenerate_reports(runs: list[Path]) -> None:
-    from pitstop.agents.synthesizer import ReportSynthesizer
-    from pitstop.config import load_settings
+    from finresearch.agents.synthesizer import ReportSynthesizer
+    from finresearch.config import load_settings
     from pitstop.llm import LLMClient, UsageTracker
-    from pitstop.schemas import TrajectoryEvent
+    from finresearch.schemas import TrajectoryEvent
 
     s = load_settings()
     synth = ReportSynthesizer(LLMClient(s.report_model, api_key=s.crusoe_api_key, base_url=s.crusoe_base_url,
