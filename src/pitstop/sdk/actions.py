@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Any, NamedTuple
+from typing import Any, Callable, NamedTuple
 
 from ..otel.emit import emit_verdict
 from .context import RunContext, WorkflowSpec, _safe
@@ -25,7 +25,8 @@ class Applied(NamedTuple):
 
 def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None = None,
                    spec: WorkflowSpec | None = None, observe_only: bool = False,
-                   verdict_span: Any = None, quiet: bool = False) -> list[Applied]:
+                   verdict_span: Any = None, quiet: bool = False,
+                   warn: Callable[[str], None] | None = None) -> list[Applied]:
     """Classify each finding (level, action), then record it. A "halt" action (a budget hit or spend spike, any
     criticality), or a P0 on a high workflow, sets a pending halt that the next boundary raises, and records a
     `halt` event marked `pending`. A P1 breakage or refusal spike on a workflow that pins a `fallback_model`, in a
@@ -49,7 +50,9 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
     a `pitstop.verdict` event to `verdict_span`, or to the current OTel span when it is None (best effort, a no-op
     without opentelemetry). The OTel processor passes the trace's root span: its current span is not the right one.
     `quiet=True` logs a failed drift write at debug level instead of warning, for a caller that reports store
-    failures itself (the OTel processor warns once per processor; the Applied's drift_id None tells it)."""
+    failures itself (the OTel processor warns once per processor; the Applied's drift_id None tells it). `warn`,
+    when given, receives the failure messages of an unrecorded P0's alerts instead of the log (the OTel processor
+    passes its once-per-key gate); it is called from the alerts thread."""
     from ..detect import drifts
     from ..detect.urgency import Level, action_for, classify
     from .guard import _one_line
@@ -78,7 +81,7 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
         if drift_id is not None and level in (Level.P0, Level.P1):
             _safe(lambda: _notify(drift_id))
         elif drift_id is None and level is Level.P0:
-            _safe(lambda: _notify_unrecorded(workflow, run_id, f, level.value))
+            _safe(lambda: _notify_unrecorded(workflow, run_id, f, level.value, warn))
         if ctx is not None and not observe_only and (action == "halt" or (level is Level.P0 and criticality == "high")):
             reason = None
             with ctx.lock:  # one check-and-set per run, shared with the tool's steer-limit halt
@@ -102,10 +105,12 @@ def _notify(drift_id: int) -> None:
     notify(drift_id)  # queues the alert on the alerts thread pool; never waits for a channel
 
 
-def _notify_unrecorded(workflow: str | None, run_id: str | None, f: Any, level: str) -> None:
+def _notify_unrecorded(workflow: str | None, run_id: str | None, f: Any, level: str,
+                       warn: Callable[[str], None] | None = None) -> None:
     from ..alerts.dispatch import notify_unrecorded
 
-    notify_unrecorded(workflow=workflow, run_id=run_id, drift_type=f.drift_type, level=level, evidence=f.evidence)
+    notify_unrecorded(workflow=workflow, run_id=run_id, drift_type=f.drift_type, level=level, evidence=f.evidence,
+                      warn=warn)
 
 
 def _fallback_change(ctx: RunContext, drift_type: str, level: Any) -> tuple[str, Any] | None:

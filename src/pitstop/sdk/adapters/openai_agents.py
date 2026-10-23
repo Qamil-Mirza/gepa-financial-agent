@@ -29,11 +29,12 @@ the same agent; call it on each agent of a handoff graph.
 
 `Hooks` names the agent: `on_agent_start` names the running SDK agent for the scope `Runner.run` was called in
 (`RunContext.set_framework_agent`, `pitstop.agent(name)` semantics, replacing the agent named before), so the run's
-model calls, tool events, drifts' halt events and the gate see it; `on_agent_end` removes the name. The named agent
-keeps the goal of the enclosing `pitstop.agent(...)` scope, which the gate judges side-effect calls against (the
-workflow goal when there is none). The SDK runs
-hooks in child asyncio tasks, so a scope entered there would not reach the run. It also tags the run
-`runs.adapter = 'openai-agents'`.
+model calls, tool events, drifts' halt events and the gate see it; `on_agent_end` gives back the name that was
+current before the matching `on_agent_start` (a per-scope stack: an agent run as a tool hands the name back to the
+agent that called it), and a handoff replaces the name. The named agent keeps the goal of the enclosing
+`pitstop.agent(...)` scope, which the gate judges side-effect calls against (the workflow goal when there is none).
+The SDK runs hooks in child asyncio tasks, so a scope entered there would not reach the run. It also tags the run
+`runs.adapter = 'openai-agents'`, once per run.
 
 Limits: only `FunctionTool`s are guarded (the SDK runs tool input guardrails for function tools only); hosted
 tools, MCP server tools and handoffs are not. Model calls are metered only through a `pitstop.wrap`-ed client. A
@@ -42,7 +43,10 @@ guarded tool's `on_invoke_tool` is replaced, so `tool.__wrapped__` no longer rea
 """
 from __future__ import annotations
 
+import inspect
 import json
+import threading
+from collections import OrderedDict
 from typing import Any, Iterable
 
 from agents import Agent, FunctionTool, RunHooks, ToolGuardrailFunctionOutput, ToolInputGuardrail
@@ -57,6 +61,9 @@ from ..runtime import get_runtime
 __all__ = ["tool_guardrail", "guard", "Hooks"]
 
 ADAPTER = "openai-agents"
+_MAX_TAGGED = 1024  # run ids remembered as tagged (once per run); the oldest is forgotten past this
+_MAX_SCOPES = 1024  # scopes with a stack of named agents per Hooks; a run that never ended leaves one behind
+_MAX_DEPTH = 64  # nested agents remembered per scope; the outermost is forgotten past this
 
 
 class _PitStopGuardrail(ToolInputGuardrail):
@@ -113,13 +120,22 @@ class Hooks(RunHooks):
     """Run hooks for `Runner.run(..., hooks=Hooks())`: name the running agent for PitStop and tag the run. Subclass
     it (calling super()) to add your own hooks."""
 
+    @property
+    def _stacks(self) -> OrderedDict[tuple[str, int], tuple[Any, list[tuple[str, str | None]]]]:
+        """(run id, id(scope frame)) -> (frame, [(agent name, the name current before it), ...]). The frame is held
+        so its id is never reused meanwhile. Created on first use: a subclass need not call `__init__`."""
+        stacks = self.__dict__.get("_pitstop_stacks")
+        if stacks is None:
+            stacks = self.__dict__["_pitstop_stacks"] = OrderedDict()
+        return stacks
+
     async def on_agent_start(self, context: Any, agent: Any) -> None:
         ctx = current_run()
         if ctx is None:
             return
         name = getattr(agent, "name", None)
         if name:
-            _safe(lambda: ctx.set_framework_agent(name))
+            _safe(lambda: self._push(ctx, name))
         _safe(lambda: _tag_run(ctx.run_id))
 
     async def on_llm_start(self, context: Any, agent: Any, system_prompt: Any, input_items: Any) -> None:
@@ -127,8 +143,51 @@ class Hooks(RunHooks):
 
     async def on_agent_end(self, context: Any, agent: Any, output: Any) -> None:
         ctx = current_run()
-        if ctx is not None and ctx.agent == getattr(agent, "name", None):
-            _safe(lambda: ctx.set_framework_agent(None))
+        if ctx is not None:
+            _safe(lambda: self._pop(ctx, getattr(agent, "name", None)))
+
+    async def on_handoff(self, context: Any, from_agent: Any, to_agent: Any) -> None:
+        """The SDK ends a handed-off agent without `on_agent_end`: the agent handed to replaces it on the stack."""
+        ctx = current_run()
+        if ctx is not None:
+            _safe(lambda: self._pop(ctx, getattr(from_agent, "name", None)))
+
+    def _push(self, ctx: Any, name: str) -> None:
+        """Name `name` for the hook's scope, remembering the framework name it replaces."""
+        frame = ctx._frame()
+        key = (ctx.run_id, id(frame))
+        entry = self._stacks.get(key)
+        if entry is None or entry[0] is not frame:
+            entry = self._stacks[key] = (frame, [])
+            if len(self._stacks) > _MAX_SCOPES:
+                self._stacks.popitem(last=False)
+        stack = entry[1]
+        stack.append((name, _framework_name(ctx, frame)))
+        del stack[:-_MAX_DEPTH]
+        ctx.set_framework_agent(name)
+
+    def _pop(self, ctx: Any, name: str | None) -> None:
+        """End agent `name`: give back the name current before its start, unless another name replaced it."""
+        frame = ctx._frame()
+        key = (ctx.run_id, id(frame))
+        entry = self._stacks.get(key)
+        stack = entry[1] if entry is not None and entry[0] is frame else []
+        i = next((i for i in range(len(stack) - 1, -1, -1) if stack[i][0] == name), None)
+        if i is None:  # started before this Hooks saw it (or forgotten): remove the name, as before
+            if name is not None and _framework_name(ctx, frame) == name:
+                ctx.set_framework_agent(None)
+            return
+        _, previous = stack.pop(i)
+        if not stack:
+            self._stacks.pop(key, None)
+        if _framework_name(ctx, frame) == name:
+            ctx.set_framework_agent(previous)
+
+
+def _framework_name(ctx: Any, frame: Any) -> str | None:
+    """The agent a framework hook named for `frame` (the calling task's innermost scope), or None."""
+    named = ctx.framework_agents.get(id(frame))
+    return named[1] if named is not None and named[0] is frame else None
 
 
 class _CheckedInvoker:
@@ -139,6 +198,10 @@ class _CheckedInvoker:
 
     def __init__(self, inner: Any) -> None:
         self._inner = inner
+        try:  # the wrapped invoker's signature, for code that inspects `on_invoke_tool`
+            self.__signature__ = inspect.signature(inner)
+        except (TypeError, ValueError):
+            pass
 
     async def __call__(self, tool_ctx: Any, input: str) -> Any:
         ctx = current_run()
@@ -219,7 +282,19 @@ def _reply_text(reply: Any) -> str:
         return repr(reply)
 
 
+_tagged: OrderedDict[str, None] = OrderedDict()  # run ids already tagged (bounded)
+_tagged_lock = threading.Lock()
+
+
 def _tag_run(run_id: str) -> None:
-    """runs.adapter = 'openai-agents', unless a non-wrap adapter tagged the run first (wrap's tag is a default)."""
+    """runs.adapter = 'openai-agents', unless a non-wrap adapter tagged the run first (wrap's tag is a default).
+    Once per run: each agent start would otherwise write it again (a failed write is tried at the next start)."""
+    with _tagged_lock:
+        if run_id in _tagged:
+            return
     with get_runtime().store.transaction() as c:
         c.execute("UPDATE runs SET adapter=? WHERE id=? AND (adapter IS NULL OR adapter='wrap')", (ADAPTER, run_id))
+    with _tagged_lock:
+        _tagged[run_id] = None
+        if len(_tagged) > _MAX_TAGGED:
+            _tagged.popitem(last=False)

@@ -19,7 +19,7 @@ dependencies = [
 anthropic = ["anthropic>=2.0"]
 otel = ["opentelemetry-api>=1.45", "opentelemetry-sdk>=1.45"]
 openai-agents = ["openai-agents>=0.24"]
-langchain = ["langchain>=1.4", "langchain-core>=1.7"]
+langchain = ["langchain>=1.4", "langchain-core>=1.7", "langgraph>=1.0"]
 
 [project.scripts]
 pitstop = "pitstop.cli:main"

@@ -340,3 +340,80 @@ def test_tool_guardrail_is_a_tool_input_guardrail():
 
     assert isinstance(tool_guardrail(), ToolInputGuardrail)
     assert isinstance(tool_guardrail(side_effects=True), ToolInputGuardrail)
+
+
+async def test_nested_agent_end_restores_outer_name(tmp_path):
+    """An agent run as a tool (its own Runner.run with Hooks) names its calls, then hands the name back to the
+    outer agent; a handoff replaces the name, and the run's end removes it."""
+    _init(tmp_path)
+
+    @function_tool
+    def whoami() -> str:
+        """The agent PitStop names for this call."""
+        return pitstop.sdk.context.current_run().agent
+
+    sub = Agent(name="sub", instructions="Answer.", model=ScriptedModel([_call("whoami", {}, 1),
+                                                                         [assistant_message("sub answer")]]),
+                tools=[whoami])
+    lead_model = ScriptedModel([_call("ask_sub", {"input": "q"}, 2), _call("whoami", {}, 3),
+                                [assistant_message("done")]])
+    lead = guard(Agent(name="lead", instructions="Lead.", model=lead_model,
+                       tools=[sub.as_tool("ask_sub", "Ask the sub agent.", hooks=Hooks()), whoami]))
+    with pitstop.workflow("wf", criticality="medium") as ctx:
+        result = await Runner.run(lead, "go", hooks=Hooks())
+        assert result.final_output == "done" and ctx.agent is None
+        hooks = Hooks()  # a handoff: on_agent_end only for the agent handed to
+        a, b = Agent(name="a"), Agent(name="b")
+        await hooks.on_agent_start(None, a)
+        await hooks.on_handoff(None, a, b)
+        await hooks.on_agent_start(None, b)
+        assert ctx.agent == "b"
+        await hooks.on_agent_end(None, b, "out")
+        assert ctx.agent is None
+    named = [r["payload"]["result"] for r in _events("tool_result") if r["name"] == "whoami"]
+    assert named == [repr("sub"), repr("lead")]
+
+
+async def test_tag_run_once_per_run(tmp_path, monkeypatch):
+    from contextlib import contextmanager
+
+    _init(tmp_path)
+    store = get_runtime().store
+    real = store.transaction
+    seen = []
+
+    class Spy:
+        def __init__(self, conn):
+            self._conn = conn
+
+        def execute(self, sql, *args):
+            seen.append(sql)
+            return self._conn.execute(sql, *args)
+
+        def __getattr__(self, attr):
+            return getattr(self._conn, attr)
+
+    @contextmanager
+    def transaction(*a, **k):
+        with real(*a, **k) as c:
+            yield Spy(c)
+
+    monkeypatch.setattr(store, "transaction", transaction)
+    for _ in range(2):
+        with pitstop.workflow("wf", criticality="medium") as ctx:
+            for _ in range(2):
+                agent = Agent(name="a", instructions="x", model=ScriptedModel([[assistant_message("done")]]))
+                await Runner.run(agent, "go", hooks=Hooks())
+        [run] = _db().execute("SELECT adapter FROM runs WHERE id=?", (ctx.run_id,)).fetchall()
+        assert run["adapter"] == "openai-agents"
+    assert len([s for s in seen if s.startswith("UPDATE runs SET adapter")]) == 2  # once per run
+
+
+def test_checked_invoker_keeps_signature():
+    import inspect
+
+    search, _ = _tools([])
+    original = search.on_invoke_tool
+    guard(Agent(name="a", instructions="x", tools=[search]))
+    assert search.on_invoke_tool is not original
+    assert inspect.signature(search.on_invoke_tool) == inspect.signature(original)
