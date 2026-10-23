@@ -123,8 +123,9 @@ def cmd_explain(args) -> None:
 
     rt = _runtime()
     target = explain_target(rt.store, args.drift_id)
-    if target is None or target["workflow"] is None:
-        console.print(f"no drift {args.drift_id}" if target is None else f"drift {args.drift_id} has no workflow")
+    if target is None or target["workflow"] is None or target["at"] is None:
+        console.print(f"no drift {args.drift_id}" if target is None else f"drift {args.drift_id} has no workflow"
+                      if target["workflow"] is None else f"drift {args.drift_id} has no time to compare around")
         sys.exit(1)
     a = attribute(rt.store, target["workflow"], target["at"], metric=target["metric"])
     console.print(escape(a.summary), soft_wrap=True)

@@ -13,8 +13,9 @@ serves its files, e.g. `/assets/*`; any other non-API GET gets `index.html` (the
 A missing `/assets/` file is 404, as is every unknown `/api` path (JSON, never `index.html`). Without an
 `index.html`, every non-API GET is a "Dashboard not built" page naming the build commands, and the API still works.
 
-`create_app` only builds the app; `pitstop ui` binds the socket and runs uvicorn. A `worker` is started and stopped
-with the app's lifespan and reported by `/api/health`."""
+The endpoints other than `/api/health` live in `routes.py` (each closes its thread's store connection when it
+returns; see there). `create_app` only builds the app; `pitstop ui` binds the socket and runs uvicorn. A `worker` is
+started and stopped with the app's lifespan and reported by `/api/health`."""
 from __future__ import annotations
 
 import asyncio
@@ -35,7 +36,9 @@ from ..budget.ledger import Ledger
 from ..sdk.runtime import Runtime
 from ..store import Store
 from ..userconfig import load_user_config
-from .models import Health, WorkerStatus
+from .models import Health
+from .routes import closes_connection, register
+from .views import worker_status
 from .worker import Worker
 
 log = logging.getLogger("pitstop.server")
@@ -150,10 +153,6 @@ def _is_api(path: str) -> bool:
     return path == "/api" or path.startswith("/api/")
 
 
-def worker_status(worker: Worker | None) -> WorkerStatus:
-    return WorkerStatus(enabled=False, running=False) if worker is None else WorkerStatus(**worker.status())
-
-
 def create_app(rt: Runtime, *, static_dir: Path | None = None, allowed_hosts: tuple[str, ...] = DEFAULT_HOSTS,
                worker: Worker | None = None) -> FastAPI:
     static_dir = Path(static_dir) if static_dir is not None else STATIC_DIR
@@ -187,10 +186,12 @@ def create_app(rt: Runtime, *, static_dir: Path | None = None, allowed_hosts: tu
     api = APIRouter(prefix="/api")
 
     @api.get("/health", response_model=Health)
+    @closes_connection(rt.store)
     def health() -> Health:
         return Health(ok=True, version=__version__, schema_version=rt.store.schema_version(), home=str(rt.home),
                       worker=worker_status(worker))
 
+    register(api, rt, worker)
     app.include_router(api)
     return app
 
