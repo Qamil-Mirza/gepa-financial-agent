@@ -138,11 +138,15 @@ def _static_response(static_dir: Path, path: str) -> Response | None:
         return HTMLResponse(NOT_BUILT_HTML)
     rel = path.lstrip("/")
     if rel:
-        root = static_dir.resolve()
-        target = (root / rel).resolve()
-        if not target.is_relative_to(root):
+        try:
+            root = static_dir.resolve()
+            target = (root / rel).resolve()
+            if not target.is_relative_to(root):
+                return None
+            is_file = target.is_file()
+        except (ValueError, OSError):  # e.g. a NUL byte (`/%00`): no such file
             return None
-        if target.is_file():
+        if is_file:
             return FileResponse(target)
         if rel.startswith("assets/"):
             return None

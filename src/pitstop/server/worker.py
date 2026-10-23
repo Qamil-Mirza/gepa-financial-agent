@@ -21,11 +21,13 @@ from ..store import Store
 
 log = logging.getLogger("pitstop.server")
 
+MAX_SCAN_EVERY_S = 86_400.0  # a day; `Event.wait` raises OverflowError above threading.TIMEOUT_MAX
+
 
 class Worker:
     def __init__(self, store: Store, *, scan_every_s: float = 60.0, digest_every_s: float = 3600.0):
         self.store = store
-        self.scan_every_s = float(scan_every_s)
+        self.scan_every_s = min(float(scan_every_s), MAX_SCAN_EVERY_S)  # the CLI rejects more; a backstop
         self.digest_every_s = float(digest_every_s)
         self._wake = threading.Event()
         self._thread: threading.Thread | None = None

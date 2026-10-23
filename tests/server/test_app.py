@@ -97,6 +97,15 @@ def test_spa_fallback_and_not_built_page(make_client, tmp_path):
     for sneaky in ("/assets/..%2F..%2Fsecret.txt", "/..%2Fsecret.txt", "/%2e%2e/secret.txt"):
         assert "outside the static dir" not in client.get(sneaky).text, sneaky
 
+
+def test_nul_in_static_path_is_404_without_traceback(make_client, tmp_path, caplog):
+    client = make_client(static_dir=_built(tmp_path))
+    for path in ("/%00", "/assets/%00", "/w%00x"):
+        r = client.get(path)
+        assert r.status_code == 404, (path, r.status_code, r.text)
+        assert r.headers["content-type"] == "application/json"
+    assert not [rec for rec in caplog.records if rec.levelname == "ERROR"]
+
     empty = tmp_path / "empty"
     empty.mkdir()
     client = make_client(static_dir=empty)

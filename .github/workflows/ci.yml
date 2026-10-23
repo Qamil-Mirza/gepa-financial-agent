@@ -31,6 +31,8 @@ jobs:
           cache: npm
           cache-dependency-path: ui/package-lock.json
       - run: npm --prefix ui ci
+      # the API types must match the committed OpenAPI schema
+      - run: npm --prefix ui run gen:api && git diff --exit-code ui/src/api/schema.d.ts
       - run: npm --prefix ui run typecheck
       - run: npm --prefix ui test -- --run
       - run: npm --prefix ui run build

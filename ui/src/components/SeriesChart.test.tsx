@@ -9,7 +9,7 @@ const found = changes.metrics.find((m) => m.name === "tokens_per_call");
 if (!found) throw new Error("fixture has no tokens_per_call metric");
 const tokens = found;
 
-function renderChart(labelMarkers = true) {
+function renderChart(labelMarkers = true, markers = changes.markers) {
   const router = createMemoryRouter(
     [
       {
@@ -18,7 +18,8 @@ function renderChart(labelMarkers = true) {
           <SeriesChart
             metric={tokens}
             points={changes.points}
-            markers={changes.markers}
+            markers={markers}
+            metrics={changes.metrics}
             labelMarkers={labelMarkers}
             xAxis
           />
@@ -64,6 +65,18 @@ describe("SeriesChart", () => {
     expect(figure).toHaveTextContent(/95 runs/);
     expect(figure).toHaveTextContent(/5,100 latest/);
     expect(figure).toHaveTextContent(/from 2,623 to 5,464/);
+  });
+
+  it("labels another metric's L2 alarm with that metric's label", () => {
+    const at = changes.points[10].started_at;
+    renderChart(true, [
+      { at, kind: "l2_alarm", metric: "cost_usd", run_id: changes.points[10].run_id, drift_id: 8 },
+      { at, kind: "l2_alarm", metric: "llm_calls", run_id: changes.points[10].run_id, drift_id: 9 },
+    ]);
+    const figure = screen.getByRole("figure", { name: /Tokens per call/ });
+    expect(figure).toHaveTextContent("L2 alarm: cost per run");
+    expect(figure).toHaveTextContent("L2 alarm: LLM calls");
+    expect(figure).not.toHaveTextContent("cost usd");
   });
 
   it("point click navigates to run", () => {

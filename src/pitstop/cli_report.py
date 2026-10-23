@@ -27,15 +27,22 @@ def workflow_names(store) -> list[str]:
         "SELECT workflow FROM runs WHERE workflow IS NOT NULL GROUP BY workflow ORDER BY MAX(started_at) DESC")]
 
 
+def latest_run(conn, wf: str, cols: str = "*"):
+    """The workflow's newest run with a numeric `started_at` (a text one would sort first in `ORDER BY started_at
+    DESC`); only when it has none, its newest run of any kind. None when it has no run."""
+    for guard in (" AND typeof(started_at) IN ('integer', 'real')", ""):
+        row = conn.execute(f"SELECT {cols} FROM runs WHERE workflow=?{guard} ORDER BY started_at DESC, rowid DESC"
+                           " LIMIT 1", (wf,)).fetchone()
+        if row is not None:
+            return row
+    return None
+
+
 def workflow_row(store, wf: str, day_start: float) -> dict | None:
     """One `pitstop status` row (also the dashboard tile's counts); None when `wf` has no run. `day_start` is the
     start of today (`_day_start`): runs today and today's agent-meter spend count from it."""
     conn = store.connect()
-    latest = conn.execute(
-        "SELECT criticality, status, budget_usd FROM runs WHERE workflow=? ORDER BY started_at DESC, rowid DESC"
-        " LIMIT 1",
-        (wf,),
-    ).fetchone()
+    latest = latest_run(conn, wf, "criticality, status, budget_usd")
     if latest is None:
         return None
     runs_today = conn.execute(

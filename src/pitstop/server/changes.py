@@ -1,7 +1,8 @@
 """What changed (decision 10): the L2 per-run metrics of a workflow's newest runs, and the markers to draw on them.
 
-Points are `run_metrics` of the newest `limit` (at most 200) runs that have metrics (refused and dropped runs have
-none; a run without metrics takes no slot, at most 5 x `limit` runs are examined), oldest first.
+Points are `run_metrics` of the newest `limit` (at most 200) finished runs that have metrics (refused and dropped runs
+have none; a run still in progress waits for its end, as `scan` does; a run without metrics takes no slot, at most
+5 x `limit` runs are examined), oldest first.
 Markers are inside the points' time range:
 
 - `model`, `base_url` and `prompt_versions` markers: the run's tag differs from the previous run of its workflow and
@@ -77,7 +78,8 @@ def change_series(store, workflow: str, *, limit: int = CHANGES_MAX) -> Changes:
     while len(points) < limit and examined < limit * EXAMINE_FACTOR:
         batch = conn.execute(
             "SELECT id, started_at, status, adapter, fallback_from, model, base_url, prompt_versions FROM runs"
-            f" WHERE workflow = ? AND {_NUMERIC} AND (status IS NULL OR status NOT IN ('refused', 'dropped'))"
+            f" WHERE workflow = ? AND {_NUMERIC} AND ended_at IS NOT NULL"
+            " AND (status IS NULL OR status NOT IN ('refused', 'dropped'))"
             " ORDER BY started_at DESC, rowid DESC LIMIT ? OFFSET ?", (workflow, limit, offset)).fetchall()
         for r in batch:
             examined += 1

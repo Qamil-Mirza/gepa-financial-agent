@@ -15,7 +15,7 @@ from pitstop.store import Store
 
 _KEYS = ("CRUSOE_API_KEY", "YDC_API_KEY", "PAGERDUTY_ROUTING_KEY", "OPSGENIE_API_KEY", "SLACK_WEBHOOK_URL",
          "PITSTOP_WEBHOOK_URL", "SMTP_PASSWORD")
-EXTRA_MSG = 'The dashboard needs the ui extra: pip install "pitstop[ui]"'
+EXTRA_MSG = 'The dashboard needs the ui extra: uv sync in the repo, or pip install "pitstop[ui]" once published'
 
 
 def _env(tmp_path) -> dict:
@@ -114,10 +114,50 @@ def test_ui_starts_server_worker_and_browser(capsys, monkeypatch):
     assert opened == []
     assert seen["app"].state.worker is None
 
-    main(["serve", "--host", "0.0.0.0", "--port", "0", "--no-worker"])
+    import pitstop.cli
+
+    real_listen = pitstop.cli._listen
+    bound = []
+    # a concrete non-loopback address, actually bound on loopback: no real LAN socket, no firewall prompt
+    monkeypatch.setattr(pitstop.cli, "_listen", lambda host, port: bound.append(host) or real_listen("127.0.0.1", 0))
+    main(["serve", "--host", "192.0.2.10", "--port", "0", "--no-worker"])
     seen["sockets"][0].close()
     out = capsys.readouterr().out
+    assert bound == ["192.0.2.10"]
     assert "shows prompts and tool arguments and has no authentication" in out
+    assert "PitStop dashboard: http://192.0.2.10:" in out
+
+
+@pytest.mark.parametrize("host", ["0.0.0.0", "::", "[::]"])
+def test_ui_refuses_wildcard_host(host, capsys, monkeypatch):
+    """A wildcard bind would only accept `Host: 0.0.0.0` (R10): refused before anything is bound."""
+    import uvicorn
+
+    import pitstop.cli
+
+    monkeypatch.setattr(pitstop.cli, "_listen", lambda *a, **k: pytest.fail("nothing may be bound"))
+    monkeypatch.setattr(uvicorn.Server, "run", lambda *a, **k: pytest.fail("the server must not start"))
+    with pytest.raises(SystemExit) as e:
+        main(["serve", "--host", host, "--port", "0", "--no-worker"])
+    assert e.value.code == 2
+    out = capsys.readouterr().out
+    assert (f"--host {host} would accept requests for any host name; pass a concrete address (e.g. this machine's "
+            "LAN IP). The dashboard has no login.") in out
+
+
+@pytest.mark.parametrize("value", ["86401", "1e9", "1e300"])
+def test_ui_rejects_huge_scan_every(value, capsys, monkeypatch):
+    """Above a day, the worker's sleep could overflow threading.TIMEOUT_MAX and kill its thread."""
+    import uvicorn
+
+    import pitstop.cli
+
+    monkeypatch.setattr(pitstop.cli, "_listen", lambda *a, **k: pytest.fail("nothing may be bound"))
+    monkeypatch.setattr(uvicorn.Server, "run", lambda *a, **k: pytest.fail("the server must not start"))
+    with pytest.raises(SystemExit) as e:
+        main(["serve", "--scan-every", value])
+    assert e.value.code == 2
+    assert "--scan-every" in capsys.readouterr().err
 
 
 def test_import_pitstop_without_fastapi(tmp_path):

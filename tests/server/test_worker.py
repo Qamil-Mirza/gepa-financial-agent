@@ -125,3 +125,22 @@ def test_worker_closes_its_connection_after_each_pass(tmp_path):
         assert _wait(lambda: store.open_connections() == 0)
     finally:
         worker.stop()
+
+
+def test_worker_clamps_a_huge_interval(tmp_path):
+    """`Event.wait` overflows above threading.TIMEOUT_MAX and would kill the thread; the CLI rejects such a value
+    and the worker clamps it as a backstop."""
+    import threading
+
+    from pitstop.server.worker import MAX_SCAN_EVERY_S
+
+    worker = Worker(Store(tmp_path / "p.db"), scan_every_s=1e300)
+    assert worker.status()["scan_every_s"] == MAX_SCAN_EVERY_S <= threading.TIMEOUT_MAX
+    worker.start()
+    try:
+        assert _wait(lambda: worker.status()["last_scan_at"] is not None)
+        time.sleep(0.05)
+        assert worker.status()["running"] is True  # still alive in its (clamped) sleep
+    finally:
+        worker.stop()
+    assert worker.status()["running"] is False

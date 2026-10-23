@@ -99,3 +99,11 @@ def test_runs_without_metrics_take_no_slot(rt, monkeypatch):
     got = [p.run_id for p in change_series(rt.store, "wf", limit=4).points]
     assert got == [runs[3], runs[4], runs[5], runs[9]]
     assert [p.run_id for p in change_series(rt.store, "wf", limit=100).points] == [r for r in runs if r not in empty]
+
+
+def test_running_run_is_not_a_point(rt, client):
+    """A run still in progress has partial metrics: it waits for its end, as `scan` does."""
+    runs = [_run(rt.store, i) for i in range(2)]
+    _run(rt.store, 2, ended_at=None, status=None)
+    assert [p.run_id for p in change_series(rt.store, "wf").points] == runs
+    assert [p["run_id"] for p in client.get("/api/changes", params={"workflow": "wf"}).json()["points"]] == runs

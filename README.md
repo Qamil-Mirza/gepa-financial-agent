@@ -143,6 +143,8 @@ Anthropic premium billing modes (fast speed, long-context premiums and server-to
 
 Only calls on the default `agent` meter feed drift detection and set the run's model. PitStop's own judge, supervisor and GEPA calls inside a run are metered against the budget but never counted as the agent's behavior; each `llm_call` event records its `meter`.
 
+Then run `uv run pitstop ui` to see your workflow on the pit wall: its open drifts, spend against budget and last run, with a live feed (setup in [Dashboard](#dashboard-pitstop-ui)).
+
 ### Pre-action gate
 
 Before a `@pitstop.tool(side_effects=True)` tool runs inside a `high` or `medium` workflow, and after the L0 checks let it through, a judge model is asked whether this one call serves the workflow's goal (and the agent's goal, if set). It sees the goals, the tool name, its arguments (first 2,000 characters) and the agent's last 5 tool calls; the prompt is frozen and versioned (`l1_gate_v2`). The arguments and the recent calls reach the judge inside `<tool_args>` and `<recent_calls>` blocks that the prompt treats as data, never as instructions; a `</` inside them is written as `<\/`, so a tool argument cannot close its block and smuggle in instructions. The judge endpoint receives the tool's name and arguments and the agent's last 5 tool calls; choose an endpoint you trust with that data. Read-only tools and `low` workflows are never gated. A "no" is recorded as an `out_of_scope_action` drift (P0) and the tool returns the usual `{"blocked_by": "pitstop", "reason": ...}` instead of running; on a `high` workflow the run also halts at its next call boundary. Every verdict is a `gate` event.
@@ -270,12 +272,15 @@ Times are UTC. `prompt_versions` reads as the run's prompt versions in JSON with
 
 ## Dashboard: `pitstop ui`
 
-A local dashboard over the same SQLite store the SDK writes. It needs the `ui` extra:
+A local dashboard over the same SQLite store the SDK writes. From a clone of the repo, build the UI once (Node 22) and start it:
 
 ```sh
-pip install "pitstop[ui]"      # from the repo: uv sync, then uv run pitstop ui
-pitstop ui                     # http://127.0.0.1:8787, opens your browser (--no-open to skip)
+uv sync                                           # pitstop, with the ui extra's packages (fastapi, uvicorn)
+npm --prefix ui ci && npm --prefix ui run build   # the dashboard, into src/pitstop/server/static/
+uv run pitstop ui                                 # http://127.0.0.1:8787, opens your browser (--no-open to skip)
 ```
+
+Without the build, the server answers with a "Dashboard not built" page that lists those two npm commands. Once PitStop is published, `pip install "pitstop[ui]"` installs it with the dashboard already built.
 
 `pitstop serve` is the same server without opening a browser. Both load a `.env` from the current directory like every pitstop command, and neither the server nor its worker makes a model call. An empty store shows a setup snippet and the demo command instead of the pit wall.
 
@@ -295,7 +300,7 @@ uv run python examples/quickstart/dashboard_demo.py --home /tmp/pitstop-demo
 PITSTOP_HOME=/tmp/pitstop-demo uv run pitstop ui
 ```
 
-**Host safety.** The server binds `127.0.0.1` and has no login. The dashboard shows prompts and tool arguments, so keep it on loopback. A non-loopback `--host` prints a warning and exposes the dashboard to that network. The server only accepts requests whose `Host` is a loopback name or the exact `--host` value: with `--host 0.0.0.0` you must browse to `0.0.0.0`, and reaching it by the machine's IP gets a 400. Writes (Dismiss) need an `X-PitStop: 1` header, and the server sends no CORS headers, so another web page cannot write to it. After startup the API returns no stack traces; a locked store answers 503.
+**Host safety.** The server binds `127.0.0.1` and has no login. The dashboard shows prompts and tool arguments, so keep it on loopback. A non-loopback `--host` prints a warning and exposes the dashboard to that network. A wildcard `--host` (`0.0.0.0`, `::`) is refused (exit 2): pass a concrete address, such as the machine's LAN IP, and browse to it. The server only accepts requests whose `Host` is a loopback name or the exact `--host` value; any other gets a 400. Writes (Dismiss) need an `X-PitStop: 1` header, and the server sends no CORS headers, so another web page cannot write to it. After startup the API returns no stack traces; a locked store answers 503.
 
 ## OpenAI Agents SDK
 

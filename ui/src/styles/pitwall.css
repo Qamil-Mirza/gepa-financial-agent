@@ -358,6 +358,8 @@
 
 .feed-workflow {
   color: var(--ink-2);
+  overflow-wrap: anywhere; /* a long unbroken workflow name wraps instead of scrolling the page at 390 px */
+  min-width: 0;
 }
 
 .feed-time {

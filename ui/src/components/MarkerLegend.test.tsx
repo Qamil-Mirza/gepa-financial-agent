@@ -3,7 +3,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { runHref } from "../routes";
 import { changes, explain, fetchStub } from "../test/fixtures";
-import { MarkerLegend, markerLabel } from "./MarkerLegend";
+import { MarkerLegend, markerLabel, metricWords } from "./MarkerLegend";
 
 function renderLegend() {
   const router = createMemoryRouter(
@@ -55,5 +55,13 @@ describe("MarkerLegend", () => {
     expect(markerLabel({ at: 0, kind: "prompt_versions", before: "a=1", after: "a=2" }, metrics)).toBe("prompts a=1 → a=2");
     expect(markerLabel({ at: 0, kind: "l2_alarm", metric: "tokens_per_call" }, metrics)).toBe("L2 alarm: tokens per call");
     expect(markerLabel({ at: 0, kind: "l2_alarm", metric: "odd_metric" }, metrics)).toBe("L2 alarm: odd metric");
+    expect(markerLabel({ at: 0, kind: "l2_alarm", metric: "llm_calls" }, metrics)).toBe("L2 alarm: LLM calls");
+  });
+
+  it("lowercases a label only when it is not an acronym", () => {
+    const metrics = changes.metrics;
+    expect(metricWords("llm_calls", metrics)).toBe("LLM calls");
+    expect(metricWords("cost_usd", metrics)).toBe("cost per run");
+    expect(metricWords("tokens_per_call", metrics)).toBe("tokens per call");
   });
 });

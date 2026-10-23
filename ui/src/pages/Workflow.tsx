@@ -131,6 +131,7 @@ function ChangesTab({ name }: { name: string }) {
             metric={m}
             points={data.points}
             markers={data.markers}
+            metrics={data.metrics}
             labelMarkers={i === 0}
             xAxis={i === charted.length - 1}
           />

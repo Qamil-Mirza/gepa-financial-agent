@@ -1,7 +1,8 @@
 // The pit wall before any run arrives: it teaches the few-lines setup instead of saying "nothing here".
 import { useEffect, useRef, useState } from "react";
 
-const INSTALL = 'pip install "pitstop[ui]"';
+const INSTALL = "uv sync";
+const PUBLISHED = 'pip install "pitstop[ui]"';
 const SNIPPET = [
   "import pitstop",
   "from openai import OpenAI",
@@ -64,7 +65,11 @@ export function EmptyState() {
       <ol className="steps">
         <li>
           <h2>Install</h2>
+          <p>In a clone of the PitStop repo:</p>
           <Code text={INSTALL} label="the install command" />
+          <p className="muted">
+            <code>{PUBLISHED}</code> once it is published.
+          </p>
         </li>
         <li>
           <h2>Wrap your client and name the workflow</h2>

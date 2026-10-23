@@ -6,7 +6,9 @@ describe("EmptyState", () => {
   it("EmptyState shows the setup snippet", () => {
     const { container } = render(<EmptyState />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("No workflows yet");
-    expect(screen.getByText('pip install "pitstop[ui]"')).toBeVisible();
+    expect(screen.getByText("uv sync")).toBeVisible();
+    const published = screen.getByText('pip install "pitstop[ui]"');
+    expect(published.parentElement).toHaveTextContent('pip install "pitstop[ui]" once it is published.');
     expect(screen.getByText("pitstop ui")).toBeVisible();
     expect(
       screen.getByText("python examples/quickstart/dashboard_demo.py --home /tmp/pitstop-demo"),

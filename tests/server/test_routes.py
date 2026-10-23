@@ -7,6 +7,7 @@ import time
 import pytest
 
 from pitstop.budget.ledger import Ledger
+from pitstop.cli_report import workflow_row
 from pitstop.sdk.runtime import Runtime, init
 from pitstop.store import Store
 from pitstop.userconfig import load_user_config
@@ -203,6 +204,7 @@ def test_endpoints_survive_malformed_rows(rt, client):
     add_drift(rt.store, "wf", ts=T0, level="P9", drift_type=None, kind=None, action=None, evidence=None)
     add_drift(rt.store, "wf", ts=None, level=None, drift_type="no-time", last_seen=None, evidence="[1, 2]")
     add_drift(rt.store, None, ts=T0, level="P2", drift_type="loose")
+    add_drift(rt.store, "wf", ts=T0, level=b"P1", drift_type="blob-level")  # a non-text level
     add_drift(rt.store, "wf", ts=T0, level="P1", drift_type="texty", run_id=texty)  # its alert text cannot be built
     add_ledger(rt.store, "wf", 0.5, ts=time.time())
 
@@ -217,6 +219,9 @@ def test_endpoints_survive_malformed_rows(rt, client):
     board = responses[0].json()
     assert {t["name"] for t in board["workflows"]} == {"wf", "nulls"}
     assert {t["name"]: t["flag"] for t in board["workflows"]}["nulls"] == "red"
+    tiles = {t["name"]: t for t in board["workflows"]}
+    assert tiles["wf"]["last_run"]["id"] == odd  # the newest numeric run, never the text-timed one
+    assert workflow_row(rt.store, "wf", 0.0)["last_status"] == "exploded"  # `pitstop status` agrees
     cards = {c["drift_type"]: c for c in client.get("/api/workflow", params={"name": "wf"}).json()["drifts"]}
     assert cards["texty"]["title"] == "[P1] wf: texty"
     assert cards["texty"]["cause"].startswith("Unknown")

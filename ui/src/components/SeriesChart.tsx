@@ -34,6 +34,8 @@ export interface SeriesChartProps {
   /** Every point of the tab (oldest first), one slot each; a run without this metric leaves its slot empty. */
   points: Point[];
   markers: Marker[];
+  /** The tab's metrics (`Changes.metrics`), so an L2 alarm on another metric reads by its label. */
+  metrics?: MetricInfo[];
   /** Draw the markers' words (the first chart of a stack). */
   labelMarkers?: boolean;
   /** Draw the time labels (the last chart of a stack). */
@@ -127,7 +129,7 @@ function placeLabels(markers: Marker[], metrics: MetricInfo[], xs: number[], lef
 
 type Active = { index: number; via: "pointer" | "key" } | null;
 
-export function SeriesChart({ metric, points, markers, labelMarkers = false, xAxis = false }: SeriesChartProps) {
+export function SeriesChart({ metric, points, markers, metrics, labelMarkers = false, xAxis = false }: SeriesChartProps) {
   const navigate = useNavigate();
   const wrap = useRef<HTMLDivElement>(null);
   const width = useWidth(wrap);
@@ -142,7 +144,7 @@ export function SeriesChart({ metric, points, markers, labelMarkers = false, xAx
   const slotX = (i: number) => left + (i + 0.5) * step; // a run's slot
   const edgeX = (i: number) => left + i * step; // the boundary before slot i
   const markerXs = markers.map((m) => edgeX(markerSlot(m, points)));
-  const placed = labelMarkers ? placeLabels(markers, [metric], markerXs, left, right) : [];
+  const placed = labelMarkers ? placeLabels(markers, metrics ?? [metric], markerXs, left, right) : [];
   const labelRows = placed.reduce((n, p) => Math.max(n, p.row + 1), 0);
   const plotTop = PAD.top + labelRows * LABEL_ROW;
   const plotBottom = plotTop + PLOT_H;

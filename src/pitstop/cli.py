@@ -271,7 +271,9 @@ def cmd_alerts(args) -> None:
         console.print("No digest sent: no new open P2/P3 drifts, or no digest channel is configured.")
 
 
-UI_EXTRA_MSG = 'The dashboard needs the ui extra: pip install "pitstop[ui]"'
+UI_EXTRA_MSG = 'The dashboard needs the ui extra: uv sync in the repo, or pip install "pitstop[ui]" once published'
+WILDCARD_HOST_MSG = ("--host {host} would accept requests for any host name; pass a concrete address (e.g. this "
+                     "machine's LAN IP). The dashboard has no login.")
 NO_AUTH_WARNING = ("Warning: listening on {host}, which is not a loopback address. The dashboard shows prompts and "
                    "tool arguments and has no authentication.")
 
@@ -281,6 +283,13 @@ def _is_loopback(host: str) -> bool:
         return True
     try:
         return ipaddress.ip_address(host.strip("[]")).is_loopback
+    except ValueError:  # a host name
+        return False
+
+
+def _is_wildcard(host: str) -> bool:
+    try:
+        return ipaddress.ip_address(host.strip("[]")).is_unspecified
     except ValueError:  # a host name
         return False
 
@@ -328,6 +337,9 @@ def cmd_ui(args) -> None:
     from .server.worker import Worker
 
     host = args.host
+    if _is_wildcard(host):  # the Host check would then accept only `Host: 0.0.0.0` (R10): refuse it
+        console.print(WILDCARD_HOST_MSG.format(host=host), markup=False, soft_wrap=True)
+        sys.exit(2)
     if not _is_loopback(host):
         console.print(NO_AUTH_WARNING.format(host=host), markup=False, soft_wrap=True)
     sock = _listen(host, args.port)
@@ -355,6 +367,15 @@ def _seconds(v: str) -> float:
     return s
 
 
+def _scan_every(v: str) -> float:
+    from .server.worker import MAX_SCAN_EVERY_S  # no fastapi: the worker module is plain Python
+
+    s = _seconds(v)
+    if s > MAX_SCAN_EVERY_S:  # the worker's sleep overflows threading.TIMEOUT_MAX on a huge value
+        raise argparse.ArgumentTypeError(f"must be at most {MAX_SCAN_EVERY_S:g} seconds (a day), got {v!r}")
+    return s
+
+
 def _port(v: str) -> int:
     n = int(v)
     if not 0 <= n <= 65535:
@@ -365,11 +386,11 @@ def _port(v: str) -> int:
 def _ui_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--host", default="127.0.0.1",
                    help="address to listen on (default 127.0.0.1; any other address exposes the dashboard, which "
-                        "has no login)")
+                        "has no login; a wildcard such as 0.0.0.0 is refused)")
     p.add_argument("--port", type=_port, default=8787, help="port to listen on (default 8787; 0 picks a free one)")
     p.add_argument("--no-worker", action="store_true", help="do not run the background scan and digest worker")
-    p.add_argument("--scan-every", type=_seconds, default=60.0, metavar="SECONDS",
-                   help="seconds between the worker's scan passes (default 60)")
+    p.add_argument("--scan-every", type=_scan_every, default=60.0, metavar="SECONDS",
+                   help="seconds between the worker's scan passes (default 60, at most 86400)")
 
 
 def main(argv: list[str] | None = None) -> None:

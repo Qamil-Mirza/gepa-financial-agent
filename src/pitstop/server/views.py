@@ -23,7 +23,8 @@ from dataclasses import fields
 from urllib.parse import urlsplit, urlunsplit
 
 from ..alerts.model import build_alert
-from ..cli_report import _day_start, budget_rows, drift_rows, explain_target, workflow_names, workflow_row
+from ..cli_report import (_day_start, budget_rows, drift_rows, explain_target, latest_run, workflow_names,
+                          workflow_row)
 from ..detect.attribution import attribute
 from ..detect.drifts import dismiss_drift
 from ..sdk import fallback
@@ -144,16 +145,11 @@ def _alert_text(store, drift: dict) -> tuple[str, str, str]:
 
 # -- pit wall --------------------------------------------------------------------------------------------------------
 
-def _latest_run(conn, workflow) -> sqlite3.Row | None:
-    return conn.execute("SELECT * FROM runs WHERE workflow=? ORDER BY started_at DESC, rowid DESC LIMIT 1",
-                        (workflow,)).fetchone()
-
-
 def _workflow_state(rt, workflow, day_start: float) -> tuple[Tile, tuple, sqlite3.Row, list[dict]] | None:
     """(tile, sort key, latest run, open drifts in `drift_rows` order) for a workflow; None when it has no run."""
     store = rt.store
     row = workflow_row(store, workflow, day_start)
-    latest = _latest_run(store.connect(), workflow)
+    latest = latest_run(store.connect(), workflow)
     if row is None or latest is None:
         return None
     drifts = drift_rows(store, workflow=workflow)
@@ -209,7 +205,7 @@ def feed(rt, *, limit: int = 50) -> list[FeedItem]:
     for d in conn.execute("SELECT id, ts, workflow, level, drift_type, run_id FROM drifts WHERE level IN ('P0', 'P1',"
                           " 'P2') AND typeof(ts) IN ('integer', 'real') ORDER BY ts DESC, id DESC LIMIT ?", (limit,)):
         items.append(FeedItem(id=f"drift:{d['id']}", ts=_num(d["ts"]), kind="drift", workflow=_str(d["workflow"]),
-                              level=d["level"], text=f"Drift opened: {d['drift_type'] or 'unknown'}",
+                              level=_str(d["level"]), text=f"Drift opened: {d['drift_type'] or 'unknown'}",
                               run_id=_str(d["run_id"]), drift_id=d["id"]))
     runs = conn.execute("SELECT id, workflow, started_at, status, model, base_url, adapter, fallback_from FROM runs"
                         f" WHERE {_NUMERIC} ORDER BY started_at DESC, rowid DESC LIMIT ?",
@@ -438,7 +434,7 @@ def settings(rt, worker=None) -> Settings:
     conn = rt.store.connect()
     workflows = []
     for wf in workflow_names(rt.store):
-        r = _latest_run(conn, wf)
+        r = latest_run(conn, wf)
         if r is not None:
             workflows.append(WorkflowSettings(name=str(wf), criticality=_str(r["criticality"]),
                                               sensitivity=_str(r["sensitivity"]), fix_mode=_str(r["fix_mode"]),

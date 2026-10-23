@@ -21,10 +21,11 @@ const KIND_SHORT: Record<Marker["kind"], string> = { model: "model", base_url: "
 
 const SOURCE_WORD: Record<string, string> = { sdk: "SDK runs", otel: "OTel runs" };
 
-/** The metric's label in lower case ("tokens per call"), from the tab's metric list or the identifier's words. */
+/** The metric's label in lower case ("tokens per call"), from the tab's metric list or the identifier's words. A
+ *  label that starts with an acronym keeps it ("LLM calls"). */
 export function metricWords(name: string, metrics: MetricInfo[]): string {
   const label = metrics.find((m) => m.name === name)?.label ?? words(name);
-  return label.charAt(0).toLowerCase() + label.slice(1);
+  return /^.\p{Ll}/u.test(label) ? label.charAt(0).toLowerCase() + label.slice(1) : label;
 }
 
 /** "model m-a → m-b", "endpoint (unset) → https://x", "prompts a=1 → a=2", "L2 alarm: tokens per call". */
