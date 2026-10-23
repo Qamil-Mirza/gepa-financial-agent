@@ -316,7 +316,7 @@ Each ends in something demoable. There is no deadline **(owner)**. Order (design
    - `wrap`, `workflow`, `tool`, `prompt`, the budget ledger, the OTel span processor, L0–L2 and L5, P0 alerts, plus the two framework adapters.
    - The example agent (financial research swarm) is wired in with a few lines and catches injected drift. A CLI (`pitstop status`, `pitstop drifts`) shows P-labeled drifts.
    - The owner's own Crusoe usage gets a $50 hard budget from day one (a global `period = "total"` budget, §3.2).
-3. **Dashboard.** Pit wall, run graph, what changed, runs, settings, all on real data from milestone 2. L3 run judge and L4 canaries land here, with the Endpoints page. **First end-to-end demo.**
+3. **Dashboard** (status: 3a done: server, worker, pit wall, workflow, run detail, settings; 3b next: L3, L4, Endpoints page; 3c: landing site, screenshots). Pit wall, run graph, what changed, runs, settings, all on real data from milestone 2. L3 run judge and L4 canaries land here, with the Endpoints page. **First end-to-end demo.**
 4. **Correction.** Managed prompts, replay, GEPA loop with gate, manual/auto modes, canary, rollback, Prompt versions tab.
 5. **Later (not designed here).** Remote collection over HTTP, more adapters (Google ADK, Claude Agent SDK, CrewAI), editing settings from the UI, a LiteLLM gateway plugin for teams that won't touch code.
 

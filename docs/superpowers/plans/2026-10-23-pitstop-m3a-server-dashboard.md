@@ -756,3 +756,22 @@ Design context: `.impeccable.md` and the mockups in `docs/superpowers/specs/2026
 | SDK runtime and tests (steer drift id, docstrings, dispatch and context tests, explain tests, finresearch grep, long lines) | 1, 2 |
 | Example (finresearch) items | 4 |
 | Docs: README TOC, long CHANGELOG bullet | 16 |
+
+## Carried to milestone 3b
+
+Items not done in 3a, each with its reason.
+
+- The opt-in `pitstop.side_effects` span attribute: a feature, deferred to "Later".
+- Async adapter hooks writing SQLite on the event loop: WAL writes are sub-millisecond, so this is revisited only on a report.
+- L2 streams and L5 windows mixing OTel and SDK runs of one workflow: by design (M2c decision 1). The dashboard separates sources in its change markers.
+- LangChain's "one observed event per model-node turn" and "a handler mixing wrapped and unwrapped calls hides the unwrapped one": documented as known limitations in the README.
+- `create_task` inside a marked call inheriting the guard mark: documented in `guard.py`, revisited with M4.
+- Attribution calling `run_metrics` per run: at most 100 small queries.
+- Refused runs counting in `pitstop status`: documented. The dashboard labels them "refused".
+- Upgrade Vitest to a major without the npm-audit advisories (`@vitest/mocker` moderate, `tinypool` critical; dev-only).
+- A quality series (judge pass rate) for What changed arrives with L3.
+- README screenshots and the hero GIF are 3c.
+
+### From the milestone 3a reviews
+
+(added after the final review)

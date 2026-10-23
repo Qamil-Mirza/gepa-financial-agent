@@ -14,7 +14,7 @@ Keep your agents on the racing line: drift detection and GEPA-powered prompt cor
 
 Agents drift in two ways. They go **off-task**: chasing a stale directive, looping, or reporting a figure their evidence does not support. Or they **degrade**: still on the right task, but quality, tool calls or cost quietly get worse after a model, provider or prompt change. Some drift needs action within seconds (an off-task call to a tool with side effects), some can wait for a weekly fix. Existing observability tools stop at the alert; PitStop is meant to also steer the agent back in the moment and rewrite the prompt that caused the drift.
 
-> **Status: pre-release.** Today the repo contains the drop-in Python SDK (drift detection, steering and hard dollar budgets), adapters for the OpenAI Agents SDK and LangChain, an OpenTelemetry span processor, the background `pitstop scan` pass, the CLI to inspect it, the research-swarm example watched by the SDK ([examples/financial-research](examples/financial-research/README.md)), the GEPA calibration tooling and benchmarks. The local dashboard and agent-prompt correction are on the [Roadmap](#roadmap).
+> **Status: pre-release.** Today the repo contains the drop-in Python SDK (drift detection, steering and hard dollar budgets), adapters for the OpenAI Agents SDK and LangChain, an OpenTelemetry span processor, the background `pitstop scan` pass, the CLI to inspect it, the local dashboard (`pitstop ui`, with a background scan worker), the research-swarm example watched by the SDK ([examples/financial-research](examples/financial-research/README.md)), the GEPA calibration tooling and benchmarks. The L3 run judge, L4 endpoint canaries and agent-prompt correction are on the [Roadmap](#roadmap).
 
 ## Contents
 
@@ -26,6 +26,7 @@ Agents drift in two ways. They go **off-task**: chasing a stale directive, loopi
   - [Alerts](#alerts)
   - [Background checks: `pitstop scan`](#background-checks-pitstop-scan)
   - [What changed?](#what-changed)
+- [Dashboard: `pitstop ui`](#dashboard-pitstop-ui)
 - [OpenAI Agents SDK](#openai-agents-sdk)
 - [LangChain / LangGraph](#langchain--langgraph)
 - [Already tracing with OpenTelemetry?](#already-tracing-with-opentelemetry)
@@ -35,6 +36,8 @@ Agents drift in two ways. They go **off-task**: chasing a stale directive, loopi
   - [One run of the research swarm](#one-run-of-the-research-swarm)
   - [Calibrating the detector prompt](#calibrating-the-detector-prompt)
 - [Where it's going (architecture)](#wheres-it-going-architecture)
+  - [Runtime](#runtime)
+  - [Detection, urgency and correction](#detection-urgency-and-correction)
 - [Repo map](#repo-map)
 - [Benchmarks](#benchmarks)
 - [Roadmap](#roadmap)
@@ -239,7 +242,7 @@ How a detector behaves:
 
 On an alarm, `scan` runs L5 attribution around the run where the shift began (see [What changed?](#what-changed)) and records a drift with action `record`, deduplicated with an open drift of the same workflow and drift type. The level follows the urgency table: `tool_call_breakage` and `refusal_spike` are P1 (P2 on `low` workflows), the others P2 (P3 on `low`). When the attribution names a `model`, `base_url` or `prompt_versions` change, the drift is raised to P1 (P2 on `low` workflows), never lowered. P0/P1 drifts alert right away, with the attribution summary as the "what likely changed" line; P2/P3 go in the digest.
 
-Run it from cron, or let it loop. The M3 server will run the same pass on a schedule.
+Run it from cron, let it loop, or let the [dashboard's worker](#dashboard-pitstop-ui) run it every minute.
 
 ```text
 $ uv run pitstop scan                 # one pass over up to 500 finished, unscanned runs
@@ -264,6 +267,35 @@ tokens_per_call mean: 120 over 30 runs before, 240 over 20 runs after
 ```
 
 Times are UTC. `prompt_versions` reads as the run's prompt versions in JSON with sorted keys (`{"researcher": 1}`), and a tag with no value before reads `(unset)`. When no tag changed, it prints `no run tag changed around <time>; likely an input or upstream shift`; with no earlier runs, `no runs before <time> to compare`. The mean line appears when the drift's evidence names a metric (`metric`); otherwise it prints how many runs were compared. An unknown drift id exits 1.
+
+## Dashboard: `pitstop ui`
+
+A local dashboard over the same SQLite store the SDK writes. It needs the `ui` extra:
+
+```sh
+pip install "pitstop[ui]"      # from the repo: uv sync, then uv run pitstop ui
+pitstop ui                     # http://127.0.0.1:8787, opens your browser (--no-open to skip)
+```
+
+`pitstop serve` is the same server without opening a browser. Both load a `.env` from the current directory like every pitstop command, and neither the server nor its worker makes a model call. An empty store shows a setup snippet and the demo command instead of the pit wall.
+
+- **Pit wall.** One tile per workflow, those that need you first, with its open drifts by level, spend against its budget and the last run's status, plus a live feed of drifts, halts, fallbacks, refused runs and model changes.
+- **Workflow page.** A Run graph tab (the agents, tools and calls of a time window or one run, with per-node latency and the checks that fired; click a node for its details), a What changed tab (cost, tokens and error series with markers where a model, base URL or prompt version changed) and a Runs tab. The right column lists the workflow's open drifts: **Explain** shows the L5 attribution (as `pitstop explain`) and **Dismiss** closes a drift. A later occurrence of the same finding opens a new one.
+- **Run detail.** One run's facts, graph and event timeline.
+- **Settings.** Read-only: the effective config (workflows, budgets, judge, alert channels and routes, worker, where data lives). Secrets show as the name of the env var and whether it is set, never the value. Change settings in `config.toml`.
+
+Quality scores and the Endpoints page arrive with the L3 run judge and L4 canaries (milestone 3b).
+
+**The worker replaces a cron `pitstop scan`.** While the server runs, a background worker runs `scan` every 60 seconds (`--scan-every SECONDS`) and the P2/P3 digest check hourly. `--no-worker` turns it off, for example when cron already runs `pitstop scan`.
+
+**Offline demo.** `dashboard_demo.py` records realistic runs through the real SDK with scripted models: no keys, no network. It refuses a home that already has a store.
+
+```sh
+uv run python examples/quickstart/dashboard_demo.py --home /tmp/pitstop-demo
+PITSTOP_HOME=/tmp/pitstop-demo uv run pitstop ui
+```
+
+**Host safety.** The server binds `127.0.0.1` and has no login. The dashboard shows prompts and tool arguments, so keep it on loopback. A non-loopback `--host` prints a warning and exposes the dashboard to that network. The server only accepts requests whose `Host` is a loopback name or the exact `--host` value: with `--host 0.0.0.0` you must browse to `0.0.0.0`, and reaching it by the machine's IP gets a 400. Writes (Dismiss) need an `X-PitStop: 1` header, and the server sends no CORS headers, so another web page cannot write to it. After startup the API returns no stack traces; a locked store answers 503.
 
 ## OpenAI Agents SDK
 
@@ -402,7 +434,7 @@ The code is in [benchmarks/calibration](benchmarks/calibration): `loop.py` runs 
 
 ## Where it's going (architecture)
 
-> **Planned (milestones 3–4).** This section describes the design, and the SDK and `pitstop scan` pieces of it that exist today are covered above. The server process, dashboard, L3, L4 and the correction loop do not exist yet. Full design: [docs/superpowers/specs/2026-10-20-pitstop-runtime-design.md](docs/superpowers/specs/2026-10-20-pitstop-runtime-design.md).
+> **Planned (milestones 3b–4).** This section describes the design. The SDK, `pitstop scan` and the local dashboard server are covered above. L3, L4 and the correction loop do not exist yet. Full design: [docs/superpowers/specs/2026-10-20-pitstop-runtime-design.md](docs/superpowers/specs/2026-10-20-pitstop-runtime-design.md).
 
 ### Runtime
 
@@ -461,12 +493,14 @@ src/pitstop/          the installable package (the SDK only) and the `pitstop` C
   sdk/adapters/       the OpenAI Agents SDK (openai_agents.py) and LangChain (langchain.py) adapters
   otel/               the OpenTelemetry span processor and the pitstop.verdict span events
   detect/             L0 checks, L1 gate, L2 per-run metrics and CUSUM, L5 attribution, spend spike, `scan`
+  server/             the local dashboard: FastAPI app and endpoints, run-graph and change views, the scan worker (`pitstop[ui]`)
   budget/             the budget ledger
   alerts/, store/     alert channels and routing, the SQLite store
   correct/            the GEPA engine (pitstop.correct.gepa) and its model clients
   llm.py              the OpenAI-compatible client used by the example and the benchmarks
   assets/prompts/     the L1 gate prompt
-examples/quickstart/  a keyless demo agent that shows steer-then-halt
+examples/quickstart/  a keyless demo agent that shows steer-then-halt, and dashboard_demo.py, which fills a home for the dashboard
+ui/                   the dashboard source (React, Vite, Node 22); built into src/pitstop/server/static/
 examples/financial-research/  the research-swarm example (package `finresearch`, CLI `finresearch`), a uv workspace member
   finresearch/agents/       research worker agents and the report synthesizer
   finresearch/supervisor/   drift supervisor: signals, LLM verdict + evidence validation, AlertPolicy, corrections
@@ -520,7 +554,7 @@ From the [design spec](docs/superpowers/specs/2026-10-20-pitstop-runtime-design.
 
 1. **Cleanup and restructure. Done.** One installable package, the example agent still runs, tests pass in one command.
 2. **SDK and detection. Done.** M2a: `wrap`, `workflow`, `agent`, `tool`, `prompt`, the hard-stop budget ledger, L0 detection with P0-P3 urgency, steer/block/halt actions, and the `pitstop status`, `pitstop drifts` and `pitstop budget` commands. M2b: hardened config and store (schema v4, migrations, `pitstop budget reconcile`), `wrap` for the OpenAI and Anthropic SDKs, the L1 pre-action gate, fallback to a pinned model, and P0/P1 alerts (PagerDuty, Opsgenie, Slack, email, webhook). M2c: refusing runs on a used-up budget and a P0 spend-spike halt, an OpenTelemetry span processor with verdicts as span events, OpenAI Agents SDK and LangChain/LangGraph adapters, L2 change-point statistics, L5 attribution (`pitstop explain`), the background `pitstop scan` pass, and the research swarm moved to `examples/financial-research/`.
-3. **Dashboard. Next.** Pit wall, run graph, what changed, runs and settings on real data, plus the L3 run judge and L4 endpoint canaries. The first end-to-end demo.
+3. **Dashboard. In progress.** 3a, done: `pitstop ui` / `pitstop serve` (a local server with a background scan worker, `pitstop[ui]`), the pit wall with a live feed, workflow page (run graph, what changed, runs, open drifts with Explain and Dismiss), run detail and read-only settings, call latency and agent parentage in the SDK, and an offline demo. 3b, next: the L3 run judge, L4 endpoint canaries, the watch budget and the Endpoints page. 3c: the landing site, README screenshots and a GIF.
 4. **Correction. Planned.** Managed prompts, replay, the GEPA loop with its gate, manual and auto modes, canary and rollback.
 5. **Later. Not designed yet.** Remote collection over HTTP, more framework adapters, editing settings from the UI, a LiteLLM gateway plugin.
 
