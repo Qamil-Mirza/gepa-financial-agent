@@ -237,7 +237,9 @@ class GraphNode(BaseModel):
     (for a leaf, its agent's). An agent's calls, cost and runs cover everything under it, and the root's too (its
     runs are every run in scope); their latency is not measured (null). `time_per_run_s` is the node's time over the
     runs in scope divided by their number, its unknown latencies counted at the mean of its known ones (an agent's:
-    the sum of its children's), null when nothing under it has a known latency.
+    the sum of its children's known times), null when nothing under it has a known latency. `time_partial` is true
+    when an agent's or the root's time sums only part of its children (one is unknown or partial itself): a lower
+    bound. A leaf is never partial.
     `run_ids` are the runs in scope that touched the node, newest first, at most 20."""
     id: str
     kind: Literal["workflow", "agent", "llm", "tool"]
@@ -248,6 +250,7 @@ class GraphNode(BaseModel):
     cost_usd: float
     latency_p50_s: float | None
     time_per_run_s: float | None
+    time_partial: bool
     verdicts: GraphVerdicts
     on_slowest_path: bool
     run_ids: list[str]

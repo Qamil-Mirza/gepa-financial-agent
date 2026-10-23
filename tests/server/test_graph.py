@@ -124,12 +124,17 @@ def test_otel_run_graph_uses_span_links(rt):
     # the parent span was never recorded (a framework's "other" span): the agent column places it
     _llm(s, run, "researcher", ts=T0 + 8, span_id="c4", parent_span_id="zz", model="m4")
     _llm(s, run, None, ts=T0 + 9, span_id="c5", parent_span_id="r0", model="m5")  # no agent: under the root
+    # a nested agent whose parent span was never recorded: the processor's `parent` places it
+    add_event(s, run, "agent", ts=T0 + 10, name="critic", agent="critic", span_id="e1", parent_span_id="chain",
+              payload={"parent": "researcher", "source": "otel"})
+    _llm(s, run, "critic", ts=T0 + 11, span_id="c6", parent_span_id="e1")
 
     g = build_graph(s, "wf", run_id=run)
     assert _edges(g) == {
         ("workflow", P), (P, "tool:planner|delegate"), (P, PR), (P, "llm:planner|m3"),
         (PR, "llm:planner › researcher|m1"), (PR, "llm:planner › researcher|m2"),
-        (PR, "llm:planner › researcher|m4"), ("workflow", "llm:|m5")}
+        (PR, "llm:planner › researcher|m4"), ("workflow", "llm:|m5"),
+        (PR, PR + " › critic"), (PR + " › critic", "llm:planner › researcher › critic|m1")}
 
 
 def test_node_stats(rt):
@@ -164,6 +169,7 @@ def test_node_stats(rt):
     assert (planner.calls, planner.runs, planner.latency_p50_s) == (7, 2, None)
     assert planner.cost_usd == pytest.approx(0.04)
     assert planner.time_per_run_s == pytest.approx(5.0)
+    assert (planner.time_partial, llm.time_partial, tool.time_partial) == (True, False, False)
     root = nodes["workflow"]
     assert (root.calls, root.runs, root.run_ids, g.runs_in_scope) == (7, 2, [b, a], 2)
     assert root.time_per_run_s == pytest.approx(5.0)
@@ -213,9 +219,13 @@ def test_slowest_path_follows_largest_child(rt):
     assert g.slowest_path == ["workflow", P, "tool:planner|search"]
     assert {n.id for n in g.nodes if n.on_slowest_path} == set(g.slowest_path)
     assert nodes[P].time_per_run_s == pytest.approx(6.0)
+    assert nodes[P].time_partial is False  # every child known
     assert nodes["agent:writer"].time_per_run_s == pytest.approx(4.0)
-    assert nodes["agent:idle"].time_per_run_s is None
+    assert nodes["agent:writer"].time_partial is True  # a lower bound: its draft tool's time is unknown
+    assert (nodes["agent:idle"].time_per_run_s, nodes["agent:idle"].time_partial) == (None, False)
     assert nodes["workflow"].time_per_run_s == pytest.approx(10.0)
+    assert nodes["workflow"].time_partial is True  # the writer is partial and the idle agent unknown
+    assert not any(n.time_partial for n in g.nodes if n.kind in ("llm", "tool"))
 
     empty = add_run(s, "quiet", started_at=T0)
     g = build_graph(s, "quiet", run_id=empty)
@@ -304,6 +314,7 @@ def test_graph_endpoint_errors(rt, client):
     assert (body["runs_in_scope"], body["window"], body["run_id"]) == (1, "24h", None)
     assert body["slowest_path"] == ["workflow", P, "llm:planner|m1"]
     assert {n["id"] for n in body["nodes"]} == {"workflow", P, "llm:planner|m1"}
+    assert not any(n["time_partial"] for n in body["nodes"])  # every latency known
     r = client.get("/api/graph", params={"workflow": "a/b", "run_id": run, "window": "7d"})
     assert r.status_code == 200 and r.json()["run_id"] == run
     r = client.get("/api/graph", params={"workflow": "a/b", "run_id": ""})  # an empty run_id scopes nothing

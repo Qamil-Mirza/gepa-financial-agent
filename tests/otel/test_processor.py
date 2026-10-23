@@ -460,3 +460,19 @@ def test_otel_events_have_latency(home):
     by_kind = {e["kind"]: json.loads(e["payload"]) for e in _events(run["id"])}
     assert by_kind["llm_call"]["latency_s"] >= 0 and by_kind["tool_result"]["latency_s"] >= 0
     assert "latency_s" not in by_kind["agent"] and root is not None
+
+
+def test_agent_event_names_its_parent_agent(home):
+    """An agent event carries its nearest agent ancestor's name, walking through spans PitStop does not record, so
+    the run graph can nest it when its parent span is unrecorded."""
+    tracer, _, _ = _tracing(workflow="w")
+    with tracer.start_as_current_span("root"):
+        with tracer.start_as_current_span("invoke_agent planner", attributes={**AGENT, "gen_ai.agent.name": "planner"}):
+            with tracer.start_as_current_span("chain"):  # an "other" span: never recorded
+                with tracer.start_as_current_span("invoke_agent researcher",
+                                                  attributes={**AGENT, "gen_ai.agent.name": "researcher"}):
+                    pass
+    [run] = _runs()
+    agents = {e["name"]: json.loads(e["payload"]) for e in _events(run["id"]) if e["kind"] == "agent"}
+    assert agents["researcher"]["parent"] == "planner"
+    assert agents["planner"]["parent"] is None  # "root" is no agent

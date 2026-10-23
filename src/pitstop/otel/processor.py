@@ -242,11 +242,12 @@ class SpanProcessor(_SdkSpanProcessor):
             if span_id in trace.spans or len(trace.spans) < MAX_SPANS_PER_TRACE:
                 trace.spans[span_id] = (parent_id, view.agent_name or span.name)
 
-    def _agent_of(self, trace: _Trace, span_id: int, parent_id: int | None) -> str | None:
-        """The nearest agent span's name, from this span up (bounded walk: a broken chain cannot loop)."""
+    def _agent_of(self, trace: _Trace, span_id: int, parent_id: int | None, *, above: bool = False) -> str | None:
+        """The nearest agent span's name, from this span up (from its parent up when `above`), walking through spans
+        PitStop does not record (bounded walk: a broken chain cannot loop)."""
         with self._lock:
             entry = trace.spans.get(span_id)
-            if entry is not None and entry[1] is not None:
+            if not above and entry is not None and entry[1] is not None:
                 return entry[1]
             cur = parent_id
             for _ in range(len(trace.spans) + 1):
@@ -272,7 +273,9 @@ class SpanProcessor(_SdkSpanProcessor):
         elif view.kind == "tool":
             findings = self._tool(trace, span, view, agent, link)
         else:
-            payload: dict[str, Any] = {"source": "otel"}
+            # its parent agent by name: the run graph nests it by this when its parent span was not recorded
+            payload: dict[str, Any] = {"parent": self._agent_of(trace, span_id, parent_id, above=True),
+                                       "source": "otel"}
             if view.error is not None:
                 payload["error"] = view.error
             self._event(trace, _seconds(span.start_time), agent, "agent", view.agent_name or span.name, payload,

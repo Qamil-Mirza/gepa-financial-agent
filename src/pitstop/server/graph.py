@@ -11,8 +11,9 @@ Where an event's agent sits:
   (run, parent, name); an event's `agent` column names its agent. A name entered under several parents in one run
   resolves to the one it was most recently entered under at the event's time (the first, before any).
 - OTel runs (`runs.adapter = 'otel'`) link events by span: an event's agent is the nearest `agent` event walking up
-  `parent_span_id`. When the walk leaves the recorded spans (a framework span PitStop does not record), the event's
-  `agent` column (the nearest agent span's name, resolved at record time) places it by name instead.
+  `parent_span_id`. When the walk leaves the recorded spans (a framework span PitStop does not record), names
+  resolved by the processor at record time place it instead, as in SDK runs: an `agent` event's `payload.parent`
+  (its nearest agent ancestor), another event's `agent` column (its nearest agent).
 - An event with no agent hangs directly under the root; an agent without an `agent` event under the root too.
 
 Only agent-meter `llm_call`s count: the judge's, supervisor's and correction calls are PitStop's own. Latency
@@ -57,6 +58,7 @@ class _Node:
     verdicts: dict[str, int] = field(default_factory=dict)
     children: set[str] = field(default_factory=set)
     time: float | None = None
+    partial: bool = False  # `time` sums only part of the children: a lower bound
 
 
 def _agent_id(path: tuple[str, ...]) -> str:
@@ -145,10 +147,10 @@ class _RunAgents:
         if e["id"] in self.memo:
             return self.memo[e["id"]]
         name = self.name_of(e)
+        parent, parent_path = None, None
         if self.otel:
             parent = self.nearest_agent(_str(e["parent_span_id"]), exclude=e)
-            parent_path = None
-        else:
+        if parent is None:  # SDK; or OTel when the walk leaves the recorded spans: the parent agent's name
             parent_name = _payload(e["payload"]).get("parent")
             parent_name = parent_name if isinstance(parent_name, str) else None
             parent = self.by_name_at(parent_name, e, exclude=e) if parent_name is not None else None
@@ -222,7 +224,9 @@ def _add_event(b: _Builder, e, path: tuple[str, ...], run_id: str) -> None:
 
 
 def _roll_up(b: _Builder, node: _Node, n_runs: int) -> None:
-    """Post-order: leaves get their time per run; agents and the root sum their subtree."""
+    """Post-order: leaves get their time per run; agents and the root sum their subtree. An agent's time sums its
+    children's known times; it is partial (a lower bound, never an unknown counted as 0) when a child's time is
+    unknown or partial itself. A leaf is never partial: its unknown latencies count at its known mean."""
     if node.kind in ("llm", "tool"):
         if node.latencies and n_runs:
             node.time = statistics.fmean(node.latencies) * node.timed / n_runs  # the known mean stands in for unknowns
@@ -236,7 +240,9 @@ def _roll_up(b: _Builder, node: _Node, n_runs: int) -> None:
         node.runs |= child.runs
         if child.time is not None:
             times.append(child.time)
+        node.partial = node.partial or child.time is None or child.partial
     node.time = sum(times) if times else None
+    node.partial = node.partial and node.time is not None
 
 
 def build_graph(store, workflow: str, *, run_id: str | None = None, window: str = "24h", now: float | None = None,
@@ -289,8 +295,8 @@ def build_graph(store, workflow: str, *, run_id: str | None = None, window: str 
         nodes.append(GraphNode(
             id=n.id, kind=n.kind, label=n.label, agent_path=list(n.path), calls=n.calls, runs=len(n.runs),
             cost_usd=n.cost, latency_p50_s=statistics.median(n.latencies) if n.latencies else None,
-            time_per_run_s=n.time, verdicts=GraphVerdicts(**n.verdicts), on_slowest_path=n.id in on_path,
-            run_ids=sorted(n.runs, key=order.__getitem__)[:RUN_IDS_MAX]))
+            time_per_run_s=n.time, time_partial=n.partial, verdicts=GraphVerdicts(**n.verdicts),
+            on_slowest_path=n.id in on_path, run_ids=sorted(n.runs, key=order.__getitem__)[:RUN_IDS_MAX]))
         for child_id in sorted(n.children):
             edges.append(GraphEdge(source=n.id, target=child_id))
             emit(b.nodes[child_id])
