@@ -8,13 +8,15 @@ app's guard turns a busy store into 503.
 
 Lists are bounded: the feed at FEED_MAX items, a runs page at RUNS_MAX runs, a workflow's drift cards at
 DRIFT_CARDS_MAX, a run's events at MAX_EVENTS. Secrets never leave: settings name env vars and say whether each is
-set, never its value, and URLs are shown without credentials, query or fragment."""
+set, never its value, and URLs are shown without credentials, query or fragment: run base_urls in runs and in the
+feed, and every URL in text built from them (alert causes, attribution summaries and tag changes)."""
 from __future__ import annotations
 
 import json
 import logging
 import math
 import os
+import re
 import sqlite3
 import time
 from dataclasses import fields
@@ -109,12 +111,27 @@ def redact_url(url: object) -> str | None:
     return urlunsplit((parts.scheme, netloc, parts.path, "", ""))
 
 
+_URL = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s()<>\"']+")
+_URL_TAIL = ".,;:!?"
+
+
+def redact_text(text: str) -> str:
+    """`text` with every URL in it passed through `redact_url`; sentence punctuation right after a URL is kept.
+    For text built from stored base_urls (alert causes, attribution summaries)."""
+    def redact(m: re.Match) -> str:
+        url = m.group(0)
+        stripped = url.rstrip(_URL_TAIL)
+        return (redact_url(stripped) or "") + url[len(stripped):]
+
+    return _URL.sub(redact, text)
+
+
 def _alert_text(store, drift: dict) -> tuple[str, str, str]:
-    """(title, cause, action) of the drift's alert. A drift whose alert cannot be built (a malformed row) gets a
-    plain title and says its cause is unknown."""
+    """(title, cause, action) of the drift's alert, URLs redacted (a cause names stored base_urls). A drift whose
+    alert cannot be built (a malformed row) gets a plain title and says its cause is unknown."""
     try:
         a = build_alert(store, drift["id"])
-        return a.title, a.cause, a.action
+        return a.title, redact_text(a.cause), redact_text(a.action)
     except sqlite3.Error:
         raise
     except Exception as e:
@@ -183,7 +200,9 @@ def feed(rt, *, limit: int = 50) -> list[FeedItem]:
     runs their `halt` and `fallback` events, refused runs and model changes. A model change is a run whose
     (model, base_url) differs from the previous run of its workflow and source (OTel or SDK, decision 10) that has a
     model and was not redirected to a fallback; the oldest run of each in the window has nothing to compare with.
-    The run window keeps every query index-backed on a large store: a halt in an older run is not shown."""
+    The run window keeps every query index-backed on a large store. When the window is full, every item (drifts
+    included) older than its oldest run is left out, so the feed may be shorter but never skips an item newer than
+    one it shows."""
     limit = max(1, min(int(limit), FEED_MAX))
     conn = rt.store.connect()
     items: list[FeedItem] = []
@@ -229,6 +248,9 @@ def feed(rt, *, limit: int = 50) -> list[FeedItem]:
             items.append(FeedItem(id=f"{e['kind']}:{e['id']}", ts=_num(e["ts"]), kind=e["kind"],
                                   workflow=_str(workflow_of.get(e["run_id"])), level=None, text=_one_line(text),
                                   run_id=_str(e["run_id"]), drift_id=None))
+    if len(runs) == FEED_RUN_WINDOW:  # older runs were not read: drop everything older than the window too
+        oldest = _num(runs[-1]["started_at"])
+        items = [i for i in items if i.ts is not None and oldest is not None and i.ts >= oldest]
     items.sort(key=lambda i: i.id)  # a stable tie-break for equal times
     items.sort(key=lambda i: i.ts if i.ts is not None else float("-inf"), reverse=True)
     return items[:limit]
@@ -271,10 +293,16 @@ def explain(rt, drift_id: int) -> Explain:
     if target["at"] is None:
         raise Unprocessable(f"drift {drift_id} has no time to compare around")
     a = attribute(rt.store, target["workflow"], target["at"], metric=target["metric"])
-    return Explain(summary=a.summary, metric=a.metric, before_mean=_num(a.before_mean),
+    return Explain(summary=redact_text(a.summary), metric=a.metric, before_mean=_num(a.before_mean),
                    after_mean=_num(a.after_mean), n_before=a.n_before, n_after=a.n_after, at=a.at,
-                   changes=[TagChange(tag=c.tag, before=c.before, after=c.after, share_before=c.share_before,
+                   changes=[TagChange(tag=c.tag, before=_tag_text(c.tag, c.before),
+                                      after=_tag_text(c.tag, c.after) or "", share_before=c.share_before,
                                       share_after=c.share_after) for c in a.changes])
+
+
+def _tag_text(tag: str, value: str | None) -> str | None:
+    """A run tag's value for the client: a base_url without credentials, query or fragment."""
+    return redact_url(value) if tag == "base_url" and value is not None else value
 
 
 # -- runs ------------------------------------------------------------------------------------------------------------

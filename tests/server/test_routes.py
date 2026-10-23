@@ -285,3 +285,35 @@ def test_responses_carry_no_raw_payload(rt, client, path):
     run = add_run(rt.store, "wf", started_at=T0)
     add_event(rt.store, run, "tool_result", ts=T0 + 1, name="t", payload={"result": "RAW-" + "y" * 5000})
     assert "y" * 300 not in client.get(path.format(run=run)).text  # at most a 300-character summary of it
+
+
+SECRET_URL = "https://user-x:pw-secret@host.example/v1?key=key-secret#frag-secret"
+URL_SECRETS = ("user-x", "pw-secret", "key-secret", "frag-secret")
+
+
+def test_run_base_url_secrets_never_reach_the_client(rt, client):
+    """A credentialed run base_url is redacted everywhere it surfaces: alert causes, explain, runs, feed."""
+    now = time.time()
+    for i in range(4):
+        add_run(rt.store, "wf", started_at=now - 600 + i, base_url="https://a/v1")
+    changed = [add_run(rt.store, "wf", started_at=now - 300 + i, base_url=SECRET_URL) for i in range(4)]
+    drift = add_drift(rt.store, "wf", ts=now - 200, level="P0", run_id=changed[-1],
+                      evidence=[{"run_id": changed[-1], "ts": now - 200,
+                                 "detail": {"change_at": now - 300, "metric": "llm_calls"}}])
+    lone = add_run(rt.store, "lone", started_at=now - 100, base_url=SECRET_URL)  # cause names its base_url
+    add_drift(rt.store, "lone", ts=now - 100, level="P1", run_id=lone)
+
+    responses = [client.get("/api/board"), client.get("/api/feed"), client.get(f"/api/drifts/{drift}/explain"),
+                 client.get("/api/runs"), client.get(f"/api/runs/{changed[-1]}"), client.get("/api/settings")]
+    responses += [client.get("/api/workflow", params={"name": n}) for n in ("wf", "lone")]
+    assert all(r.status_code == 200 for r in responses)
+    for r in responses:
+        for secret in URL_SECRETS:
+            assert secret not in r.text, (r.request.url, secret)
+    explain = responses[2].json()
+    assert {"tag": "base_url", "before": "https://a/v1", "after": "https://host.example/v1", "share_before": 0.0,
+            "share_after": 1.0} in explain["changes"]
+    assert "https://host.example/v1" in explain["summary"]
+    cause = responses[-2].json()["drifts"][0]["cause"]
+    assert "from https://a/v1 to https://host.example/v1 (" in cause  # the sentence around the URL is intact
+    assert "https://host.example/v1)." in responses[-1].json()["drifts"][0]["cause"]

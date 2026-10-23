@@ -235,3 +235,23 @@ def test_run_detail_caps_events(rt):
     d = run_detail(rt, run)
     assert MAX_EVENTS == 2000 and len(d.events) == 2000 and d.truncated is True
     assert d.events[0].ts == NOW  # the first 2,000
+
+
+def test_feed_never_skips_an_item_newer_than_one_it_shows(rt):
+    """Halts and refusals come from the newest FEED_RUN_WINDOW runs; once more runs than that started after a halt,
+    anything older than the window's oldest run is left out too, so the feed stays a newest-first prefix."""
+    from pitstop.server.views import FEED_RUN_WINDOW, feed
+
+    t = NOW - 100 * HOUR
+    old_drift = add_drift(rt.store, "wf", ts=t, level="P2")
+    halted = add_run(rt.store, "wf", started_at=t + 10, status="halted")
+    add_event(rt.store, halted, "halt", ts=t + 11, payload={"reason": "spend spike"})
+    assert [i.kind for i in feed(rt)] == ["halt", "drift"]  # within the window: both
+
+    with rt.store.transaction() as c:
+        c.executemany("INSERT INTO runs(id, workflow, started_at, status, model) VALUES (?,?,?,?,?)",
+                      [(f"later-{i:04d}", "wf", t + 100 + i, "ok", "m1") for i in range(FEED_RUN_WINDOW + 5)])
+    new_drift = add_drift(rt.store, "wf", ts=t + 100 + FEED_RUN_WINDOW, level="P1")
+    items = feed(rt)
+    assert [i.id for i in items] == [f"drift:{new_drift}"]  # the halt fell out of the window, so did the older drift
+    assert f"drift:{old_drift}" not in {i.id for i in items}
