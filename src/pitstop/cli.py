@@ -15,6 +15,7 @@ example's commands (run, check, compare, timeline, serve, demo) are on the `finr
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 import time
 from datetime import datetime
@@ -130,7 +131,8 @@ def _scan_once(store) -> None:
     from .detect.scan import scan
 
     report = scan(store)
-    console.print(f"scanned {report.runs} runs, {len(report.alarms)} alarms")
+    n = len(report.alarms)
+    console.print(f"scanned {report.runs} run{'' if report.runs == 1 else 's'}, {n} alarm{'' if n == 1 else 's'}")
     for a in report.alarms:
         console.print(escape(f"{a.level} {a.workflow} {a.drift_type} ({a.metric}): {a.summary}"), soft_wrap=True)
     console.file.flush()
@@ -261,8 +263,8 @@ def _minutes(v: str) -> float:
 
 def _seconds(v: str) -> float:
     s = float(v)
-    if not s > 0:  # also rejects nan
-        raise argparse.ArgumentTypeError(f"must be a positive number of seconds, got {v!r}")
+    if not (s > 0 and math.isfinite(s)):  # rejects nan and inf (time.sleep(inf) overflows)
+        raise argparse.ArgumentTypeError(f"must be a positive, finite number of seconds, got {v!r}")
     return s
 
 

@@ -215,6 +215,21 @@ def test_processor_never_raises_from_entry_points(home, monkeypatch):
     proc.shutdown()
 
 
+def test_span_read_failures_on_start_and_end_warn_once(home, monkeypatch, caplog):
+    tracer, _, proc = _tracing()
+
+    def boom(*a, **k):
+        raise RuntimeError("internal")
+
+    monkeypatch.setattr(processor_mod, "read_span", boom)
+    caplog.set_level(logging.WARNING, logger="pitstop")
+    with tracer.start_as_current_span("root"):
+        with tracer.start_as_current_span("chat", attributes=CHAT):
+            pass
+    warnings = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
+    assert warnings == ["pitstop: could not read an OpenTelemetry span; ignored"]
+
+
 def test_trace_without_genai_spans_writes_nothing(home):
     tracer, _, proc = _tracing(workflow="w")
     with tracer.start_as_current_span("GET /health"):

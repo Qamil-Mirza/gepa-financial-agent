@@ -9,6 +9,8 @@ import sys
 import threading
 from datetime import datetime, timezone
 
+import pytest
+
 from pitstop.detect.drifts import list_drifts
 from pitstop.detect.scan import ScanAlarm, ScanReport, scan
 from pitstop.store import Store
@@ -208,6 +210,20 @@ def test_scan_cli_once(tmp_path):
     assert lines[2].startswith("P1 wf cost_or_latency_creep (cost_usd): model changed from m1 to m2")
     again = _cli(tmp_path, "scan")
     assert again.returncode == 0 and again.stdout.splitlines() == ["scanned 0 runs, 0 alarms"]
+
+
+def test_scan_cli_counts_one_run_in_the_singular(tmp_path):
+    _runs(Store(tmp_path / "pitstop.db"), 1)
+    out = _cli(tmp_path, "scan")
+    assert out.returncode == 0, out.stdout + out.stderr
+    assert out.stdout.splitlines() == ["scanned 1 run, 0 alarms"]
+
+
+@pytest.mark.parametrize("every", ["inf", "nan", "0", "-1", "soon"])
+def test_scan_cli_rejects_a_bad_interval(tmp_path, every):
+    out = _cli(tmp_path, "scan", f"--every={every}")
+    assert out.returncode == 2
+    assert "--every" in out.stderr and "Traceback" not in out.stderr
 
 
 def test_scan_cli_every_loops_until_ctrl_c(tmp_path):

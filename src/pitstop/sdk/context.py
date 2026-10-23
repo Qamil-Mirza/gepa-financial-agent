@@ -392,13 +392,14 @@ class _Workflow(_Scope):
     def _exhausted(self) -> BudgetExceeded | None:
         """The used-up budget that refuses this run at its start (spec 3.2), else None: the workflow's own budget,
         a global budget without base_url, or the global budget for the endpoint of the workflow's previous run
-        that made a call (a refused run has none); an endpoint the run has not used yet halts at its first call. A store or ledger error is logged
-        and the run starts (fail open); an invalid config still fails closed."""
+        that made a call (a refused run has none; a run observed through OpenTelemetry never counts); an endpoint
+        the run has not used yet halts at its first call. A store or ledger error is logged and the run starts
+        (fail open); an invalid config still fails closed."""
         try:
             rt = get_runtime()
             row = rt.store.connect().execute(
                 "SELECT base_url FROM runs WHERE workflow=? AND base_url IS NOT NULL"
-                " ORDER BY started_at DESC LIMIT 1", (self.spec.name,)).fetchone()
+                " AND (adapter IS NULL OR adapter != 'otel') ORDER BY started_at DESC LIMIT 1", (self.spec.name,)).fetchone()
             return rt.ledger.exhausted(workflow=self.spec.name, workflow_budget_usd=self.spec.budget_usd,
                                        base_url=row["base_url"] if row is not None else None)
         except ConfigInvalid as e:

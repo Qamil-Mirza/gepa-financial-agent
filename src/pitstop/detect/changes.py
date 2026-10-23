@@ -23,8 +23,10 @@ def recent_change(store, workflow: str, run_id: str, *, ignore_model: str | None
     """The change of (model, base_url) that run `run_id` is on, if it happened within CHANGE_WINDOW_S.
 
     Earlier runs of the workflow (started no later than this one) are walked newest first, skipping runs with no
-    model, runs whose agent calls were redirected to the pinned fallback (`runs.fallback_from` set) and runs on
-    `ignore_model`: a fallback run is not a setup of its own, whether or not the fallback is still active. The
+    model, runs whose agent calls were redirected to the pinned fallback (`runs.fallback_from` set), runs observed
+    through OpenTelemetry (adapter `otel`: their model is the response's and their base_url is built from
+    `server.address`) and runs on `ignore_model`: a fallback run is not a setup of its own, whether or not the
+    fallback is still active. The
     first run on a different (model, base_url) is the previous setup; the model is compared first, then the
     base_url. `at` is when the current setup started: the earliest run on it after the previous one. None when
     this run has no model yet, no earlier setup differs, or the change is older than the window."""
@@ -37,7 +39,7 @@ def recent_change(store, workflow: str, run_id: str, *, ignore_model: str | None
     at = cur["started_at"]
     earlier = conn.execute(
         "SELECT id, model, base_url, started_at FROM runs WHERE workflow=? AND id<>? AND model IS NOT NULL"
-        " AND fallback_from IS NULL"
+        " AND fallback_from IS NULL AND (adapter IS NULL OR adapter != 'otel')"
         " AND (started_at < ? OR (started_at = ? AND rowid < ?)) ORDER BY started_at DESC, rowid DESC",
         (workflow, run_id, at, at, cur["rowid"]))
     for prev in earlier:  # a cursor: stops reading at the first decisive row

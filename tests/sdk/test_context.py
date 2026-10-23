@@ -650,6 +650,23 @@ def test_endpoint_budget_checked_from_previous_run(tmp_path):
             pass
 
 
+def test_endpoint_budget_ignores_otel_runs(tmp_path):
+    import time
+
+    (tmp_path / "config.toml").write_text(_FLAT + f'[budgets.a]\nlimit_usd = 1.0\nperiod = "total"\nbase_url = "{_A}"\n')
+    pitstop.init(home=tmp_path)
+    _spend(1.0, base_url=_A)
+    with get_runtime().store.transaction() as c:
+        c.execute("INSERT INTO runs(id, workflow, started_at, ended_at, status, base_url) VALUES (?,?,?,?,?,?)",
+                  ("prev-sdk", "wf", time.time(), time.time(), "ok", _B))
+        # a later observed run on A: OTel spend never reaches the ledger, so it never decides a refusal
+        c.execute("INSERT INTO runs(id, workflow, started_at, ended_at, status, base_url, adapter)"
+                  " VALUES (?,?,?,?,?,?,?)", ("otel-1", "wf", time.time() + 1, time.time() + 1, "ok", _A, "otel"))
+    with workflow("wf") as ctx:
+        pass
+    assert _row(ctx.run_id)["status"] == "ok"
+
+
 def test_refusal_check_fails_open(tmp_path, monkeypatch, caplog):
     import sqlite3
 

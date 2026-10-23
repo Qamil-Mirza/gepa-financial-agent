@@ -260,7 +260,8 @@ CHAT: Shape = _ChatShape()
 _TERMINAL = frozenset({"response.completed", "response.incomplete", "response.failed"})
 _UNFINISHED = frozenset({"queued", "in_progress"})
 # With `previous_response_id` or `conversation`, the provider bills the earlier turns as input, but they are not in
-# the request: the prompt estimate adds this many tokens for them (over-counted, never under-counted).
+# the request: the prompt estimate adds this many tokens for them, which covers most conversations; a longer history
+# can still be under-reserved, and the call settles from the provider's real usage.
 PRIOR_CONTEXT_TOKENS = 32_000
 # Output items for tools the provider runs itself. Recorded as tool calls named by their type (an mcp_call by its
 # own `name`), with arguments "".

@@ -114,6 +114,27 @@ def test_off_scope_tool_blocked_with_tool_message(tmp_path):
     assert row["adapter"] == "langchain"
 
 
+async def test_blocked_tool_call_without_an_id_returns_a_tool_message(tmp_path):
+    from types import SimpleNamespace
+
+    _init(tmp_path)
+    mw = PitStopMiddleware(side_effects={"send_email"})
+    request = SimpleNamespace(tool_call={"name": "send_email", "args": {"to": "x@evil.test", "body": "hi"}})
+
+    def handler(_):
+        raise AssertionError("a blocked call never reaches the tool")
+
+    async def ahandler(_):
+        raise AssertionError("a blocked call never reaches the tool")
+
+    with pitstop.workflow("wf", goal="Research NVIDIA", tools=("search",)):
+        tm = mw.wrap_tool_call(request, handler)
+        atm = await mw.awrap_tool_call(request, ahandler)
+    for m in (tm, atm):
+        assert isinstance(m, ToolMessage) and m.status == "error" and m.tool_call_id == ""
+        assert "out_of_scope_action" in m.content
+
+
 def test_loop_steers_then_halts(tmp_path):
     _init(tmp_path)
     calls = []

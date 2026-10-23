@@ -110,6 +110,28 @@ def test_base_url_only_change_does_not_engage_fallback(tmp_path):
     assert _events("fallback") == []
 
 
+def test_otel_run_on_another_model_does_not_engage_fallback(tmp_path):
+    import time
+
+    _init(tmp_path)
+    fake = FakeOpenAI([_ok()] + [_bad() for _ in range(5)])
+    w = pitstop.wrap(fake)
+    with workflow("wf", fallback_model=FALLBACK):
+        w.chat.completions.create(model=MODEL_A, messages=MSGS)
+    with get_runtime().store.transaction() as c:  # the same workflow observed through OpenTelemetry
+        c.execute("INSERT INTO runs(id, workflow, started_at, ended_at, status, model, base_url, adapter)"
+                  " VALUES (?,?,?,?,?,?,?,?)", ("otel-1", "wf", time.time(), time.time(), "ok", MODEL_B,
+                                                "https://api.other.example", "otel"))
+    with workflow("wf", fallback_model=FALLBACK):
+        for _ in range(5):
+            w.chat.completions.create(model=MODEL_A, messages=MSGS)
+    assert [c["model"] for c in fake.calls] == [MODEL_A] * 6
+    [drift] = list_drifts(get_runtime().store)
+    assert (drift["drift_type"], drift["level"], drift["action"]) == ("tool_call_breakage", "P1", "record")
+    assert fallback.active(get_runtime().store, "wf") is None
+    assert _events("fallback") == []
+
+
 def test_fallback_from_unset_model(tmp_path):
     _init(tmp_path)
     _activate()

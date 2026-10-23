@@ -12,10 +12,11 @@ def store(tmp_path):
 
 
 def _run(store, run_id, *, workflow="wf", model="m-a", base_url="https://a.example/v1", started_at=1.0,
-         fallback_from=None):
+         fallback_from=None, adapter=None):
     with store.transaction() as c:
-        c.execute("INSERT INTO runs(id, workflow, started_at, status, model, base_url, fallback_from)"
-                  " VALUES (?,?,?,?,?,?,?)", (run_id, workflow, started_at, "ok", model, base_url, fallback_from))
+        c.execute("INSERT INTO runs(id, workflow, started_at, status, model, base_url, fallback_from, adapter)"
+                  " VALUES (?,?,?,?,?,?,?,?)",
+                  (run_id, workflow, started_at, "ok", model, base_url, fallback_from, adapter))
 
 
 def test_recent_change_detects_model_and_base_url(store):
@@ -74,6 +75,16 @@ def test_fallback_runs_are_not_a_setup(store):
     _run(store, "r4", model="m-b", started_at=4.0)  # the fallback was cleared
     # no ignore_model needed: r3 is skipped by its fallback_from, so r4 is still on the m-a -> m-b change
     assert recent_change(store, "wf", "r4", now=NOW) == Change("model", "m-a", "m-b", "r1", 2.0)
+
+
+def test_otel_runs_are_not_a_setup(store):
+    _run(store, "r1", model="m-a", started_at=1.0)
+    # an observed run of the same workflow: its response model and https://<server.address> are not a setup
+    _run(store, "o2", model="m-other", base_url="https://api.other.example", started_at=2.0, adapter="otel")
+    _run(store, "r3", model="m-a", started_at=3.0)
+    assert recent_change(store, "wf", "r3", now=NOW) is None
+    _run(store, "r4", model="m-b", started_at=4.0)
+    assert recent_change(store, "wf", "r4", now=NOW) == Change("model", "m-a", "m-b", "r3", 4.0)
 
 
 def test_recent_change_none_without_history_or_change(store):

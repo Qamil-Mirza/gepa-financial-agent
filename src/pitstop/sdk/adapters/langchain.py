@@ -247,8 +247,9 @@ def _call_of(request: Any) -> tuple[str, Any, str]:
 
 
 def _refusal(reply: Any, name: str, call_id: Any) -> ToolMessage:
-    """The ToolMessage a blocked or steered call returns to the model instead of the tool's result."""
-    return ToolMessage(content=_reply_text(reply), tool_call_id=call_id, name=name, status="error")
+    """The ToolMessage a blocked or steered call returns to the model instead of the tool's result (a tool call
+    without an id gets "": ToolMessage requires a string)."""
+    return ToolMessage(content=_reply_text(reply), tool_call_id=call_id or "", name=name, status="error")
 
 
 def _record_result(ctx: RunContext, name: str, result: Any, agent: str | None) -> None:

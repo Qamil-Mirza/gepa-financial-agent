@@ -157,10 +157,11 @@ def _mark_scanned(store, run_id: str) -> bool:
 
 
 def _record(store, p: _Pending) -> ScanAlarm:
-    """Attribute the alarm, record the drift and queue its alert; a failure is logged (drift_id None)."""
-    a, summary, drift_id = p.alarm, "", None
-    level = classify(p.spec.drift_type, p.criticality, False)
+    """Attribute the alarm, record the drift and queue its alert; a failure is logged (drift_id None, and P2 if
+    the level itself could not be classified)."""
+    a, summary, drift_id, level = p.alarm, "", None, Level.P2
     try:
+        level = classify(p.spec.drift_type, p.criticality, False)
         attribution = attribute(store, p.workflow, a.at, metric=p.metric)
         summary = attribution.summary
         if explains_change(attribution):

@@ -98,13 +98,13 @@ class SpanProcessor(_SdkSpanProcessor):
                 return
             self._start(span)
         except Exception:
-            self._warn("start", "pitstop: could not read an OpenTelemetry span; ignored")
+            self._warn("span", "pitstop: could not read an OpenTelemetry span; ignored")
 
     def on_end(self, span: ReadableSpan) -> None:
         try:
             self._end(span)
         except Exception:
-            self._warn("end", "pitstop: could not read an OpenTelemetry span; ignored")
+            self._warn("span", "pitstop: could not read an OpenTelemetry span; ignored")
 
     def shutdown(self) -> None:
         try:
@@ -195,7 +195,7 @@ class SpanProcessor(_SdkSpanProcessor):
             try:
                 self._record(trace, span, read_span(span.name, span.attributes or {}, error))
             except Exception:
-                self._warn("end", "pitstop: could not read an OpenTelemetry span; ignored")
+                self._warn("span", "pitstop: could not read an OpenTelemetry span; ignored")
         if is_root and trace.inserted:
             self._write("UPDATE runs SET ended_at=?, status=? WHERE id=?",
                         (_seconds(span.end_time), "error" if error else "ok", trace.run_id))
