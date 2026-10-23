@@ -854,3 +854,23 @@ def scan(store, *, limit: int = 500) -> ScanReport: ...
 | Fork test `waitpid` timeout; unexited manager in a test | Task 1 |
 | CHANGELOG L1 sentence | Task 5 |
 | `budget reconcile` docstring | No action needed (fixed in M2b) |
+
+---
+
+## Carried to milestone 3 (recorded at the end of execution)
+
+These came out of the task reviews and the final whole-branch review. The M3 plan must cover or explicitly drop them. GEPA items stay with milestone 4 (decision 11).
+
+- **Open from the final review (residual):** the OTel filter added to `recent_change` also hides other OTel runs when building the alert cause for an OTel run's own drift, so an OTel-only workflow's alert can say "No model or provider change detected" when the model did change. Compare like with like (exclude OTel history only when the current run is not OTel) and add an alert-cause test.
+- **Run sources sharing a workflow name:** an OTel run's response model (dated snapshot) vs an SDK run's requested model can read as a model change in alert causes; L2 streams and L5 windows mix OTel and SDK runs of one workflow by design (decision 1) — revisit when the dashboard shows them side by side.
+- **Server-owned scan:** `notify(drift_id)` resolves against the SDK runtime's store, not the `store` passed to `scan` (add `store=`); an unrecorded P0 page waits the 5 s busy timeout per channel when the store is locked (send first, record after).
+- **OTel processor:** agent identity is read from start-time attributes only; a GenAI child ending concurrently with its root can lazy-insert a run left `running`; no multi-threaded span-end test; an opt-in `pitstop.side_effects` span attribute; unrecorded-P0 logging outside the once-per-key gate.
+- **Adapters:** Agents SDK — `on_agent_end` clears rather than restores the framework agent name (nested `as_tool` runs, concurrent runs in one scope share a name); `_CheckedInvoker` should forward `__signature__`; `_tag_run` writes at every agent start. LangChain — observed events are named by the response's model name; one observed event per model-node turn; a handler mixing wrapped and unwrapped calls hides the unwrapped one; `langgraph` is imported directly but only arrives through `langchain`; the concurrent observed test relies on a 0.3 s sleep. Both — async hooks write SQLite on the event loop.
+- **Guard:** a nested same-name tool skips the gate for inner calls with different args, and `create_task` inside a marked call inherits the mark; `emit_verdict` retries the failing import when OTel is missing.
+- **L2/L5/scan:** a failed attribution prints an alarm line with an empty summary; the L5 summary with no runs after the change point reads like "no tag changed"; `run_metrics` is called per run in attribution; negative `duration_s` on clock skew; `pitstop budget reconcile --older-than-min inf` is accepted.
+- **Budgets:** the refused-run alert cause reads "model unknown at base_url unknown" (name the budget instead); refused rows count as runs in `pitstop status` (documented).
+- **Alerts and gate:** no test for the store-refused branch of `notify_unrecorded`; `SMTPRecipientsRefused` with all-4xx codes is treated as permanent and `SSLCertVerificationError` is retried; near-miss closers (`< /tool_args>`, full-width) are not escaped by gate v2.
+- **wrap:** a mixed `[int, str]` completions prompt counts bare ints as 0.
+- **SDK runtime and tests:** the steer-limit halt can attach the steer's drift id to a halt whose reason came from elsewhere; `_unhooked` docstring should say a skipped-cleanup inner async generator is never finalized; `open_connections()` counts connections closed directly; a dispatch test half never asserts its failing job ran; a context test replaces the loop exception handler without restoring it; an explain test for exit 2 and workflow-less drifts; a static grep for `finresearch` in `src/pitstop`; a few lines over 120 characters.
+- **Example (finresearch):** the worker sees PitStop's raw block text; `--offline` silently ignores `--no-report`/`--mode`/`--cache-dir`/`--max-research-calls`; `--prompt` has no alias; under `watch=False` a halted benchmark run no longer fails loudly; the research tool decorator is applied per call; `--max-corrections` help; the example's pyproject omits `python-dotenv`.
+- **Docs:** the README TOC omits the "Where it's going" subsections; one long CHANGELOG swarm bullet.
