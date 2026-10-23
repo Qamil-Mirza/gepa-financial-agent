@@ -148,9 +148,10 @@ def record_tool_result(ctx: RunContext, tool: str, *, result: Any = None, error:
     """Record a `tool_result` event: the error's repr when `error` is given, else the result's (capped)."""
     who = agent if agent is not None else ctx.agent
     mark = _checked.get().get((ctx.run_id, tool))
+    payload = {"error": _summ(error)} if error is not None else {"result": _summ(result)}
     if mark is not None:
         mark.recorded = True
-    payload = {"error": _summ(error)} if error is not None else {"result": _summ(result)}
+        payload["latency_s"] = round(time.monotonic() - mark.started, 4)
     _safe(lambda: _event(ctx, "tool_result", tool, payload, who))
 
 

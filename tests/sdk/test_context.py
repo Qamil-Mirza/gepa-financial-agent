@@ -723,3 +723,33 @@ async def test_framework_agent_names_the_calling_scope(tmp_path):
 
 async def _name(name):
     current_run().set_framework_agent(name)
+
+
+def _agent_events():
+    import json
+
+    rows = get_runtime().store.connect().execute("SELECT * FROM events WHERE kind='agent' ORDER BY id").fetchall()
+    return [(r["name"], r["agent"], json.loads(r["payload"])) for r in rows]
+
+
+def test_agent_scope_writes_agent_event_with_parent(tmp_path):
+    pitstop.init(home=tmp_path)
+    with workflow("wf"), agent("a"):
+        with agent("b"):
+            pass
+    assert _agent_events() == [("a", "a", {"parent": None, "source": "sdk"}),
+                               ("b", "b", {"parent": "a", "source": "sdk"})]
+
+
+def test_framework_agent_event_once(tmp_path):
+    pitstop.init(home=tmp_path)
+    with workflow("wf") as ctx:
+        with agent("outer"):
+            ctx.set_framework_agent("fw")
+            ctx.set_framework_agent("fw")
+            ctx.push_framework_agent("fw")
+        ctx.set_framework_agent("top")
+        ctx.set_framework_agent(None)
+    assert _agent_events() == [("outer", "outer", {"parent": None, "source": "sdk"}),
+                               ("fw", "fw", {"parent": "outer", "source": "sdk"}),
+                               ("top", "top", {"parent": None, "source": "sdk"})]

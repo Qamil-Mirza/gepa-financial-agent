@@ -441,3 +441,14 @@ async def test_overlapping_runs_leave_no_stale_name(tmp_path, shared):
         assert ctx.agent == "A"
         await ha.on_agent_end(None, a, "out")
         assert ctx.agent is None
+
+
+async def test_hooks_named_agent_writes_one_agent_event(tmp_path):
+    _init(tmp_path)
+    calls = []
+    model = ScriptedModel([_call("search", {"q": "x"}, 1), [assistant_message("done")]])
+    agent = Agent(name="researcher", instructions="Research.", model=model, tools=list(_tools(calls)))
+    with pitstop.workflow("wf"), pitstop.agent("lead"):
+        await Runner.run(agent, "go", hooks=Hooks())
+    evs = [(e["name"], e["payload"]) for e in _events("agent") if e["name"] == "researcher"]
+    assert evs == [("researcher", {"parent": "lead", "source": "sdk"})]

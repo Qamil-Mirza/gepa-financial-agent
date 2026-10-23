@@ -1,6 +1,6 @@
 import json
 
-from pitstop.detect.drifts import MAX_EVIDENCE, list_drifts, record_drift
+from pitstop.detect.drifts import MAX_EVIDENCE, dismiss_drift, list_drifts, record_drift
 from pitstop.detect.l0 import Finding
 from pitstop.detect.urgency import Level
 from pitstop.store import Store
@@ -102,3 +102,14 @@ def test_fallback_ranks_between_record_and_steer(tmp_path):
     assert [r["action"] for r in list_drifts(store)] == ["fallback"]
     record_drift(store, run_id="r", workflow="wf", finding=brk, level="P1", action="steer")
     assert [r["action"] for r in list_drifts(store)] == ["steer"]
+
+
+def test_dismiss_drift_states(tmp_path):
+    s = _store(tmp_path)
+    a = record_drift(s, run_id="r1", workflow="wf", finding=f(n=1), level=Level.P1, action="steer")
+    assert dismiss_drift(s, a) == "dismissed"
+    assert dismiss_drift(s, a) == "not_open"
+    assert dismiss_drift(s, a + 100) == "not_found"
+    assert list_drifts(s, workflow="wf") == []
+    b = record_drift(s, run_id="r2", workflow="wf", finding=f(n=2), level=Level.P1, action="steer")
+    assert b != a

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import functools
 import inspect
+import json
 import logging
 import sys
 import threading
@@ -107,6 +108,8 @@ class RunContext:
     # Framework agents live per scope (see push_framework_agent): id(base frame) -> (base frame, name before the
     # first, [live agent names, innermost last]).
     framework_stacks: dict = field(default_factory=dict, repr=False, compare=False)
+    # (parent, name) of every `agent` event already written for the run: one event per pair.
+    agent_events: set = field(default_factory=set, repr=False, compare=False)
 
     def tool_history_for(self, agent: str | None) -> deque:
         hist = self.tool_history.get(agent)
@@ -148,6 +151,8 @@ class RunContext:
                 self.framework_agents.pop(id(base), None)
             else:
                 self.framework_agents[id(base)] = (base, name)  # holds the frame: its id is never reused meanwhile
+        if name is not None:
+            self.note_agent(name, base.name if base is not None else None)
 
     def push_framework_agent(self, name: str) -> None:
         """A framework agent started in the calling task's scope: name it (as set_framework_agent) and keep it on
@@ -163,6 +168,7 @@ class RunContext:
             live.append(name)
             del live[:-_MAX_FRAMEWORK_DEPTH]
             self.framework_agents[id(base)] = (base, name)
+        self.note_agent(name, base.name if base is not None else None)
 
     def pop_framework_agent(self, name: str | None) -> None:
         """A framework agent of the calling task's scope ended (or handed off): drop it from the scope's stack and,
@@ -189,6 +195,23 @@ class RunContext:
                 self.framework_agents.pop(id(base), None)
             else:
                 self.framework_agents[id(base)] = (base, nxt)
+
+    def note_agent(self, name: str, parent: str | None) -> None:
+        """Write the run's `agent` event for `name` under `parent` (the run graph's edge), once per (parent, name).
+        Fails open."""
+        key = (parent, name)
+        with self.lock:
+            if key in self.agent_events:
+                return
+            self.agent_events.add(key)
+
+        def write() -> None:
+            with get_runtime().store.transaction() as c:
+                c.execute("INSERT INTO events(run_id, ts, agent, kind, name, payload, cost_usd) VALUES (?,?,?,?,?,?,?)",
+                          (self.run_id, time.time(), name, "agent", name,
+                           json.dumps({"parent": parent, "source": "sdk"}), None))
+
+        _safe(write)
 
     def _frame(self) -> _AgentFrame | None:
         cur = _agent_var.get()
@@ -518,7 +541,9 @@ class _Agent(_Scope):
                 _Agent._warned = True
                 log.info("pitstop.agent used outside a workflow; ignored")
             return None
-        _agent_var.set(_AgentFrame(ctx.run_id, self.name, self.goal, _agent_var.get(), self))
+        prev = _agent_var.get()
+        _agent_var.set(_AgentFrame(ctx.run_id, self.name, self.goal, prev, self))
+        ctx.note_agent(self.name, prev.name if prev is not None and prev.run_id == ctx.run_id else None)
         return ctx
 
     def __exit__(self, et, ev, tb):

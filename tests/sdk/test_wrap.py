@@ -689,3 +689,26 @@ def test_mode_is_a_literal_of_the_modes_used():
 
     assert typing.get_origin(Mode) is typing.Literal
     assert set(typing.get_args(Mode)) == {"normal", "raw", "streaming"} == {"normal", *_MODES.values()}
+
+
+def test_llm_call_records_latency(tmp_path):
+    _init(tmp_path)
+    w = pitstop.wrap(FakeOpenAI([make_response("hi", prompt_tokens=10, completion_tokens=2),
+                                 _chunks() + [make_usage_chunk(30, 4)]]))
+    with workflow("wf"):
+        w.chat.completions.create(model=MODEL, messages=MSGS)
+        list(w.chat.completions.create(model=MODEL, messages=MSGS, stream=True))
+    evs = _events()
+    assert len(evs) == 2 and all(e["payload"]["latency_s"] >= 0 for e in evs)
+
+
+async def test_async_llm_call_records_latency(tmp_path):
+    _init(tmp_path)
+    w = pitstop.wrap(FakeAsyncOpenAI([make_response("hi", prompt_tokens=10, completion_tokens=2),
+                                      _chunks() + [make_usage_chunk(30, 4)]]))
+    async with workflow("wf"):
+        await w.chat.completions.create(model=MODEL, messages=MSGS)
+        stream = await w.chat.completions.create(model=MODEL, messages=MSGS, stream=True)
+        [c async for c in stream]
+    evs = _events()
+    assert len(evs) == 2 and all(e["payload"]["latency_s"] >= 0 for e in evs)

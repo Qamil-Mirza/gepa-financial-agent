@@ -303,6 +303,7 @@ class SpanProcessor(_SdkSpanProcessor):
         payload = {"tool_calls": tool_calls, "finish_reason": view.finish_reasons[0] if view.finish_reasons else None,
                    "content_chars": None, "meter": "agent", "prompt_tokens": prompt, "completion_tokens": completion,
                    "refused": refused, "source": "otel"}
+        self._latency(payload, span)
         record = LLMCallRecord(0, tool_calls, refused)
         with self._lock:
             first = view.model is not None and not trace.tagged
@@ -336,8 +337,14 @@ class SpanProcessor(_SdkSpanProcessor):
         result: dict[str, Any] = {"source": "otel"}
         if view.error is not None:
             result["error"] = view.error
+        self._latency(result, span)
         self._event(trace, _seconds(span.end_time), agent, "tool_result", name, result, None, link)
         return findings
+
+    @staticmethod
+    def _latency(payload: dict, span: ReadableSpan) -> None:
+        if span.start_time is not None and span.end_time is not None:
+            payload["latency_s"] = round(max(span.end_time - span.start_time, 0) / 1e9, 4)
 
     def _event(self, trace: _Trace, ts: float | None, agent: str | None, kind: str, name: str | None,
                payload: dict, cost: float | None, link: tuple) -> None:

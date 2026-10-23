@@ -79,6 +79,7 @@ def test_trace_becomes_run_with_events(home):
     assert call["span_id"] == result["span_id"] != llm["span_id"]
     assert llm["agent"] == call["agent"] == result["agent"] == "analyst"
     payload = json.loads(llm["payload"])
+    assert payload.pop("latency_s") >= 0
     assert payload == {"tool_calls": 1, "finish_reason": "tool_calls", "content_chars": None, "meter": "agent",
                        "prompt_tokens": 1000, "completion_tokens": 500, "refused": False, "source": "otel"}
     assert llm["cost_usd"] == pytest.approx((1000 * 0.05 + 500 * 0.20) / 1e6)
@@ -446,3 +447,16 @@ def test_unrecorded_p0_warning_once(tmp_path, monkeypatch, caplog):
     warnings = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
     assert len([m for m in warnings if "unrecorded" in m]) == 1, warnings
     assert len(warnings) == len(set(warnings)), warnings
+
+
+def test_otel_events_have_latency(home):
+    tracer, _, _ = _tracing(workflow="research")
+    with tracer.start_as_current_span("invoke_agent analyst", attributes={
+            "gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": "analyst"}) as root:
+        with tracer.start_as_current_span("chat openai/gpt-oss-120b", attributes=CHAT):
+            pass
+        _tool(tracer)
+    [run] = _runs()
+    by_kind = {e["kind"]: json.loads(e["payload"]) for e in _events(run["id"])}
+    assert by_kind["llm_call"]["latency_s"] >= 0 and by_kind["tool_result"]["latency_s"] >= 0
+    assert "latency_s" not in by_kind["agent"] and root is not None

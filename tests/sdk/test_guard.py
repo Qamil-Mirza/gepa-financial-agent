@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 
 import pytest
 
@@ -256,3 +257,25 @@ def test_nested_same_name_second_call_is_guarded(tmp_path):
             assert [e["name"] for e in _events("tool_call")] == ["search"]
             assert mark.recorded
             assert isinstance(mark.started, float)
+
+
+def test_tool_result_records_latency(tmp_path):
+    _init(tmp_path)
+
+    @pitstop.tool(name="slow")
+    def slow():
+        time.sleep(0.05)
+        return "ok"
+
+    with workflow("wf"):
+        slow()
+    [res] = _events("tool_result")
+    assert res["payload"]["latency_s"] >= 0.05
+
+
+def test_tool_result_without_mark_has_no_latency(tmp_path):
+    _init(tmp_path)
+    with workflow("wf") as ctx:
+        record_tool_result(ctx, "search", result="r")
+    [res] = _events("tool_result")
+    assert "latency_s" not in res["payload"]
