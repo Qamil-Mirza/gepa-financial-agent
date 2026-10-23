@@ -54,7 +54,8 @@ def test_large_store_responses_are_capped(rt, client):
     _seed(rt.store)
     board = client.get("/api/board").json()
     assert {t["name"] for t in board["workflows"]} == set(WORKFLOWS)
-    assert all(len(t["drifts"]) <= 50 for t in board["workflows"] if "drifts" in t)
+    assert len(board["workflows"]) == len(WORKFLOWS)  # one tile per workflow
+    assert all(isinstance(n, int) and n >= 0 for t in board["workflows"] for n in t["open"].values())
     assert len(client.get("/api/feed", params={"limit": 10_000}).json()) == 100
     page = client.get("/api/runs", params={"limit": 10_000}).json()
     assert len(page["runs"]) == 200 and page["next_before"] is not None

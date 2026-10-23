@@ -87,3 +87,15 @@ def test_l2_alarm_marker_from_drift_evidence(rt, client):
     assert (marker.kind, marker.at, marker.metric, marker.drift_id, marker.run_id) == (
         "l2_alarm", T0 + 250, "cost_usd", drift, runs[3])
     assert client.get("/api/changes", params={"workflow": "wf"}).json()["markers"][0]["kind"] == "l2_alarm"
+
+
+def test_runs_without_metrics_take_no_slot(rt, monkeypatch):
+    from pitstop.server import changes
+
+    real = changes.run_metrics
+    runs = [_run(rt.store, i) for i in range(10)]
+    empty = set(runs[6:9])  # metric-less runs among the newest
+    monkeypatch.setattr(changes, "run_metrics", lambda store, rid: {} if rid in empty else real(store, rid))
+    got = [p.run_id for p in change_series(rt.store, "wf", limit=4).points]
+    assert got == [runs[3], runs[4], runs[5], runs[9]]
+    assert [p.run_id for p in change_series(rt.store, "wf", limit=100).points] == [r for r in runs if r not in empty]

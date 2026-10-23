@@ -1,7 +1,8 @@
 """What changed (decision 10): the L2 per-run metrics of a workflow's newest runs, and the markers to draw on them.
 
 Points are `run_metrics` of the newest `limit` (at most 200) runs that have metrics (refused and dropped runs have
-none), oldest first. Markers are inside the points' time range:
+none; a run without metrics takes no slot, at most 5 x `limit` runs are examined), oldest first.
+Markers are inside the points' time range:
 
 - `model`, `base_url` and `prompt_versions` markers: the run's tag differs from the previous run of its workflow and
   source (OTel runs are compared only with OTel runs, SDK runs only with SDK runs, as the feed does). A run redirected
@@ -20,6 +21,7 @@ from .models import Changes, Marker, MetricInfo, Point
 from .views import _NUMERIC, _num, _str, _tag_text
 
 CHANGES_MAX = 200
+EXAMINE_FACTOR = 5  # runs examined for metrics, at most this many times `limit`
 _TAGS = ("model", "base_url", "prompt_versions")
 _METRIC_INFO = {
     "tool_error_rate": ("Tool errors", "%"), "refusal_rate": ("Refusals", "%"), "cost_usd": ("Cost per run", "$"),
@@ -70,18 +72,29 @@ def change_series(store, workflow: str, *, limit: int = CHANGES_MAX) -> Changes:
     """The series and markers of `workflow` (see the module docstring); at most `limit` (capped at 200) points."""
     limit = max(1, min(int(limit), CHANGES_MAX))
     conn = store.connect()
-    rows = conn.execute(
-        "SELECT id, started_at, status, adapter, fallback_from, model, base_url, prompt_versions FROM runs"
-        f" WHERE workflow = ? AND {_NUMERIC} AND (status IS NULL OR status NOT IN ('refused', 'dropped'))"
-        " ORDER BY started_at DESC, rowid DESC LIMIT ?", (workflow, limit)).fetchall()
-    runs, points = [], []
-    for r in reversed(rows):  # oldest first
-        metrics = run_metrics(store, r["id"])
-        if not metrics:
-            continue
-        runs.append(r)
-        points.append(Point(run_id=str(r["id"]), started_at=float(r["started_at"]), status=_str(r["status"]),
-                            source="otel" if r["adapter"] == "otel" else "sdk", metrics=metrics))
+    runs, points = [], []  # newest first while collecting
+    offset, examined = 0, 0
+    while len(points) < limit and examined < limit * EXAMINE_FACTOR:
+        batch = conn.execute(
+            "SELECT id, started_at, status, adapter, fallback_from, model, base_url, prompt_versions FROM runs"
+            f" WHERE workflow = ? AND {_NUMERIC} AND (status IS NULL OR status NOT IN ('refused', 'dropped'))"
+            " ORDER BY started_at DESC, rowid DESC LIMIT ? OFFSET ?", (workflow, limit, offset)).fetchall()
+        for r in batch:
+            examined += 1
+            metrics = run_metrics(store, r["id"])
+            if metrics:  # a run without metrics takes no slot: older runs fill the series
+                runs.append(r)
+                points.append(Point(run_id=str(r["id"]), started_at=float(r["started_at"]), status=_str(r["status"]),
+                                    source="otel" if r["adapter"] == "otel" else "sdk", metrics=metrics))
+                if len(points) == limit:
+                    break
+            if examined >= limit * EXAMINE_FACTOR:
+                break
+        if len(batch) < limit:
+            break
+        offset += limit
+    runs.reverse()
+    points.reverse()  # oldest first
     markers = _tag_markers(runs)
     if points:
         markers += _alarm_markers(conn, workflow, points[0].started_at, limit)
