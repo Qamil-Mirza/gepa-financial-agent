@@ -1,5 +1,6 @@
 """Turn L0 findings into actions: classify each one (level, action), record it as a drift, and set the pending
-halt that a P0 on a high-criticality workflow calls for. Shared by `@pitstop.tool` and the wrapped clients."""
+halt that a "halt" action (a budget hit or spend spike) or a P0 on a high-criticality workflow calls for. Shared
+by `@pitstop.tool` and the wrapped clients."""
 from __future__ import annotations
 
 import json
@@ -21,12 +22,12 @@ class Applied(NamedTuple):
 
 
 def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None = None) -> list[Applied]:
-    """Classify each finding (level, action), then record it. A P0 on a high workflow sets a pending halt that
-    the next boundary raises, and records a `halt` event marked `pending`. A P1 breakage or refusal spike on a
-    workflow that pins a `fallback_model`, in a run whose model or base_url changed within the last 24 h (see
-    `pitstop.detect.changes.recent_change`), engages the fallback (sticky until cleared): the drift's action is
-    "fallback" and a `fallback` event is recorded. Outside a workflow: workflow=None, criticality medium,
-    sensitivity normal.
+    """Classify each finding (level, action), then record it. A "halt" action (a budget hit or spend spike, any
+    criticality), or a P0 on a high workflow, sets a pending halt that the next boundary raises, and records a
+    `halt` event marked `pending`. A P1 breakage or refusal spike on a workflow that pins a `fallback_model`, in a
+    run whose model or base_url changed within the last 24 h (see `pitstop.detect.changes.recent_change`), engages
+    the fallback (sticky until cleared): the drift's action is "fallback" and a `fallback` event is recorded.
+    Outside a workflow: workflow=None, criticality medium, sensitivity normal.
 
     The block/steer/halt decision never depends on the store: a failed drift or event write is logged, leaves
     drift_id None, and the action still applies. The fallback does need the store (the run's model, the previous
@@ -58,11 +59,12 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
             _safe(lambda: _engage_fallback(ctx, f.drift_type, drift_id, *engage))
         if drift_id is not None and level in (Level.P0, Level.P1):
             _safe(lambda: _notify(drift_id))
-        if ctx is not None and level is Level.P0 and criticality == "high":
+        if ctx is not None and (action == "halt" or (level is Level.P0 and criticality == "high")):
             reason = None
             with ctx.lock:  # one check-and-set per run, shared with the tool's steer-limit halt
                 if ctx.halt_reason is None:
-                    reason = ctx.halt_reason = f"{f.drift_type} (P0) on high-criticality workflow {workflow!r}"
+                    reason = ctx.halt_reason = \
+                        f"{f.drift_type} ({level.value}) on {criticality}-criticality workflow {workflow!r}"
                     ctx.halt_drift_id = drift_id
             if reason is not None:
                 payload = {"reason": reason, "drift_id": drift_id, "pending": True}

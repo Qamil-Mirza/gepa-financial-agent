@@ -18,6 +18,7 @@ class Level(str, Enum):
 _ANY = {"high": Level.P0, "medium": Level.P0, "low": Level.P0}
 _TABLE: dict[tuple[str, bool | None], dict[str, Level]] = {
     ("budget_exhausted", None): _ANY,
+    ("spend_spike", None): _ANY,  # spend rate above N x the workflow's baseline (pitstop.detect.spend)
     ("out_of_scope_action", True): _ANY,
     ("out_of_scope_action", False): {"high": Level.P1, "medium": Level.P2, "low": Level.P3},
     ("unproductive_loop", True): _ANY,
@@ -25,6 +26,7 @@ _TABLE: dict[tuple[str, bool | None], dict[str, Level]] = {
     ("tool_call_breakage", None): {"high": Level.P1, "medium": Level.P1, "low": Level.P2},
     ("refusal_spike", None): {"high": Level.P1, "medium": Level.P1, "low": Level.P2},
 }
+_HALTS = ("budget_exhausted", "spend_spike")  # halt the run on any criticality, never de-escalated (spec 5)
 _OTHER = {"high": Level.P2, "medium": Level.P2, "low": Level.P3}
 
 
@@ -37,7 +39,7 @@ def action_for(finding: Finding, level: Level, criticality: Criticality) -> Lite
     """The in-the-moment action for a finding. "fallback" is never chosen here: `pitstop.sdk.actions` upgrades a
     P1 "record" to "fallback" afterwards, when the workflow pins a fallback model and the run follows a model or
     provider change (it needs the store, which this table does not read)."""
-    if finding.drift_type == "budget_exhausted":
+    if finding.drift_type in _HALTS:
         return "halt"
     if finding.kind == "off_task":
         return "block" if finding.side_effects else "steer"

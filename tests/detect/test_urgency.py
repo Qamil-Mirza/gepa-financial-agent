@@ -7,6 +7,7 @@ P0, P1, P2, P3 = Level.P0, Level.P1, Level.P2, Level.P3
 ROWS = [
     ("budget_exhausted", True, (P0, P0, P0)),
     ("budget_exhausted", False, (P0, P0, P0)),
+    ("spend_spike", False, (P0, P0, P0)),
     ("out_of_scope_action", True, (P0, P0, P0)),
     ("out_of_scope_action", False, (P1, P2, P3)),
     ("unproductive_loop", True, (P0, P0, P0)),
@@ -30,6 +31,7 @@ def test_action_for_order():
     f = lambda t, k, s: Finding(t, k, s)  # noqa: E731
     assert action_for(f("budget_exhausted", "degraded", True), P0, "high") == "halt"
     assert action_for(f("budget_exhausted", "off_task", False), P0, "low") == "halt"
+    assert action_for(f("spend_spike", "degraded", False), P0, "low") == "halt"
     assert action_for(f("unproductive_loop", "off_task", True), P0, "high") == "block"
     assert action_for(f("unproductive_loop", "off_task", False), P0, "high") == "steer"
     assert action_for(f("refusal_spike", "degraded", False), P1, "high") == "record"

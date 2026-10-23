@@ -56,6 +56,8 @@ def build_alert(store, drift_id: int) -> Alert:
     if latest.get("detail"):
         what += f"; latest evidence: {_one_line(latest['detail'])}"
     action = _ACTIONS.get(d["action"], f"Action: {d['action']}.")
+    if run is not None and run["status"] == "refused":  # a budget used up before the run began
+        action = "Refused the run at its start (no model call was made)."
     if d["level"] == "P0" and run is not None and run["criticality"] == "high" and d["action"] != "halt":
         action += " The run halts at its next call boundary (high-criticality workflow)."
     return Alert(drift_id=d["id"], workflow=d["workflow"], level=d["level"], drift_type=d["drift_type"], what=what,

@@ -21,8 +21,9 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal, NamedTuple, TypeVar
 
-from .errors import Halted
-from .runtime import get_runtime, halt_if_config_invalid
+from ..userconfig import ConfigInvalid
+from .errors import BudgetExceeded, Halted
+from .runtime import config_halt, get_runtime, halt_if_config_invalid
 
 log = logging.getLogger("pitstop")
 
@@ -37,6 +38,7 @@ _FIX_MODES = ("manual", "auto", None)
 _GATE_ERROR_POLICIES = ("block", "allow", None)
 
 HISTORY_MAX = 64  # per-agent tool history and per-run LLM history are capped at this many recent calls
+UNSET = object()  # RunContext.spend_baseline before the run's first settle computed it (None: no baseline)
 
 
 def _history() -> deque:
@@ -91,6 +93,12 @@ class RunContext:
     refusals: int = 0  # every refusal in the run; the capped llm_history cannot count them all
     llm_calls: int = 0  # agent-meter LLM calls only
     prompt_versions: dict[str, int] = field(default_factory=dict)
+    started_at: float = field(default_factory=time.time)
+    # The spend-rate P0 (pitstop.detect.spend): the run's settled agent-meter USD, its workflow's baseline
+    # (computed once, at the first settle) and whether the spike was already applied (at most once per run).
+    spend_usd: float = 0.0
+    spend_baseline: Any = UNSET
+    spend_spiked: bool = False
     # Guards the counters and histories when several threads share the run (e.g. the steer limit).
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
 
@@ -342,20 +350,53 @@ class _Workflow(_Scope):
             raise RuntimeError("pitstop.workflow cannot be nested")
         halt_if_config_invalid()  # an invalid config.toml fails closed before the run starts
         ctx = RunContext(run_id=uuid.uuid4().hex, spec=self.spec)
+        refused = self._exhausted()
+        if refused is not None:
+            _safe(lambda: self._insert(ctx, "refused"))
+            _safe(lambda: self._record_refusal(ctx, refused))
+            raise refused
         _safe(lambda: self._insert(ctx))
         _current.set(ctx)
         return ctx
 
-    def _insert(self, ctx: RunContext) -> None:
+    def _exhausted(self) -> BudgetExceeded | None:
+        """The used-up budget that refuses this run at its start (spec 3.2), else None: the workflow's own budget,
+        a global budget without base_url, or the global budget for the endpoint of the workflow's previous run
+        that made a call (a refused run has none); an endpoint the run has not used yet halts at its first call. A store or ledger error is logged
+        and the run starts (fail open); an invalid config still fails closed."""
+        try:
+            rt = get_runtime()
+            row = rt.store.connect().execute(
+                "SELECT base_url FROM runs WHERE workflow=? AND base_url IS NOT NULL"
+                " ORDER BY started_at DESC LIMIT 1", (self.spec.name,)).fetchone()
+            return rt.ledger.exhausted(workflow=self.spec.name, workflow_budget_usd=self.spec.budget_usd,
+                                       base_url=row["base_url"] if row is not None else None)
+        except ConfigInvalid as e:
+            raise config_halt(e) from e
+        except Exception:
+            log.warning("pitstop: could not check the budgets at run start; the run starts", exc_info=True)
+            return None
+
+    def _record_refusal(self, ctx: RunContext, exc: BudgetExceeded) -> None:
+        from ..detect.l0 import Finding
+        from .actions import apply_findings
+
+        ctx.halt_reason = str(exc)  # the run never starts: no pending halt (or its event) to record
+        apply_findings(ctx, [Finding("budget_exhausted", "degraded", False,
+                                     {"scope": exc.scope, "limit_usd": exc.limit_usd, "spent_usd": exc.spent_usd,
+                                      "refused": True})])
+
+    def _insert(self, ctx: RunContext, status: str = "running") -> None:
         from .. import __version__
 
         s = ctx.spec
+        ended = ctx.started_at if status == "refused" else None
         with get_runtime().store.transaction() as c:
             c.execute(
-                "INSERT INTO runs(id, workflow, goal, criticality, sensitivity, fix_mode, started_at, status,"
-                " pitstop_version, budget_usd) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO runs(id, workflow, goal, criticality, sensitivity, fix_mode, started_at, ended_at,"
+                " status, pitstop_version, budget_usd) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 (ctx.run_id, s.name, s.goal, s.criticality, s.sensitivity, s.effective_fix_mode,
-                 time.time(), "running", __version__, s.budget_usd),
+                 ctx.started_at, ended, status, __version__, s.budget_usd),
             )
 
     def __exit__(self, et, ev, tb):

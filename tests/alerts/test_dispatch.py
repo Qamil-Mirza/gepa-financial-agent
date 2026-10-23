@@ -256,6 +256,16 @@ def test_alert_body_names_model_change(tmp_path, monkeypatch):
                                                 "(model model-b at base_url https://api.example/v1).")
 
 
+def test_alert_for_refused_run_says_it_was_refused(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "")
+    with rt.store.transaction() as c:
+        c.execute("INSERT INTO runs(id, workflow, criticality, started_at, status) VALUES (?,?,?,?,?)",
+                  ("r1", "wf", "medium", time.time(), "refused"))
+    did = record_drift(rt.store, run_id="r1", workflow="wf", level="P0", action="halt",
+                       finding=Finding("budget_exhausted", "degraded", False, {"scope": "workflow:wf"}))
+    assert build_alert(rt.store, did).action == "Refused the run at its start (no model call was made)."
+
+
 def test_notify_without_channels_starts_no_work(tmp_path, monkeypatch):
     _init(tmp_path, monkeypatch, "")
     seen = _capture(monkeypatch)

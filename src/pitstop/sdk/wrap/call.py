@@ -64,6 +64,34 @@ def _after_llm_call(ctx: RunContext | None, obs: Observed, refused: bool) -> Non
     apply_findings(ctx, findings)
 
 
+def _after_settle(ctx: RunContext, usd: float) -> None:
+    """The spend-rate P0 (`pitstop.detect.spend`): add a settled agent-meter call to the run's spend and, past N x
+    the workflow's baseline, apply one `spend_spike` (P0, halt) per run. The halt is pending: the call that
+    settled returns normally and the run's next call raises. Runs outside any store transaction."""
+    from ...detect import spend
+    from ..context import UNSET
+
+    with ctx.lock:
+        ctx.spend_usd += usd
+        run_usd, baseline = ctx.spend_usd, ctx.spend_baseline
+        if ctx.spend_spiked:
+            return
+    if baseline is UNSET:  # once per run: the first settle reads the store; a failed read is retried next time
+        baseline = spend.baseline_run_cost(get_runtime().store, ctx.spec.name, before=ctx.started_at)
+        with ctx.lock:
+            if ctx.spend_baseline is UNSET:
+                ctx.spend_baseline = baseline
+            baseline = ctx.spend_baseline
+    finding = spend.check_spend(run_usd, baseline, ctx.spec.sensitivity)
+    if finding is None:
+        return
+    with ctx.lock:
+        if ctx.spend_spiked:
+            return
+        ctx.spend_spiked = True
+    apply_findings(ctx, [finding])
+
+
 def _on_budget_exceeded(ctx: RunContext | None, exc: BudgetExceeded) -> None:
     """Record a budget_exhausted drift (P0, halt) before the exception is raised."""
     from ...detect.l0 import Finding
@@ -239,6 +267,9 @@ class _Call:
         if self.meter == "agent" and not self.worst_case:
             obs = self.obs
             _safe(lambda: _after_llm_call(self.ctx, obs, refused))
+        # Every metered agent call counts toward the spend spike, a worst-case charge included.
+        if self.meter == "agent" and self.ctx is not None and self.res is not None and cost is not None:
+            _safe(lambda: _after_settle(self.ctx, cost))
 
     def _tokens(self) -> tuple[int, int, int, bool | str]:
         if self.worst_case:

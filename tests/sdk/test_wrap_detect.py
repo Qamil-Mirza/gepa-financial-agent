@@ -77,6 +77,18 @@ def test_budget_exhausted_records_p0_drift(tmp_path):
     assert rows[0]["evidence"][0]["detail"]["scope"] == "workflow:wf"
 
 
+def test_budget_exhausted_in_a_run_halts_its_next_call(tmp_path):
+    _init(tmp_path)
+    w = pitstop.wrap(FakeOpenAI([make_response("hi")]))
+    with workflow("wf", criticality="low", budget_usd=0.000001) as ctx:  # any criticality: a budget hit halts
+        with pytest.raises(BudgetExceeded):
+            w.chat.completions.create(model=MODEL, messages=[{"role": "user", "content": "x" * 400}])
+        with pytest.raises(Halted) as ei:  # the user caught it and went on: the run is halted, not retried
+            w.chat.completions.create(model=MODEL, messages=MSGS)
+    assert not isinstance(ei.value, BudgetExceeded) and ei.value.drift_id == ctx.halt_drift_id is not None
+    assert "budget_exhausted (P0)" in ei.value.reason
+
+
 def test_budget_exhausted_outside_workflow(tmp_path):
     _init(tmp_path, '[budgets.all]\nlimit_usd = 0.000001\nperiod = "total"\n')
     w = pitstop.wrap(FakeOpenAI([make_response("hi")]))

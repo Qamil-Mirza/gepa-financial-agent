@@ -548,3 +548,129 @@ async def test_async_gen_workflow_in_reference_cycle(tmp_path, monkeypatch, capl
     assert _row(rid)["status"] == "ok"
     assert errors == []  # no "aclose(): asynchronous generator is already running" from a second close task
     assert "already running" not in caplog.text
+
+
+# -- refusing a run on an exhausted budget ----------------------------------------------------------------
+
+_FLAT = '[prices."acme/flat"]\ninput = 1.0\noutput = 0.0\n'
+_A, _B = "https://a.example/v1", "https://b.example/v1"
+
+
+def _spend(usd, *, workflow=None, budget=None, base_url=_A):
+    """Settle `usd` of agent spend on the runtime's ledger (today, outside any run)."""
+    ledger = get_runtime().ledger
+    res = ledger.reserve(model="acme/flat", base_url=base_url, est_prompt_tokens=round(usd * 1_000_000),
+                         max_completion_tokens=0, run_id="earlier", workflow=workflow, workflow_budget_usd=budget)
+    ledger.settle(res, prompt_tokens=round(usd * 1_000_000), completion_tokens=0)
+
+
+def _runs(name):
+    return get_runtime().store.connect().execute(
+        "SELECT * FROM runs WHERE workflow=? ORDER BY started_at", (name,)).fetchall()
+
+
+def test_exhausted_workflow_budget_refuses_run(tmp_path):
+    from pitstop.detect.drifts import list_drifts
+    from pitstop.sdk.errors import BudgetExceeded
+
+    (tmp_path / "config.toml").write_text(_FLAT)
+    pitstop.init(home=tmp_path)
+    _spend(1.0, workflow="wf", budget=1.0)
+    entered = []
+    with pytest.raises(BudgetExceeded) as ei:
+        with workflow("wf", budget_usd=1.0):
+            entered.append(1)
+    assert entered == [] and current_run() is None
+    assert ei.value.scope == "workflow:wf" and ei.value.limit_usd == 1.0
+    [row] = _runs("wf")
+    assert row["status"] == "refused" and row["ended_at"] is not None and row["budget_usd"] == 1.0
+    [d] = list_drifts(get_runtime().store)
+    assert (d["drift_type"], d["level"], d["action"], d["workflow"], d["run_id"]) == \
+        ("budget_exhausted", "P0", "halt", "wf", row["id"])
+    assert d["evidence"][0]["detail"]["scope"] == "workflow:wf"
+    # another workflow, and the same one without a budget, still start
+    with workflow("wf2", budget_usd=1.0):
+        pass
+    with workflow("wf"):
+        pass
+
+
+def test_refused_generator_and_async_workflows_raise_on_entry(tmp_path):
+    from pitstop.sdk.errors import BudgetExceeded
+
+    (tmp_path / "config.toml").write_text(_FLAT)
+    pitstop.init(home=tmp_path)
+    _spend(1.0, workflow="wf", budget=1.0)
+    body = []
+
+    @workflow("wf", budget_usd=1.0)
+    def gen():
+        body.append(1)
+        yield 1
+
+    g = gen()
+    with pytest.raises(BudgetExceeded):
+        next(g)
+
+    @workflow("wf", budget_usd=1.0)
+    async def afn():
+        body.append(2)
+
+    with pytest.raises(BudgetExceeded):
+        asyncio.run(afn())
+    assert body == [] and current_run() is None
+    assert [r["status"] for r in _runs("wf")] == ["refused", "refused"]
+
+
+def test_endpoint_budget_checked_from_previous_run(tmp_path):
+    import time
+
+    from pitstop.sdk.errors import BudgetExceeded
+
+    (tmp_path / "config.toml").write_text(_FLAT + f'[budgets.a]\nlimit_usd = 1.0\nperiod = "total"\nbase_url = "{_A}"\n')
+    pitstop.init(home=tmp_path)
+    _spend(1.0, base_url=_A)
+
+    def previous(url):
+        with get_runtime().store.transaction() as c:
+            c.execute("INSERT INTO runs(id, workflow, started_at, ended_at, status, base_url) VALUES (?,?,?,?,?,?)",
+                      (f"prev-{url}", "wf", time.time(), time.time(), "ok", url))
+
+    previous(_B)
+    with workflow("wf"):  # the previous run used B: B's budget is not used up
+        pass
+    previous(_A + "/")
+    with pytest.raises(BudgetExceeded) as ei:
+        with workflow("wf"):
+            pass
+    assert ei.value.scope == "global:a"
+    assert _runs("wf")[-1]["status"] == "refused"
+    with pytest.raises(BudgetExceeded):  # the refused run has no endpoint: the one before it still counts
+        with workflow("wf"):
+            pass
+
+
+def test_refusal_check_fails_open(tmp_path, monkeypatch, caplog):
+    import sqlite3
+
+    from pitstop.budget.ledger import Ledger
+
+    pitstop.init(home=tmp_path)
+
+    def locked(self, **kw):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(Ledger, "exhausted", locked)
+    with caplog.at_level("WARNING", logger="pitstop"):
+        with workflow("wf", budget_usd=1.0) as ctx:
+            assert current_run() is ctx
+    assert _row(ctx.run_id)["status"] == "ok"
+    assert [r for r in caplog.records if r.levelname == "WARNING"]
+
+
+def test_refusal_check_keeps_config_invalid_fail_closed(tmp_path, monkeypatch):
+    monkeypatch.setenv("PITSTOP_HOME", str(tmp_path))
+    (tmp_path / "config.toml").write_text("[budgets.a]\nlimit_usd = -1\n")
+    with pytest.raises(Halted, match="pitstop config invalid"):
+        with workflow("wf"):
+            pass

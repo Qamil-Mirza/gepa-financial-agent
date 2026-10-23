@@ -283,7 +283,7 @@ class Swarm:
                 await self._gather_workers()
                 if self.synthesizer:
                     await self._synthesize()
-        except pitstop.Halted as e:  # the workflow scope has recorded the run as halted
+        except pitstop.Halted as e:  # the workflow scope has recorded the run as halted (or refused, at entry)
             self.run.halted = str(e)
             self.console.print(f"[bold red]  ■ PitStop halted the run: {escape(str(e))}[/]")
         self._write_meta()
