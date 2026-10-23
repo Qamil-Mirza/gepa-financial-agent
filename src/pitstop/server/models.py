@@ -218,3 +218,53 @@ class Settings(BaseModel):
     judge: JudgeSettings
     alerts: AlertSettings
     worker: WorkerStatus
+
+
+class GraphVerdicts(BaseModel):
+    """Verdict events on a node: `gate_reject` counts gates with `allow` false, `tool_error` errored tool results."""
+    block: int = 0
+    steer: int = 0
+    halt: int = 0
+    fallback: int = 0
+    gate_reject: int = 0
+    gate_error: int = 0
+    tool_error: int = 0
+
+
+class GraphNode(BaseModel):
+    """One run-graph node (decision 8). `id` is "workflow", "agent:<path>", "llm:<agent path>|<model>" or
+    "tool:<agent path>|<tool name>", the path being the agent names joined with " › "; `agent_path` lists those names
+    (for a leaf, its agent's). An agent's calls, cost and runs cover everything under it, and the root's too (its
+    runs are every run in scope); their latency is not measured (null). `time_per_run_s` is the node's time over the
+    runs in scope divided by their number, its unknown latencies counted at the mean of its known ones (an agent's:
+    the sum of its children's), null when nothing under it has a known latency.
+    `run_ids` are the runs in scope that touched the node, newest first, at most 20."""
+    id: str
+    kind: Literal["workflow", "agent", "llm", "tool"]
+    label: str
+    agent_path: list[str]
+    calls: int
+    runs: int
+    cost_usd: float
+    latency_p50_s: float | None
+    time_per_run_s: float | None
+    verdicts: GraphVerdicts
+    on_slowest_path: bool
+    run_ids: list[str]
+
+
+class GraphEdge(BaseModel):
+    source: str
+    target: str
+
+
+class Graph(BaseModel):
+    """The run graph over one run (`run_id`, `window` null) or the newest runs started in `window`, at most 200.
+    `slowest_path` lists node ids from the root, each step the child with the largest `time_per_run_s`; it is empty
+    when no node has a known latency."""
+    nodes: list[GraphNode]  # the root first, then depth-first by id
+    edges: list[GraphEdge]
+    runs_in_scope: int
+    window: str | None
+    run_id: str | None
+    slowest_path: list[str]

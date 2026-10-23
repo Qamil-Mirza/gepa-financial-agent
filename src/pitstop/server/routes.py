@@ -18,8 +18,8 @@ from fastapi import APIRouter, HTTPException, Path, Query
 from fastapi.responses import JSONResponse
 
 from ..sdk.runtime import Runtime
-from . import views
-from .models import Board, DismissResult, Explain, FeedItem, RunDetail, RunPage, Settings, WorkflowDetail
+from . import graph, views
+from .models import Board, DismissResult, Explain, FeedItem, Graph, RunDetail, RunPage, Settings, WorkflowDetail
 from .worker import Worker
 
 F = TypeVar("F", bound=Callable)
@@ -89,6 +89,15 @@ def register(api: APIRouter, rt: Runtime, worker: Worker | None) -> None:
     def get_run(run_id: str) -> RunDetail:
         try:
             return views.run_detail(rt, run_id)
+        except views.NotFound as e:
+            raise HTTPException(404, str(e)) from None
+
+    @api.get("/graph", response_model=Graph)
+    @closing
+    def get_graph(workflow: Annotated[str, Query()], run_id: str | None = None,
+                  window: graph.Window = "24h") -> Graph:
+        try:
+            return graph.build_graph(rt.store, workflow, run_id=run_id or None, window=window)
         except views.NotFound as e:
             raise HTTPException(404, str(e)) from None
 

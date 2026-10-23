@@ -169,13 +169,17 @@ def _get_everything(client, store) -> list:
     """Every read endpoint, for each workflow, run and drift in the store."""
     conn = store.connect()
     names = [r[0] for r in conn.execute("SELECT DISTINCT workflow FROM runs WHERE workflow IS NOT NULL")]
-    run_ids = [r[0] for r in conn.execute("SELECT id FROM runs")]
+    runs = conn.execute("SELECT id, workflow FROM runs").fetchall()
+    run_ids = [r[0] for r in runs]
     drift_ids = [r[0] for r in conn.execute("SELECT id FROM drifts")]
     responses = [client.get(p) for p in ("/api/board", "/api/feed", "/api/runs", "/api/settings", "/api/health")]
     for name in names:
         responses.append(client.get("/api/workflow", params={"name": name}))
         responses.append(client.get("/api/runs", params={"workflow": name}))
+        responses.append(client.get("/api/graph", params={"workflow": name, "window": "30d"}))
     responses += [client.get(f"/api/runs/{run_id}") for run_id in run_ids]
+    responses += [client.get("/api/graph", params={"workflow": r[1], "run_id": r[0]}) for r in runs
+                  if r[1] is not None]
     responses += [client.get(f"/api/drifts/{d}/explain") for d in drift_ids]
     return responses
 
@@ -238,9 +242,12 @@ def test_workflow_names_round_trip(rt, client):
         assert client.get(f"/api/runs/{runs[name]}").json()["workflow"] == name
         assert {i["kind"] for i in feed if i["workflow"] == name} == {"drift", "halt"}
         assert client.get(f"/api/drifts/{drifts[name]}/explain").status_code == 200
+        graph = client.get("/api/graph", params={"workflow": name, "run_id": runs[name]}).json()
+        assert (graph["nodes"][0]["label"], graph["run_id"]) == (name, runs[name])
     assert client.get("/api/workflow", params={"name": "a/"}).status_code == 404
     assert client.get("/api/workflow", params={"name": "résumé"}).status_code == 404
     assert client.get("/api/runs", params={"workflow": "a/"}).json()["runs"] == []
+    assert client.get("/api/graph", params={"workflow": "a/"}).status_code == 404
 
 
 def test_unknown_workflow_is_404(client):
@@ -273,10 +280,11 @@ def test_endpoints_are_in_the_openapi_schema():
 
     schema = export_openapi()
     paths = {"/api/board", "/api/feed", "/api/workflow", "/api/drifts/{drift_id}/dismiss",
-             "/api/drifts/{drift_id}/explain", "/api/runs", "/api/runs/{run_id}", "/api/settings"}
+             "/api/drifts/{drift_id}/explain", "/api/runs", "/api/runs/{run_id}", "/api/settings", "/api/graph"}
     assert paths <= set(schema["paths"])
     models = {"Board", "Tile", "BudgetRow", "FeedItem", "WorkflowDetail", "DriftCard", "DismissResult", "Explain",
-              "TagChange", "RunPage", "RunRow", "RunDetail", "EventRow", "Settings"}
+              "TagChange", "RunPage", "RunRow", "RunDetail", "EventRow", "Settings", "Graph", "GraphNode", "GraphEdge",
+              "GraphVerdicts"}
     assert models <= set(schema["components"]["schemas"])
 
 
