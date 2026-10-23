@@ -183,12 +183,21 @@ async def make_fixture_pair(runs_dir: Path) -> Pair:
 
     def side(name: str, pair_dir: Path) -> Swarm:
         handler, path = judges[name]
-        return Swarm(fixture_scenario(), worker_llm=llm(worker_handler),
-                     supervisor=Supervisor.from_text(llm(handler), load_prompt(path)[0], version=f"FIXTURE:{path.stem}"),
-                     research=research, prompts_dir=PROMPTS / "worker", runs_dir=pair_dir,
-                     halt_on_drift=False, correct_on_drift=True, max_corrections=LIVE_MAX_CORRECTIONS,
-                     synthesizer=ReportSynthesizer(llm(report_handler), PROMPTS / "worker", backoff_s=0.0),
-                     console=Console(file=io.StringIO()), verbose_events=False, watch=False)
+        return Swarm(
+            fixture_scenario(),
+            worker_llm=llm(worker_handler),
+            supervisor=Supervisor.from_text(llm(handler), load_prompt(path)[0], version=f"FIXTURE:{path.stem}"),
+            research=research,
+            prompts_dir=PROMPTS / "worker",
+            runs_dir=pair_dir,
+            halt_on_drift=False,
+            correct_on_drift=True,
+            max_corrections=LIVE_MAX_CORRECTIONS,
+            synthesizer=ReportSynthesizer(llm(report_handler), PROMPTS / "worker", backoff_s=0.0),
+            console=Console(file=io.StringIO()),
+            verbose_events=False,
+            watch=False,
+        )
 
     pair = Pair.create(runs_dir, side)
     try:

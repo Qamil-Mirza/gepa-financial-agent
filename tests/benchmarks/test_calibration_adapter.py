@@ -39,7 +39,9 @@ def test_evaluator_scores_with_pitstop_alert_rule():
     assert score == 0.8
 
     # Below the 0.75 alert threshold: no alert, only near-miss credit.
-    score, info = make_pitstop_evaluator(MockModelClient(_verdict("DRIFTING", 0.6, drift.expect_type, [ev_id])))("p", drift)
+    score, info = make_pitstop_evaluator(MockModelClient(_verdict("DRIFTING", 0.6, drift.expect_type, [ev_id])))(
+        "p", drift
+    )
     assert score == 0.1 and info["fired"] is False and "below the 0.75 alert threshold" in info["feedback"]
 
     ok = _case("ok")
@@ -52,8 +54,9 @@ def test_evaluator_scores_with_pitstop_alert_rule():
 
 def test_invented_evidence_is_downgraded_by_pitstop_validator_and_explained():
     drift = _case("drift")
-    score, info = make_pitstop_evaluator(MockModelClient(_verdict("DRIFTING", 0.95, drift.expect_type, ["made-up-e999"])))(
-        "p", drift)
+    score, info = make_pitstop_evaluator(
+        MockModelClient(_verdict("DRIFTING", 0.95, drift.expect_type, ["made-up-e999"]))
+    )("p", drift)
     assert score == 0.1 and info["fired"] is False and "downgraded" in info["feedback"]
 
 

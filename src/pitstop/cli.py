@@ -70,7 +70,18 @@ def cmd_status(args) -> None:
         console.print(EMPTY_MSG)
         return
     t = Table(title="Workflows")
-    for col in ("workflow", "criticality", "runs today", "P0", "P1", "P2", "P3", "spend today", "budget", "last status"):
+    for col in (
+        "workflow",
+        "criticality",
+        "runs today",
+        "P0",
+        "P1",
+        "P2",
+        "P3",
+        "spend today",
+        "budget",
+        "last status",
+    ):
         t.add_column(col)
     for r in workflow_rows(rt.store, time.time(), tz=rt.ledger.tz):
         t.add_row(r["workflow"], str(r["criticality"]), str(r["runs_today"]), str(r["open_p0"]), str(r["open_p1"]),

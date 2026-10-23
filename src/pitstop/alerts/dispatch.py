@@ -228,7 +228,9 @@ def _attempt(store, row_ids: list[int], ch, alert: Alert, *, retries: tuple[floa
         if error is None or not (_retryable(error) if retryable is None else retryable):
             break
     status = "sent" if error is None else "failed"
-    for last in (False, True) if row_ids else ():  # one retry: a stuck pending row would block this channel until it goes stale
+    for last in (
+        (False, True) if row_ids else ()
+    ):  # one retry: a stuck pending row would block this channel until it goes stale
         try:
             _update(store, row_ids, status, error)
             break

@@ -30,7 +30,10 @@ def main() -> None:
     pt = ct = live = queries = broad = 0
     for t in traces:
         v = verify(t)
-        key = (t.scenario_family, t.generation.steer.steer_id.split(":")[0] + ":" + (t.generation.steer.drift_type or "-"))
+        key = (
+            t.scenario_family,
+            t.generation.steer.steer_id.split(":")[0] + ":" + (t.generation.steer.drift_type or "-"),
+        )
         by[(key, v.passed)] += 1
         if not v.passed:
             fails[v.reason.split(":")[0]] += 1
@@ -58,7 +61,10 @@ def main() -> None:
     print("top discard reasons:", fails.most_common(6))
     print(f"research queries: {queries}, broad: {broad} ({broad / max(1, queries):.0%})")
     cost = pt / 1e6 * PRICE_IN + ct / 1e6 * PRICE_OUT
-    print(f"crusoe tokens: {pt:,} in / {ct:,} out (~${cost:.2f}); you.com live calls in rollouts: {live} (~${live * YOUCOM_PER_CALL:.2f})")
+    print(
+        f"crusoe tokens: {pt:,} in / {ct:,} out (~${cost:.2f}); "
+        f"you.com live calls in rollouts: {live} (~${live * YOUCOM_PER_CALL:.2f})"
+    )
     print(f"you.com cache entries: {len(list(config.YOUCOM_CACHE_DIR.glob('*.json')))}")
 
     ds = config.DATA_DIR / "dataset.jsonl"

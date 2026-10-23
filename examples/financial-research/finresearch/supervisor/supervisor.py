@@ -36,7 +36,7 @@ Return ONLY a JSON object, no prose before or after it:
   "evidence_event_ids": ["<event ids copied exactly from the trajectory above>"],
   "explanation": "<two or three sentences grounded in the cited events>"
 }
-Use drift_type "none" when status is ON_TRACK. Only cite event IDs that appear in the trajectory above."""
+Use drift_type "none" when status is ON_TRACK. Only cite event IDs that appear in the trajectory above."""  # noqa: E501 (prompt text, kept verbatim)
 
 MAX_DIGEST_CHARS = 700
 MAX_REPORT_CHARS = 2000
@@ -82,7 +82,8 @@ def render_user_message(inp: SupervisorInput) -> str:
         f"### Directive\n{inp.agent_directive}",
         "### Constraints\n" + ("\n".join(f"- {c}" for c in inp.constraints) or "- (none)"),
         "### Success criteria\n" + ("\n".join(f"- {c}" for c in inp.success_criteria) or "- (none)"),
-        f"### Budget\nsteps used {b.steps_used}/{b.steps_max}; research calls {b.research_calls_used}/{b.research_calls_max}",
+        f"### Budget\nsteps used {b.steps_used}/{b.steps_max}; "
+        f"research calls {b.research_calls_used}/{b.research_calls_max}",
     ]
     if inp.relevant_swarm_messages:
         parts.append("### Swarm messages\n" + "\n".join(f"- {m.sender}: {m.text}" for m in inp.relevant_swarm_messages))

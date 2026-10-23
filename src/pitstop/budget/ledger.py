@@ -4,10 +4,11 @@ Every model call first *reserves* its worst-case cost (estimated prompt tokens +
 The check against every applicable budget and the insert of the `reserved` row happen in one
 `BEGIN IMMEDIATE` transaction, so concurrent threads and processes sharing the DB file can never
 jointly reserve past a limit. Ledger writes therefore refuse to run inside another transaction (they would
-become a savepoint without the write lock, and an outer rollback would erase a reservation whose call ran). After the call, `settle` replaces the estimate with the actual cost;
-on failure `release` frees it. A reservation left `reserved` by a process that died mid-call keeps counting
-until `release_stale` (`pitstop budget reconcile --release`) frees it. Once a budget is used up, `exhausted`
-names it, so a new run is refused at its start instead of at its first call.
+become a savepoint without the write lock, and an outer rollback would erase a reservation whose call ran).
+After the call, `settle` replaces the estimate with the actual cost; on failure `release` frees it.
+A reservation left `reserved` by a process that died mid-call keeps counting until `release_stale`
+(`pitstop budget reconcile --release`) frees it. Once a budget is used up, `exhausted` names it, so a new run is
+refused at its start instead of at its first call.
 
 Scopes are derived at query time (the ledger table has no scope column):
   global:<budget>   rows whose base_url matches the BudgetSpec's (all rows if it has none), every meter

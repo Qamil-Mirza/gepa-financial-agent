@@ -236,10 +236,21 @@ def message_events(text: str = "Hello", *, tool_use: dict | None = None, input_t
     if tool_use is not None:
         args = json.dumps(tool_use["input"])
         events += [
-            {"type": "content_block_start", "index": 1,
-             "content_block": {"type": "tool_use", "id": "toolu_0", "name": tool_use["name"], "input": {}}},
-            {"type": "content_block_delta", "index": 1, "delta": {"type": "input_json_delta", "partial_json": args[:4]}},
-            {"type": "content_block_delta", "index": 1, "delta": {"type": "input_json_delta", "partial_json": args[4:]}},
+            {
+                "type": "content_block_start",
+                "index": 1,
+                "content_block": {"type": "tool_use", "id": "toolu_0", "name": tool_use["name"], "input": {}},
+            },
+            {
+                "type": "content_block_delta",
+                "index": 1,
+                "delta": {"type": "input_json_delta", "partial_json": args[:4]},
+            },
+            {
+                "type": "content_block_delta",
+                "index": 1,
+                "delta": {"type": "input_json_delta", "partial_json": args[4:]},
+            },
             {"type": "content_block_stop", "index": 1},
         ]
     events += [

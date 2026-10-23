@@ -139,8 +139,9 @@ def test_refusals_in_trace_record_refusal_spike(home):
         with tracer.start_as_current_span("chat", attributes={"gen_ai.operation.name": "chat"}):
             pass  # no model: does not tag the run
         for _ in range(2):
-            with tracer.start_as_current_span("chat", attributes={**CHAT,
-                                                                  "gen_ai.response.finish_reasons": ("content_filter",)}):
+            with tracer.start_as_current_span(
+                "chat", attributes={**CHAT, "gen_ai.response.finish_reasons": ("content_filter",)}
+            ):
                 pass
     [run] = _runs()
     assert run["model"] == "openai/gpt-oss-120b"

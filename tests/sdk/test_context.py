@@ -632,7 +632,9 @@ def test_endpoint_budget_checked_from_previous_run(tmp_path):
 
     from pitstop.sdk.errors import BudgetExceeded
 
-    (tmp_path / "config.toml").write_text(_FLAT + f'[budgets.a]\nlimit_usd = 1.0\nperiod = "total"\nbase_url = "{_A}"\n')
+    (tmp_path / "config.toml").write_text(
+        _FLAT + f'[budgets.a]\nlimit_usd = 1.0\nperiod = "total"\nbase_url = "{_A}"\n'
+    )
     pitstop.init(home=tmp_path)
     _spend(1.0, base_url=_A)
 
@@ -658,7 +660,9 @@ def test_endpoint_budget_checked_from_previous_run(tmp_path):
 def test_endpoint_budget_ignores_otel_runs(tmp_path):
     import time
 
-    (tmp_path / "config.toml").write_text(_FLAT + f'[budgets.a]\nlimit_usd = 1.0\nperiod = "total"\nbase_url = "{_A}"\n')
+    (tmp_path / "config.toml").write_text(
+        _FLAT + f'[budgets.a]\nlimit_usd = 1.0\nperiod = "total"\nbase_url = "{_A}"\n'
+    )
     pitstop.init(home=tmp_path)
     _spend(1.0, base_url=_A)
     with get_runtime().store.transaction() as c:

@@ -107,14 +107,22 @@ async def main() -> None:
         pc["verdicts"].append(f"{r['status']}@{r['confidence']:.2f}/{r['drift_type']}")
     caught = [r for r in rows if r["label"] == "drift" and r["fired"]]
     summary = {
-        "model": model, "prompt": sup.prompt_version, "trials": args.trials, "judgments": len(rows),
+        "model": model,
+        "prompt": sup.prompt_version,
+        "trials": args.trials,
+        "judgments": len(rows),
         "infra_errors_excluded": len(all_rows) - len(rows),
-        "overall": score(rows), "by_split": by("split"), "by_category": by("category"),
-        "drift_type_match_when_caught": round(sum(r["drift_type"] == r["expect_type"] for r in caught) / len(caught), 3) if caught else None,
+        "overall": score(rows),
+        "by_split": by("split"),
+        "by_category": by("category"),
+        "drift_type_match_when_caught": round(sum(r["drift_type"] == r["expect_type"] for r in caught) / len(caught), 3)
+        if caught
+        else None,
         "flaky_cases": [k for k, v in per_case.items() if 0 < v["correct"] < v["n"]],
         "invalid_json": sum(not r["valid_json"] for r in rows),
         "downgraded_for_no_valid_evidence": sum(r["downgraded"] for r in rows),
-        "usage": llm.usage.as_dict(), "wall_s": round(time.time() - t0, 1),
+        "usage": llm.usage.as_dict(),
+        "wall_s": round(time.time() - t0, 1),
     }
 
     out = s.runs_dir / f"eval-{Path(args.prompt).stem}-{time.strftime('%Y%m%d-%H%M%S')}"
@@ -123,12 +131,35 @@ async def main() -> None:
     (out / "summary.json").write_text(json.dumps({"summary": summary, "per_case": per_case}, indent=2))
 
     for cid, v in per_case.items():
-        print(f"{'✓' if v['correct'] * 2 > v['n'] else '✗'} {cid:<38} {v['label']:<5} {v['correct']}/{v['n']}  {v['verdicts']}")
-    print(json.dumps({k: summary[k] for k in ("prompt", "infra_errors_excluded", "overall", "by_split", "drift_type_match_when_caught",
-                                              "flaky_cases", "invalid_json", "downgraded_for_no_valid_evidence", "wall_s")}, indent=1))
+        print(
+            f"{'✓' if v['correct'] * 2 > v['n'] else '✗'} {cid:<38} {v['label']:<5} "
+            f"{v['correct']}/{v['n']}  {v['verdicts']}"
+        )
+    print(
+        json.dumps(
+            {
+                k: summary[k]
+                for k in (
+                    "prompt",
+                    "infra_errors_excluded",
+                    "overall",
+                    "by_split",
+                    "drift_type_match_when_caught",
+                    "flaky_cases",
+                    "invalid_json",
+                    "downgraded_for_no_valid_evidence",
+                    "wall_s",
+                )
+            },
+            indent=1,
+        )
+    )
     print("by category:")
     for k, v in summary["by_category"].items():
-        print(f"  {k:<20} acc={v['accuracy']:.2f} recall={v['drift_recall']:.2f} spec={v['ok_specificity']:.2f} pairs={v['pair_accuracy']:.2f}")
+        print(
+            f"  {k:<20} acc={v['accuracy']:.2f} recall={v['drift_recall']:.2f} "
+            f"spec={v['ok_specificity']:.2f} pairs={v['pair_accuracy']:.2f}"
+        )
     print("results:", out)
 
 

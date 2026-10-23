@@ -400,9 +400,15 @@ class _Workflow(_Scope):
         (fail open); an invalid config still fails closed."""
         try:
             rt = get_runtime()
-            row = rt.store.connect().execute(
-                "SELECT base_url FROM runs WHERE workflow=? AND base_url IS NOT NULL"
-                " AND (adapter IS NULL OR adapter != 'otel') ORDER BY started_at DESC LIMIT 1", (self.spec.name,)).fetchone()
+            row = (
+                rt.store.connect()
+                .execute(
+                    "SELECT base_url FROM runs WHERE workflow=? AND base_url IS NOT NULL"
+                    " AND (adapter IS NULL OR adapter != 'otel') ORDER BY started_at DESC LIMIT 1",
+                    (self.spec.name,),
+                )
+                .fetchone()
+            )
             return rt.ledger.exhausted(workflow=self.spec.name, workflow_budget_usd=self.spec.budget_usd,
                                        base_url=row["base_url"] if row is not None else None)
         except ConfigInvalid as e:

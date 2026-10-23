@@ -19,7 +19,8 @@ log = logging.getLogger("pitstop.correct.client")
 
 
 def _thinking_key(model: str) -> str:
-    """chat_template_kwargs key that toggles reasoning: DeepSeek uses `thinking`, Nemotron and Qwen `enable_thinking`."""
+    """chat_template_kwargs key that toggles reasoning: DeepSeek uses `thinking`, Nemotron and Qwen
+    `enable_thinking`."""
     m = model.lower()
     return "enable_thinking" if ("nemotron" in m or "qwen" in m) else "thinking"
 
@@ -89,12 +90,18 @@ class UsageTracker:
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
             return {
-                "model": self.model, "requests": self.requests, "errors": self.errors, "retries": self.retries,
-                "prompt_tokens": self.prompt_tokens, "completion_tokens": self.completion_tokens,
+                "model": self.model,
+                "requests": self.requests,
+                "errors": self.errors,
+                "retries": self.retries,
+                "prompt_tokens": self.prompt_tokens,
+                "completion_tokens": self.completion_tokens,
                 "cached_tokens": self.cached_tokens,
                 "mean_latency_ms": (self.total_latency_ms / self.requests) if self.requests else 0.0,
                 "max_in_flight": self.max_in_flight,
-                "est_cost_usd": estimate_cost_usd(self.model, self.prompt_tokens, self.completion_tokens, self.cached_tokens),
+                "est_cost_usd": estimate_cost_usd(
+                    self.model, self.prompt_tokens, self.completion_tokens, self.cached_tokens
+                ),
             }
 
 
@@ -138,7 +145,9 @@ class CrusoeClient:
                  sync_client: Any = None, async_client: Any = None) -> None:
         key = api_key or os.environ.get("CRUSOE_API_KEY")
         if not key and sync_client is None and async_client is None:
-            raise ConfigError("CRUSOE_API_KEY is not set. export CRUSOE_API_KEY='...' (single quotes) or use MockModelClient.")
+            raise ConfigError(
+                "CRUSOE_API_KEY is not set. export CRUSOE_API_KEY='...' (single quotes) or use MockModelClient."
+            )
         self.model = model
         self.base_url = base_url
         self.thinking = thinking
@@ -219,7 +228,9 @@ class CrusoeClient:
                         raise ModelUnavailableError(f"{self.model}: gave up after {attempt + 1} attempts: {e}") from e
                     self.tracker.record_retry()
                     delay = _backoff(attempt)
-                    log.warning("retryable error from %s (attempt %d): %s; sleeping %.1fs", self.model, attempt + 1, e, delay)
+                    log.warning(
+                        "retryable error from %s (attempt %d): %s; sleeping %.1fs", self.model, attempt + 1, e, delay
+                    )
                     time.sleep(delay)
         raise AssertionError("unreachable")
 
@@ -235,7 +246,9 @@ class CrusoeClient:
             self._async, self._async_client_loop = self._async_factory(), loop
         return self._async
 
-    async def acomplete(self, messages, *, max_tokens=1024, temperature=0.0, json_mode=False, seed=None) -> CompletionResult:
+    async def acomplete(
+        self, messages, *, max_tokens=1024, temperature=0.0, json_mode=False, seed=None
+    ) -> CompletionResult:
         kw = self._kwargs(messages, max_tokens, temperature, json_mode, seed)
         async with self._async_sem():
             with self.tracker.in_flight():
@@ -251,10 +264,18 @@ class CrusoeClient:
                             raise
                         if attempt == self.max_retries:
                             self.tracker.record_error()
-                            raise ModelUnavailableError(f"{self.model}: gave up after {attempt + 1} attempts: {e}") from e
+                            raise ModelUnavailableError(
+                                f"{self.model}: gave up after {attempt + 1} attempts: {e}"
+                            ) from e
                         self.tracker.record_retry()
                         delay = _backoff(attempt)
-                        log.warning("retryable error from %s (attempt %d): %s; sleeping %.1fs", self.model, attempt + 1, e, delay)
+                        log.warning(
+                            "retryable error from %s (attempt %d): %s; sleeping %.1fs",
+                            self.model,
+                            attempt + 1,
+                            e,
+                            delay,
+                        )
                         await asyncio.sleep(delay)
         raise AssertionError("unreachable")
 
@@ -304,7 +325,9 @@ class MockModelClient:
                 time.sleep(self.latency_s)
             return self._result(messages, t0)
 
-    async def acomplete(self, messages, *, max_tokens=1024, temperature=0.0, json_mode=False, seed=None) -> CompletionResult:
+    async def acomplete(
+        self, messages, *, max_tokens=1024, temperature=0.0, json_mode=False, seed=None
+    ) -> CompletionResult:
         t0 = time.perf_counter()
         with self.tracker.in_flight():
             if self.latency_s:

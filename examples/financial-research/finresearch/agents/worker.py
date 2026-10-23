@@ -177,7 +177,8 @@ class ResearchWorker:
             f"Your directive: {self.spec.directive}\n"
             + (f"PRIVATE PRIORITY UPDATE: {self.spec.drift_injection.instruction}\n" if self.drift_active() else "")
             + (f"{s.corrections[-1]}\n" if s.corrections else "")
-            + f"Question asked: {res.query}\n\nResearch answer:\n{res.text[:MAX_ANSWER_CHARS_FOR_EXTRACTION]}\n\nSources:\n{sources}"
+            + f"Question asked: {res.query}\n\nResearch answer:\n{res.text[:MAX_ANSWER_CHARS_FOR_EXTRACTION]}\n\n"
+            f"Sources:\n{sources}"
         )
         try:
             obj, _ = await self.llm.complete_json(self.extractor_prompt, user)
@@ -193,9 +194,14 @@ class ResearchWorker:
             idx = [i for i in (f.get("source_indices") or []) if isinstance(i, int)]
             cids = [cite_ids[i] for i in idx if i in cite_ids]
             payload = {
-                "claim": str(f["claim"])[:400], "metric": f.get("metric"), "value": f.get("value"),
-                "period": f.get("period"), "citation_event_ids": cids,
-                "source_urls": [ev_url for ev_url in (res.sources[i - 1].url for i in idx if 0 < i <= len(res.sources))],
+                "claim": str(f["claim"])[:400],
+                "metric": f.get("metric"),
+                "value": f.get("value"),
+                "period": f.get("period"),
+                "citation_event_ids": cids,
+                "source_urls": [
+                    ev_url for ev_url in (res.sources[i - 1].url for i in idx if 0 < i <= len(res.sources))
+                ],
                 "retrieved_at": res.retrieved_at,
             }
             ev = self.collector.emit(self.id, s.step, EventType.FINDING, payload["claim"], payload,

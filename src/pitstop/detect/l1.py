@@ -2,8 +2,9 @@
 whether this one action serves the goal (the LlamaFirewall AlignmentCheck pattern, spec §6.2).
 
 The prompt is frozen and versioned (`assets/prompts/l1_gate_v2.txt`; v1 stays as it shipped). The untrusted text
-(the proposed call's arguments, the recent calls) sits in `<tool_args>` and `<recent_calls>` blocks with every closer ("</" and near-misses)
-inside written as "<\\/", so it cannot close its block; the prompt says the blocks are data, never instructions.
+(the proposed call's arguments, the recent calls) sits in `<tool_args>` and `<recent_calls>` blocks with every closer
+("</" and near-misses) inside written as "<\\/", so it cannot close its block; the prompt says the blocks are
+data, never instructions.
 
 The judge call is one sync chat call on the "watch" meter, so it counts against the budgets but never feeds L0
 detection or the run's model tag. A judge that errors or answers without a usable verdict yields

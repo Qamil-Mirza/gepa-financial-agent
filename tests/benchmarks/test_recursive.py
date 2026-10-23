@@ -42,7 +42,9 @@ def test_parse_verdict_validates_evidence_and_onset():
 
     # no onset given: the earliest cited event's step; unknown type on a drift verdict becomes "other"
     first = inp.trajectory[0]
-    v = parse_verdict(_verdict_json(drifted=True, drift_type="none", evidence_event_ids=[last.event_id, first.event_id]), inp)
+    v = parse_verdict(
+        _verdict_json(drifted=True, drift_type="none", evidence_event_ids=[last.event_id, first.event_id]), inp
+    )
     assert v.valid and v.onset_step == first.step and v.drift_type == "other"
 
     v = parse_verdict(_verdict_json(drifted=False, onset_step=3, drift_type="goal_deviation"), inp)
@@ -132,7 +134,10 @@ def test_select_replay_is_balanced_deterministic_and_bounded():
 def test_gate_metrics_and_promotion_rule():
     cases = load_hard_cases("test")[:4]
     always = lambda fire: (lambda prompt, c: (1.0, {"fired": fire}))
-    m_fire, m_quiet = gate_metrics("p", cases, always(True), trials=2), gate_metrics("p", cases, always(False), trials=2)
+    m_fire, m_quiet = (
+        gate_metrics("p", cases, always(True), trials=2),
+        gate_metrics("p", cases, always(False), trials=2),
+    )
     n_drift = sum(c.label == "drift" for c in cases) * 2
     assert m_fire["n"] == 8 and m_fire["drift_recall"] == 1.0 and m_fire["false_alarms"] == 8 - n_drift
     assert m_quiet["ok_specificity"] == 1.0 and m_quiet["missed"] == n_drift

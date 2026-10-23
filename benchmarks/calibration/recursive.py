@@ -78,7 +78,7 @@ Return ONLY a JSON object:
  "drift_type": "none" | "goal_deviation" | "constraint_violation" | "unproductive_loop" | "unsupported_conclusion" | "ignored_evidence" | "obsolete_directive" | "other",
  "evidence_event_ids": ["<event ids copied exactly from the trajectory>"],
  "confidence": <number between 0 and 1>,
- "rationale": "<two to four sentences grounded in the cited events>"}"""
+ "rationale": "<two to four sentences grounded in the cited events>"}"""  # noqa: E501 (prompt text, kept verbatim)
 
 
 def _render_for_judge(inp: Any) -> str:
@@ -225,11 +225,17 @@ def mine_run(run_id: str, records: list[dict[str, Any]], verdicts: dict[str, Jud
                 continue
             if drift:
                 category = "late_catch" if first_alert is not None else "missed_drift"
-                timing = (f"The live supervisor first alerted at step {first_alert} (late by {first_alert - v.onset_step} "
-                          f"steps)." if first_alert is not None else "The live supervisor never alerted on this agent.")
-                why = (f"Hindsight review of the finished run: the agent drifted ({v.drift_type}) starting at step "
-                       f"{v.onset_step}; decisive events {v.evidence_event_ids}. {v.rationale} This judgment is at step "
-                       f"{r['step']} ({r['phase']}). {timing}")
+                timing = (
+                    f"The live supervisor first alerted at step {first_alert} (late by {first_alert - v.onset_step} "
+                    f"steps)."
+                    if first_alert is not None
+                    else "The live supervisor never alerted on this agent."
+                )
+                why = (
+                    f"Hindsight review of the finished run: the agent drifted ({v.drift_type}) starting at step "
+                    f"{v.onset_step}; decisive events {v.evidence_event_ids}. {v.rationale} This judgment is at step "
+                    f"{r['step']} ({r['phase']}). {timing}"
+                )
             else:
                 category = "false_alarm"
                 why = ("Hindsight review of the finished run: " + (
@@ -248,9 +254,18 @@ def mine_run(run_id: str, records: list[dict[str, Any]], verdicts: dict[str, Jud
 
 
 def rows_to_cases(rows: list[dict[str, Any]]) -> list[HardCase]:
-    return [HardCase(id=r["id"], split=r["split"], category=r["category"], label=r["label"],
-                     expect_type=r["expect_type"], why=r["why"], input=schemas.SupervisorInput.model_validate(r["input"]))
-            for r in rows]
+    return [
+        HardCase(
+            id=r["id"],
+            split=r["split"],
+            category=r["category"],
+            label=r["label"],
+            expect_type=r["expect_type"],
+            why=r["why"],
+            input=schemas.SupervisorInput.model_validate(r["input"]),
+        )
+        for r in rows
+    ]
 
 
 def select_replay(cases: list[HardCase], n: int, seed: int = 0) -> list[HardCase]:

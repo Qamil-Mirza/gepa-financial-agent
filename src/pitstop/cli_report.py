@@ -23,9 +23,14 @@ def workflow_rows(store, now: float, tz: tzinfo | None = None) -> list[dict]:
         "SELECT workflow FROM runs WHERE workflow IS NOT NULL GROUP BY workflow ORDER BY MAX(started_at) DESC")]
     rows = []
     for wf in names:
-        latest = conn.execute("SELECT criticality, status, budget_usd FROM runs WHERE workflow=? ORDER BY started_at DESC, rowid DESC"
-                              " LIMIT 1", (wf,)).fetchone()
-        runs_today = conn.execute("SELECT COUNT(*) FROM runs WHERE workflow=? AND started_at>=?", (wf, start)).fetchone()[0]
+        latest = conn.execute(
+            "SELECT criticality, status, budget_usd FROM runs WHERE workflow=? ORDER BY started_at DESC, rowid DESC"
+            " LIMIT 1",
+            (wf,),
+        ).fetchone()
+        runs_today = conn.execute(
+            "SELECT COUNT(*) FROM runs WHERE workflow=? AND started_at>=?", (wf, start)
+        ).fetchone()[0]
         spend = conn.execute(
             "SELECT COALESCE(SUM(usd),0) FROM ledger WHERE workflow=? AND meter='agent' AND state IN (?,?) AND ts>=?",
             (wf, *_LIVE, start)).fetchone()[0]

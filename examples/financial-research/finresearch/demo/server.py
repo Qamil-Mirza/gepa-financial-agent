@@ -10,9 +10,9 @@
                               PAIR of real swarms (costs money)
   GET  /api/live/<pair_id>    build_pair_view of that pair as it is written, plus "error" if its thread crashed
 
-Live mode (demo/pair.py): scenarios/nvda_amd.json, or a team planned for the typed objective (demo/team.py), run twice at once, one swarm run by
-Nano + the original prompt (a), one by Nano + the GEPA prompt (b); each corrects its own drifting agents and
-writes its own team report. 409 while a pair is going, 400 without API keys.
+Live mode (demo/pair.py): scenarios/nvda_amd.json, or a team planned for the typed objective (demo/team.py), run
+twice at once, one swarm run by Nano + the original prompt (a), one by Nano + the GEPA prompt (b); each
+corrects its own drifting agents and writes its own team report. 409 while a pair is going, 400 without API keys.
 """
 from __future__ import annotations
 

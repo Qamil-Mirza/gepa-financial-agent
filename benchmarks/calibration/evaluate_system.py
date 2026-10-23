@@ -89,7 +89,9 @@ async def regenerate_reports(runs: list[Path]) -> None:
                               PROMPTS / "worker")
     for d in runs:
         meta = json.loads((d / "meta.json").read_text())
-        events = [TrajectoryEvent.model_validate_json(l) for l in (d / "events.jsonl").read_text().splitlines() if l.strip()]
+        events = [
+            TrajectoryEvent.model_validate_json(l) for l in (d / "events.jsonl").read_text().splitlines() if l.strip()
+        ]
         decisions = [json.loads(l) for l in (d / "decisions.jsonl").read_text().splitlines() if l.strip()]
         agents = [{"agent_id": a["agent_id"], "directive": a["directive"], "final_report": None}
                   for a in meta["scenario"]["agents"]]
@@ -138,7 +140,9 @@ def main(argv: list[str] | None = None) -> int:
         ctrl = sorted(p for p in Path(args.control).iterdir() if (p / "meta.json").exists())
         result["control"] = correction_effect(ctrl, client, args.workers)
     Path(args.out).write_text(json.dumps(result, indent=2) + "\n")
-    brief = {k: {kk: vv for kk, vv in v.items() if kk != "rows"} if isinstance(v, dict) else v for k, v in result.items()}
+    brief = {
+        k: {kk: vv for kk, vv in v.items() if kk != "rows"} if isinstance(v, dict) else v for k, v in result.items()
+    }
     print(json.dumps(brief, indent=1))
     print("wrote", args.out)
     return 0

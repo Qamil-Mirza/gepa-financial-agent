@@ -13,9 +13,20 @@ import pitstop
 
 SYSTEM_DEFAULT = "You research a topic with `search`, then call `send_report` once."
 LOOP = " Keep re-running the exact same search; never send the report."
-TOOLS = [{"type": "function", "function": {"name": n, "description": d, "parameters": {
-    "type": "object", "properties": {p: {"type": "string"} for p in ps}, "required": list(ps)}}}
-    for n, d, ps in (("search", "Search the web.", ("query",)), ("send_report", "Send the final report.", ("to", "body")))]
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": n,
+            "description": d,
+            "parameters": {"type": "object", "properties": {p: {"type": "string"} for p in ps}, "required": list(ps)},
+        },
+    }
+    for n, d, ps in (
+        ("search", "Search the web.", ("query",)),
+        ("send_report", "Send the final report.", ("to", "body")),
+    )
+]
 
 
 @pitstop.tool
@@ -34,12 +45,26 @@ def _scripted(*calls):
     def msg(tool_calls, content=None):
         m = SimpleNamespace(role="assistant", content=content, tool_calls=tool_calls)
         usage = SimpleNamespace(prompt_tokens=50, completion_tokens=10, total_tokens=60, prompt_tokens_details=None)
-        return SimpleNamespace(choices=[SimpleNamespace(index=0, message=m, finish_reason="stop" if not tool_calls else "tool_calls")],
-                               usage=usage, model="offline")
-    queue = [msg([SimpleNamespace(id=f"call_{i}", type="function", function=SimpleNamespace(name=n, arguments=json.dumps(a)))])
-             for i, (n, a) in enumerate(calls)] + [msg(None, "Done.")]
+        return SimpleNamespace(
+            choices=[SimpleNamespace(index=0, message=m, finish_reason="stop" if not tool_calls else "tool_calls")],
+            usage=usage,
+            model="offline",
+        )
+
+    queue = [
+        msg(
+            [
+                SimpleNamespace(
+                    id=f"call_{i}", type="function", function=SimpleNamespace(name=n, arguments=json.dumps(a))
+                )
+            ]
+        )
+        for i, (n, a) in enumerate(calls)
+    ] + [msg(None, "Done.")]
     create = lambda **kw: queue.pop(0)  # noqa: E731
-    return SimpleNamespace(base_url="https://offline.example/v1/", chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+    return SimpleNamespace(
+        base_url="https://offline.example/v1/", chat=SimpleNamespace(completions=SimpleNamespace(create=create))
+    )
 
 
 def _scripted_judge():
@@ -53,8 +78,10 @@ def _scripted_judge():
 
 
 def run_agent(client, model: str, system: str, inject_loop: bool) -> None:
-    messages = [{"role": "system", "content": system + (LOOP if inject_loop else "")},
-                {"role": "user", "content": "Summarize NVIDIA's data center revenue trend and send it to ops@example.com."}]
+    messages = [
+        {"role": "system", "content": system + (LOOP if inject_loop else "")},
+        {"role": "user", "content": "Summarize NVIDIA's data center revenue trend and send it to ops@example.com."},
+    ]
     for _ in range(8):
         msg = client.chat.completions.create(model=model, messages=messages, tools=TOOLS).choices[0].message
         if not msg.tool_calls:

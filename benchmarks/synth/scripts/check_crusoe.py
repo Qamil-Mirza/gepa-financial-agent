@@ -31,7 +31,10 @@ resp = client.chat.completions.create(
     model=config.WORKER_MODEL,
     messages=[
         {"role": "system", "content": "You are a financial research agent. Use tools to gather evidence."},
-        {"role": "user", "content": "Directive: investigate NVIDIA data-center revenue growth. Take your first action."},
+        {
+            "role": "user",
+            "content": "Directive: investigate NVIDIA data-center revenue growth. Take your first action.",
+        },
     ],
     tools=tools,
     max_tokens=2048,

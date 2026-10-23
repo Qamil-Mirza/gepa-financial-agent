@@ -141,9 +141,14 @@ async def cmd_timeline(args) -> None:
             continue
         quiet = f" [dim](+{e['quiet_streak']} quiet)[/]" if e["quiet_streak"] else ""
         reply = f" [dim]↳ {e['responds_to']}[/]" if e["responds_to"] else ""
-        who = e["source"]["label"] + (f" → {e['agent_label']}" if e["agent_label"] and e["source"]["role"] != "agent" else "")
-        console.print(f"[{SEVERITY_STYLE[e['severity']]}]{e['entry_id']} {e['kind']:<22} \\[{escape(who)}] {escape(e['title'])}[/]"
-                      f"{reply}{quiet}")
+        who = e["source"]["label"] + (
+            f" → {e['agent_label']}" if e["agent_label"] and e["source"]["role"] != "agent" else ""
+        )
+        console.print(
+            f"[{SEVERITY_STYLE[e['severity']]}]{e['entry_id']} {e['kind']:<22} "
+            f"\\[{escape(who)}] {escape(e['title'])}[/]"
+            f"{reply}{quiet}"
+        )
         if e["evidence"] and e["severity"] != "info":
             for ev in e["evidence"]:
                 console.print(f"[dim]      {ev['event_id']}: {escape(ev['summary'][:100])}[/]")
