@@ -88,3 +88,23 @@ def test_emit_without_otel_installed_is_noop(monkeypatch, tracing):
         monkeypatch.undo()
     assert _verdicts(exporter) == []
     assert trace  # the real module is untouched for later tests
+
+
+def test_apply_findings_verdict_span_override(tmp_path, tracing):
+    from pitstop.detect.l0 import Finding
+    from pitstop.sdk.actions import apply_findings
+    from pitstop.sdk.context import WorkflowSpec
+
+    tracer, exporter = tracing
+    (tmp_path / "config.toml").write_text("")
+    pitstop.init(home=tmp_path)
+    finding = Finding("out_of_scope_action", "off_task", True, {"tool": "send_email"})
+    with tracer.start_as_current_span("outer") as outer:
+        with tracer.start_as_current_span("inner"):
+            apply_findings(None, [finding], run_id="otel-1", spec=WorkflowSpec("wf"), observe_only=True,
+                           verdict_span=outer)
+    spans = {s.name: s for s in exporter.get_finished_spans()}
+    assert [e.name for e in spans["inner"].events] == []
+    [event] = spans["outer"].events
+    assert event.name == "pitstop.verdict" and event.attributes["pitstop.action"] == "record"
+    assert event.attributes["pitstop.run_id"] == "otel-1"

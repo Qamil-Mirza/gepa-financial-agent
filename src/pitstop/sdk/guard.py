@@ -74,15 +74,17 @@ def tool_args_text(args: tuple, kwargs: dict) -> str:
 def checked(ctx: RunContext, tool: str) -> Iterator[None]:
     """Mark `tool` as already guarded in this run while the block runs: a `@pitstop.tool` of the same name inside
     it skips its own guard. Use it around the tool's execution once `guard_call` returned "run"."""
+    key = (ctx.run_id, tool)
     prev = _checked.get()
-    token = _checked.set(prev | {(ctx.run_id, tool)})
+    token = _checked.set(prev | {key})
     try:
         yield
     finally:
         try:
             _checked.reset(token)
-        except ValueError:  # exited from another Context than the one it was entered in
-            _checked.set(prev)
+        except ValueError:  # exited from another Context: drop only this mark, never install the entering
+            if key not in prev:  # context's other marks there (they would skip L0 and the gate)
+                _checked.set(_checked.get() - {key})
 
 
 def is_checked(ctx: RunContext, tool: str) -> bool:

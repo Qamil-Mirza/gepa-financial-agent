@@ -24,7 +24,8 @@ class Applied(NamedTuple):
 
 
 def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None = None,
-                   spec: WorkflowSpec | None = None, observe_only: bool = False) -> list[Applied]:
+                   spec: WorkflowSpec | None = None, observe_only: bool = False,
+                   verdict_span: Any = None) -> list[Applied]:
     """Classify each finding (level, action), then record it. A "halt" action (a budget hit or spend spike, any
     criticality), or a P0 on a high workflow, sets a pending halt that the next boundary raises, and records a
     `halt` event marked `pending`. A P1 breakage or refusal spike on a workflow that pins a `fallback_model`, in a
@@ -45,7 +46,8 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
     Each recorded P0/P1 occurrence is handed to `pitstop.alerts.dispatch.notify`, which queues the alert and
     returns at once (the alert is sent once per drift and channel, again on escalation to P0). A P0 whose drift
     write failed still pages, through `dispatch.notify_unrecorded` (undeduplicated). Every applied finding then adds
-    a `pitstop.verdict` event to the current OTel span (best effort, a no-op without opentelemetry)."""
+    a `pitstop.verdict` event to `verdict_span`, or to the current OTel span when it is None (best effort, a no-op
+    without opentelemetry). The OTel processor passes the trace's root span: its current span is not the right one."""
     from ..detect import drifts
     from ..detect.urgency import Level, action_for, classify
     from .guard import _one_line
@@ -86,7 +88,8 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
                 payload = {"reason": reason, "drift_id": drift_id, "pending": True}
                 _safe(lambda: _halt_event(ctx, f.drift_type, payload))
         _safe(lambda: emit_verdict(run_id=run_id, drift_type=f.drift_type, level=level.value, action=action,
-                                   drift_id=drift_id, reason=f"{f.drift_type}: {_one_line(f.evidence)}"))
+                                   drift_id=drift_id, reason=f"{f.drift_type}: {_one_line(f.evidence)}",
+                                   span=verdict_span))
         applied.append(Applied(f, level, action, drift_id))
     return applied
 

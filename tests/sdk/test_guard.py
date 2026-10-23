@@ -181,3 +181,24 @@ def test_observe_only_without_ctx_uses_spec(tmp_path):
     assert a.action == "record"
     [d] = list_drifts(get_runtime().store)
     assert (d["workflow"], d["level"]) == ("otel-wf", "P0")
+
+
+def test_checked_exit_in_another_context_never_leaks_marks(tmp_path):
+    import contextvars
+
+    from pitstop.sdk.guard import _checked
+
+    _init(tmp_path)
+    with workflow("wf") as ctx:
+        entering = contextvars.copy_context()
+        cm = checked(ctx, "t")
+
+        def enter():
+            _checked.set(frozenset({(ctx.run_id, "outer")}))  # an outer mark in the entering context only
+            cm.__enter__()
+
+        entering.run(enter)
+        foreign = contextvars.Context()
+        foreign.run(cm.__exit__, None, None, None)
+        assert foreign.run(_checked.get) == frozenset()  # neither "outer" nor "t" installed there
+        assert entering.run(_checked.get) == frozenset({(ctx.run_id, "outer"), (ctx.run_id, "t")})
