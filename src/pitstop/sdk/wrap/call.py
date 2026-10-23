@@ -122,6 +122,8 @@ def _fallback_from(ctx: RunContext | None, meter: str, kwargs: dict) -> str | No
     requested = kwargs.get("model")
     if requested == target or _safe(lambda: fallback.active(get_runtime().store, ctx.spec.name)) is None:
         return None
+    if requested is None:
+        return "(unset)"  # no model kwarg (a client-side default, say): never the string "None"
     return requested if isinstance(requested, str) else str(requested)
 
 

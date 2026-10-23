@@ -17,8 +17,9 @@ CREATE TABLE IF NOT EXISTS ledger (
 CREATE TABLE IF NOT EXISTS prompts (
     name TEXT, version INTEGER, text TEXT, sha TEXT, source TEXT, created_at REAL,
     active INTEGER, PRIMARY KEY(name, version));
--- alerts: kind immediate | digest | test; status pending | sent | failed; error is an exception type name or
--- "HTTP <status>", never a message, URL or body (they can hold secrets).
+-- alerts: kind immediate | digest | test; status pending | sent | failed | superseded (a stale pending row that a
+-- later send took over); drift_id NULL for test sends and for P0 pages whose drift could not be recorded; error is an
+-- exception type name or "HTTP <status>", never a message, URL or body (they can hold secrets).
 CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY, drift_id INTEGER, level TEXT, channel TEXT, kind TEXT,
     ts REAL, status TEXT, error TEXT);
 -- l2_state: the L2 change detector's saved state, one row per (workflow, metric).

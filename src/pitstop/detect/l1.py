@@ -1,11 +1,15 @@
 """L1 pre-action gate: before a side-effect tool runs on a high or medium workflow, a small judge model is asked
 whether this one action serves the goal (the LlamaFirewall AlignmentCheck pattern, spec §6.2).
 
-The prompt is frozen and versioned (`assets/prompts/l1_gate_v1.txt`). The judge call is one sync chat call on the
-"watch" meter, so it counts against the budgets but never feeds L0 detection or the run's model tag. A judge that
-errors or answers without a usable verdict yields `GateVerdict(error=...)`; the caller applies the workflow's
-`on_gate_error` policy. The error text is only an exception type name or "unparseable verdict", never the request,
-the key or the URL. `Halted` and `BudgetExceeded` from the judge call propagate."""
+The prompt is frozen and versioned (`assets/prompts/l1_gate_v2.txt`; v1 stays as it shipped). The untrusted text
+(the proposed call's arguments, the recent calls) sits in `<tool_args>` and `<recent_calls>` blocks with every "</"
+inside written as "<\\/", so it cannot close its block; the prompt says the blocks are data, never instructions.
+
+The judge call is one sync chat call on the "watch" meter, so it counts against the budgets but never feeds L0
+detection or the run's model tag. A judge that errors or answers without a usable verdict yields
+`GateVerdict(error=...)`; the caller applies the workflow's `on_gate_error` policy. The error text is only an
+exception type name or "unparseable verdict", never the request, the key or the URL. `Halted` and `BudgetExceeded`
+from the judge call propagate."""
 from __future__ import annotations
 
 import functools
@@ -18,7 +22,7 @@ from ..llm import extract_json_object
 from ..sdk.errors import Halted
 from .l0 import ToolCallRecord
 
-GATE_PROMPT_VERSION = "l1_gate_v1"
+GATE_PROMPT_VERSION = "l1_gate_v2"
 
 ARGS_MAX = 2000  # chars of the proposed call's arguments shown to the judge
 RECENT_CALLS = 5  # the agent's most recent tool calls shown for context
@@ -39,17 +43,27 @@ def _system_prompt() -> str:
     return (PROMPTS / f"{GATE_PROMPT_VERSION}.txt").read_text()
 
 
+def _data(text: str) -> str:
+    """Untrusted text for a tag block: no "</" survives, so the text cannot close the block it sits in."""
+    return text.replace("</", "<\\/")
+
+
 def _user_message(workflow_goal: str | None, agent_goal: str | None, tool: str, args_text: str,
                   recent: list[ToolCallRecord]) -> str:
+    shown = list(recent)[-RECENT_CALLS:]
+    calls = [f"- {r.name} {r.args[:RECENT_ARGS_MAX]}" for r in shown] or ["(none)"]
     lines = [f"Workflow goal: {workflow_goal or '(none given)'}",
              f"Agent goal: {agent_goal or '(none given)'}",
              "",
-             f"Proposed action: call tool {tool!r} with arguments:",
-             args_text[:ARGS_MAX],
+             f"Proposed action: call tool {_data(repr(tool))} with these arguments:",
+             "<tool_args>",
+             _data(args_text[:ARGS_MAX]),
+             "</tool_args>",
              "",
-             "The agent's most recent tool calls (oldest first):"]
-    shown = list(recent)[-RECENT_CALLS:]
-    lines += [f"- {r.name} {r.args[:RECENT_ARGS_MAX]}" for r in shown] or ["(none)"]
+             "The agent's most recent tool calls (oldest first):",
+             "<recent_calls>",
+             _data("\n".join(calls)),
+             "</recent_calls>"]
     return "\n".join(lines)
 
 

@@ -9,8 +9,12 @@ Every send attempt is an `alerts` row (kind `immediate` | `digest` | `test`, sta
 error an exception type name or "HTTP <status>"). An immediate alert is sent once per drift and channel: a channel
 is skipped while a sent row, or a pending row younger than ALERT_PENDING_STALE_S, exists for the drift at the same or
 a more urgent level. So a drift that escalates from P1 to P0 alerts again, a failed send is retried at the drift's
-next occurrence, and a row left pending by a killed process stops blocking after ALERT_PENDING_STALE_S. Drifts are
-themselves deduplicated per (workflow, drift_type) while open, so this is one alert per open drift."""
+next occurrence, and a row left pending by a killed process stops blocking after ALERT_PENDING_STALE_S (the next
+send for that drift and channel marks it `superseded`). Drifts are themselves deduplicated per (workflow,
+drift_type) while open, so this is one alert per open drift.
+
+A P0 whose drift could not be recorded (a store error) still pages: `notify_unrecorded` sends it to the P0 routes
+without deduplication, with `alerts` rows whose drift_id is NULL."""
 from __future__ import annotations
 
 import logging
@@ -23,7 +27,7 @@ from concurrent.futures import wait as _wait
 from ..userconfig import ALERT_CHANNELS
 from . import channels
 from .channels import ChannelError
-from .model import Alert, build_alert
+from .model import Alert, build_alert, build_unrecorded_alert
 
 log = logging.getLogger("pitstop")
 
@@ -33,7 +37,8 @@ LAST_DIGEST_KEY = "last_digest_ts"
 # A pending row older than this was left by a process that died mid-send (or whose status update failed): it no
 # longer blocks a new send. Well above one send's worst case (see RETRY_BACKOFF_S).
 ALERT_PENDING_STALE_S = 120.0
-# Backoff before each retry of an immediate send that failed with a transport error, a 5xx or a 429. Bounded so an
+# Backoff before each retry of an immediate send that failed with a transport error, a 5xx, a 429 or an SMTP 4xx.
+# Bounded so an
 # alert queued at exit delays the exit by at most 3 attempts + 1.5 s per channel: about 16.5 s over HTTP (5 s
 # timeout), 31.5 s over SMTP (10 s timeout). Digest and test sends are not retried.
 RETRY_BACKOFF_S: tuple[float, ...] = (0.5, 1.0)
@@ -90,6 +95,23 @@ def _done(fut: Future) -> None:
         _futures.discard(fut)
 
 
+def notify_unrecorded(*, workflow: str | None, run_id: str | None, drift_type: str, level: str,
+                      evidence: dict) -> None:
+    """Queue a best-effort, undeduplicated alert for a drift whose write failed (`apply_findings` calls it for a
+    P0) and return at once. Sent to `level`'s routes; each send is an `alerts` row with drift_id NULL when the
+    store takes it, and goes out even when it does not. A no-op when no routed channel is usable."""
+    rt = _runtime()
+    alerts = rt.config.alerts
+    if level not in IMMEDIATE_LEVELS or not _usable(alerts, alerts.routes[level]):
+        return
+    fields = {"workflow": workflow, "run_id": run_id, "drift_type": drift_type, "level": level,
+              "evidence": evidence, "ts": time.time()}
+    fut = _pool.submit(_deliver_unrecorded, rt.store, alerts, fields)
+    with _lock:
+        _futures.add(fut)
+    fut.add_done_callback(_done)
+
+
 def wait_idle(timeout: float = 10.0) -> bool:
     """Wait for every queued alert to finish. True when none is left (for tests and the CLI)."""
     with _lock:
@@ -116,6 +138,28 @@ def _deliver(store, alerts, drift_id: int) -> None:
             log.warning("pitstop: could not close the alert worker's store connection (%s)", type(e).__name__)
 
 
+def _deliver_unrecorded(store, alerts, fields: dict) -> None:
+    try:
+        alert = build_unrecorded_alert(store, **fields)
+        for ch in _usable(alerts, alerts.routes[alert.level]):
+            row_ids = []
+            try:
+                with store.transaction(immediate=True) as c:
+                    row_ids = [_insert(c, None, alert.level, ch.name, "immediate")]
+            except Exception as e:  # the store that lost the drift may refuse this row too: send anyway
+                log.warning("pitstop: could not record the unrecorded drift's %s alert (%s)", ch.name,
+                            type(e).__name__)
+            _attempt(store, row_ids, ch, alert, retries=RETRY_BACKOFF_S)
+    except Exception as e:
+        log.warning("pitstop: alert for an unrecorded %s drift failed (%s)", fields.get("drift_type"),
+                    type(e).__name__)
+    finally:
+        try:
+            store.close_local()
+        except Exception as e:
+            log.warning("pitstop: could not close the alert worker's store connection (%s)", type(e).__name__)
+
+
 # A row that still counts: sent, or pending and fresh enough that its sender may still be alive.
 _LIVE = "(status = 'sent' OR (status = 'pending' AND ts > ?))"
 
@@ -129,6 +173,7 @@ def _claim(store, alert: Alert, channel: str) -> int | None:
     with store.transaction(immediate=True) as c:
         if _covered(c, alert, channel):
             return None
+        _supersede(c, alert.drift_id, channel, "immediate")
         return _insert(c, alert.drift_id, alert.level, channel, "immediate")
 
 
@@ -138,22 +183,23 @@ def _covered(c, alert: Alert, channel: str) -> bool:
     return any(_RANK.get(r["level"], 9) <= _RANK[alert.level] for r in rows)
 
 
+def _supersede(c, drift_id: int, channel: str, kind: str) -> None:
+    """Mark the drift's stale pending rows for this channel `superseded`: their sender died, and a new send for
+    the same drift and channel takes over (so a row is never left pending forever)."""
+    c.execute("UPDATE alerts SET status='superseded' WHERE drift_id=? AND channel=? AND kind=? AND status='pending'"
+              " AND ts <= ?", (drift_id, channel, kind, time.time() - ALERT_PENDING_STALE_S))
+
+
 def _insert(c, drift_id: int | None, level: str, channel: str, kind: str) -> int:
     return c.execute("INSERT INTO alerts(drift_id, level, channel, kind, ts, status) VALUES (?,?,?,?,?,'pending')",
                      (drift_id, level, channel, kind, time.time())).lastrowid
 
 
-# SMTP replies a retry will not change: the server answered and refused (smtplib.SMTPResponseException and its
-# subclasses, plus refused recipients and a missing server feature). SMTPConnectError (a refused greeting) and
-# SMTPServerDisconnected are connection errors and are retried.
-_SMTP_FINAL = frozenset({"SMTPResponseException", "SMTPAuthenticationError", "SMTPSenderRefused", "SMTPDataError",
-                         "SMTPHeloError", "SMTPRecipientsRefused", "SMTPNotSupportedError"})
-
-
 def _retryable(kind: str) -> bool:
-    """Transport errors, 5xx and 429 may pass on a retry; other HTTP statuses, an SMTP refusal (auth, sender,
-    recipients, data) and a missing env var will not."""
-    if kind == channels.NOT_CONFIGURED or kind in _SMTP_FINAL:
+    """For an error whose channel did not say (`ChannelError.retryable` None; SMTP always says, see
+    `channels._smtp_retryable`): transport errors, 5xx and 429 may pass on a retry; other HTTP statuses and a
+    missing env var will not."""
+    if kind == channels.NOT_CONFIGURED:
         return False
     if kind.startswith("HTTP "):
         status = kind[5:]
@@ -167,17 +213,18 @@ def _attempt(store, row_ids: list[int], ch, alert: Alert, *, retries: tuple[floa
     for delay in (None, *retries):
         if delay is not None:
             time.sleep(delay)
+        retryable = None
         try:
             ch.send(alert)
             error = None
         except ChannelError as e:
-            error = e.kind
+            error, retryable = e.kind, e.retryable
         except Exception as e:  # a channel bug: still only its type name
             error = type(e).__name__
-        if error is None or not _retryable(error):
+        if error is None or not (_retryable(error) if retryable is None else retryable):
             break
     status = "sent" if error is None else "failed"
-    for last in (False, True):  # one retry: a stuck pending row would block this channel until it goes stale
+    for last in (False, True) if row_ids else ():  # one retry: a stuck pending row would block this channel until it goes stale
         try:
             _update(store, row_ids, status, error)
             break
@@ -220,6 +267,8 @@ def run_digest(now: float | None = None, *, force: bool = False) -> tuple[int, d
                 "SELECT id, level FROM drifts d WHERE status='open' AND level IN ('P2', 'P3') AND NOT EXISTS"
                 f" (SELECT 1 FROM alerts WHERE drift_id=d.id AND channel=? AND kind='digest' AND {_LIVE})"
                 " ORDER BY id", (ch.name, time.time() - ALERT_PENDING_STALE_S)).fetchall()
+            for d in drifts:
+                _supersede(c, d["id"], ch.name, "digest")
             row_ids = [_insert(c, d["id"], d["level"], ch.name, "digest") for d in drifts]
         if not drifts:
             continue

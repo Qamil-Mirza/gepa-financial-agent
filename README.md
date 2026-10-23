@@ -38,7 +38,7 @@ uv run finresearch run --offline
 ```text
   agent_nvda_dc-e016     error         research blocked by PitStop: out_of_scope_action: {"gate": "about consumer gaming, not the directive", ...
 ...
-agent_nvda_dc: drift injected at step 2 → PitStop blocked 2 research call(s), first at step 2: out_of_scope_action: {"gate": "about consumer gaming, not the directive", "prompt": "l1_gate_v1", "tool": "youcom_research"}
+agent_nvda_dc: drift injected at step 2 → PitStop blocked 2 research call(s), first at step 2: out_of_scope_action: {"gate": "about consumer gaming, not the directive", "prompt": "l1_gate_v2", "tool": "youcom_research"}
 agent_amd_ai: no injection → not blocked by PitStop
 agent_supply: no injection → not blocked by PitStop
 PitStop run 7a210f33… (ok); `pitstop drifts` lists what PitStop caught
@@ -116,11 +116,11 @@ Only calls on the default `agent` meter feed drift detection and set the run's m
 
 ### Pre-action gate
 
-Before a `@pitstop.tool(side_effects=True)` tool runs inside a `high` or `medium` workflow, and after the L0 checks let it through, a judge model is asked whether this one call serves the workflow's goal (and the agent's goal, if set). It sees the goals, the tool name, its arguments (first 2,000 characters) and the agent's last 5 tool calls; the prompt is frozen and versioned (`l1_gate_v1`). Read-only tools and `low` workflows are never gated. A "no" is recorded as an `out_of_scope_action` drift (P0) and the tool returns the usual `{"blocked_by": "pitstop", "reason": ...}` instead of running; on a `high` workflow the run also halts at its next call boundary. Every verdict is a `gate` event.
+Before a `@pitstop.tool(side_effects=True)` tool runs inside a `high` or `medium` workflow, and after the L0 checks let it through, a judge model is asked whether this one call serves the workflow's goal (and the agent's goal, if set). It sees the goals, the tool name, its arguments (first 2,000 characters) and the agent's last 5 tool calls; the prompt is frozen and versioned (`l1_gate_v2`). The arguments and the recent calls reach the judge inside `<tool_args>` and `<recent_calls>` blocks that the prompt treats as data, never as instructions; a `</` inside them is written as `<\/`, so a tool argument cannot close its block and smuggle in instructions. The judge endpoint receives the tool's name and arguments and the agent's last 5 tool calls; choose an endpoint you trust with that data. Read-only tools and `low` workflows are never gated. A "no" is recorded as an `out_of_scope_action` drift (P0) and the tool returns the usual `{"blocked_by": "pitstop", "reason": ...}` instead of running; on a `high` workflow the run also halts at its next call boundary. Every verdict is a `gate` event.
 
 Each gated call costs one judge call and adds roughly 0.5–1.5 s of latency. Judge calls go through the `watch` meter: they count against your budgets (a budget hit raises `BudgetExceeded` from the tool call) but never feed drift detection. Async tools run the judge in a worker thread, not on the event loop.
 
-The judge is configured in `[judge]` in `config.toml` (default: `openai/gpt-oss-120b` on Crusoe, key read from `CRUSOE_API_KEY`, 10 s timeout, no retries; see [docs/config.example.toml](docs/config.example.toml)). To use your own client, pass a sync OpenAI-compatible client: `pitstop.init(judge_client=OpenAI(...), judge_model="...")` (PitStop wraps it; an async client is refused and counts as no judge). Pick a model from a different family than your agent where you can, and prefer a fast non-reasoning model: a reasoning model spends tokens and seconds thinking before it answers (the judge call allows up to 2,048 output tokens). The judge is resolved once per runtime: a key exported later takes effect after a restart, `pitstop.sdk.runtime.reset_runtime()` or `pitstop.init(judge_client=...)`.
+The judge is configured in `[judge]` in `config.toml` (default: `openai/gpt-oss-120b` on Crusoe, key read from `CRUSOE_API_KEY`, 10 s timeout, no retries; `base_url` must be an `http://` or `https://` URL with a host; see [docs/config.example.toml](docs/config.example.toml)). To use your own client, pass a sync OpenAI-compatible client: `pitstop.init(judge_client=OpenAI(...), judge_model="...")` (PitStop wraps it; an async client is refused and counts as no judge). Pick a model from a different family than your agent where you can, and prefer a fast non-reasoning model: a reasoning model spends tokens and seconds thinking before it answers (the judge call allows up to 2,048 output tokens). The judge is resolved once per runtime: a key exported later takes effect after a restart, `pitstop.sdk.runtime.reset_runtime()` or `pitstop.init(judge_client=...)`.
 
 When the judge is missing, times out, errors or returns no usable verdict, the workflow's failure policy decides: `high` workflows block the call (fail closed) and `medium` workflows run it (fail open). Override it per workflow with `pitstop.workflow(..., on_gate_error="block" | "allow")`. Every failure is recorded as a `gate_error` event with the policy applied; a blocked call's reason says how to fix it (configure `[judge]` or set `on_gate_error="allow"`). So with no judge configured, side-effect tools on `high` workflows do not run.
 
@@ -141,12 +141,12 @@ The `occurrences` column counts every occurrence of the drift; the DB keeps the 
 Pin a known-good model on a workflow with `pitstop.workflow(..., fallback_model="...")`. The fallback engages when all of these hold:
 
 - a P1 `tool_call_breakage` or `refusal_spike` drift is detected in a run (a `low` workflow's P2 never engages it);
-- the run's model or provider `base_url` changed in the last 24 hours: it differs from the workflow's previous setup, and the first run on the new setup started less than a day ago (a breakage with no recent change is only recorded). Runs that went to the pinned model don't count as a setup, so clearing the fallback and going back to your old model is not a change, while a switch you made while the fallback was on still is;
+- the run's model changed in the last 24 hours: it differs from the model of the workflow's previous setup, and the first run on the new model started less than a day ago (a breakage with no recent change is only recorded). Runs that went to the pinned model don't count as a setup, so clearing the fallback and going back to your old model is not a change, while a switch you made while the fallback was on still is;
 - the run is not already on the pinned model.
 
 From the next call on, every agent-meter call in that workflow is sent to the pinned model instead of the one your code asked for; the agent sees no other difference. The reservation, cost and `llm_call` event use the pinned model, and the event records the requested one as `fallback_from`. The drift's action is `fallback`, and a `fallback` event records `{"from", "to", "change"}`. Judge and supervisor calls (other meters) and calls outside the workflow are never swapped. If PitStop cannot read its state, the call keeps its own model.
 
-Only the model id is swapped: the call still goes to the client's own `base_url`. Every agent-meter client in the workflow sends the pinned id, and after a fallback engaged by a `base_url` change it goes to the new provider. Pick a `fallback_model` that every endpoint the workflow calls actually serves.
+The fallback handles model changes only. A change of provider `base_url` with the same model still records the P1 drift and alerts, but does not engage the fallback: the pinned model id may mean nothing to the new provider. Only the model id is swapped: the call still goes to the client's own `base_url`, so pick a `fallback_model` that every endpoint the workflow calls actually serves. An `llm_call` event of a call that named no model records `fallback_from` as `"(unset)"`.
 
 The fallback is sticky: it stays on across runs and processes until you clear it, since only you can tell when the new model or provider is fixed:
 
@@ -154,6 +154,8 @@ The fallback is sticky: it stays on across runs and processes until you clear it
 $ uv run pitstop fallback status        # workflow, pinned model, since, the change that engaged it
 $ uv run pitstop fallback clear support # the next call goes back to the requested model
 ```
+
+Once cleared, `pitstop drifts` shows the drift's action as `fallback (cleared)`.
 
 ### Alerts
 

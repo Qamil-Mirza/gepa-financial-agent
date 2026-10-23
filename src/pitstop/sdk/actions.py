@@ -25,8 +25,9 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
     """Classify each finding (level, action), then record it. A "halt" action (a budget hit or spend spike, any
     criticality), or a P0 on a high workflow, sets a pending halt that the next boundary raises, and records a
     `halt` event marked `pending`. A P1 breakage or refusal spike on a workflow that pins a `fallback_model`, in a
-    run whose model or base_url changed within the last 24 h (see `pitstop.detect.changes.recent_change`), engages
-    the fallback (sticky until cleared): the drift's action is "fallback" and a `fallback` event is recorded.
+    run whose model changed within the last 24 h (see `pitstop.detect.changes.recent_change`), engages the fallback
+    (sticky until cleared): the drift's action is "fallback" and a `fallback` event is recorded. A base_url-only
+    change does not: the pinned model id may mean nothing on the new provider, so the drift is only recorded.
     Outside a workflow: workflow=None, criticality medium, sensitivity normal.
 
     The block/steer/halt decision never depends on the store: a failed drift or event write is logged, leaves
@@ -34,7 +35,8 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
     run, the shared state); when it cannot be read the call keeps its model (fail open).
 
     Each recorded P0/P1 occurrence is handed to `pitstop.alerts.dispatch.notify`, which queues the alert and
-    returns at once (the alert is sent once per drift and channel, again on escalation to P0)."""
+    returns at once (the alert is sent once per drift and channel, again on escalation to P0). A P0 whose drift
+    write failed still pages, through `dispatch.notify_unrecorded` (undeduplicated)."""
     from ..detect import drifts
     from ..detect.urgency import Level, action_for, classify
 
@@ -59,6 +61,8 @@ def apply_findings(ctx: RunContext | None, findings: list, *, run_id: str | None
             _safe(lambda: _engage_fallback(ctx, f.drift_type, drift_id, *engage))
         if drift_id is not None and level in (Level.P0, Level.P1):
             _safe(lambda: _notify(drift_id))
+        elif drift_id is None and level is Level.P0:
+            _safe(lambda: _notify_unrecorded(workflow, run_id, f, level.value))
         if ctx is not None and (action == "halt" or (level is Level.P0 and criticality == "high")):
             reason = None
             with ctx.lock:  # one check-and-set per run, shared with the tool's steer-limit halt
@@ -79,8 +83,15 @@ def _notify(drift_id: int) -> None:
     notify(drift_id)  # queues the alert on the alerts thread pool; never waits for a channel
 
 
+def _notify_unrecorded(workflow: str | None, run_id: str | None, f: Any, level: str) -> None:
+    from ..alerts.dispatch import notify_unrecorded
+
+    notify_unrecorded(workflow=workflow, run_id=run_id, drift_type=f.drift_type, level=level, evidence=f.evidence)
+
+
 def _fallback_change(ctx: RunContext, drift_type: str, level: Any) -> tuple[str, Any] | None:
-    """(the run's model, the Change) when this finding engages the workflow's fallback, else None."""
+    """(the run's model, the Change) when this finding engages the workflow's fallback, else None. Only a model
+    change engages it: after a base_url-only change the run already sends the model id it used before."""
     from ..detect.changes import recent_change
     from ..detect.urgency import Level
     from .fallback import FALLBACK_TRIGGERS
@@ -93,7 +104,7 @@ def _fallback_change(ctx: RunContext, drift_type: str, level: Any) -> tuple[str,
     if row is None or row["model"] is None or row["model"] == target:  # already on the pinned model
         return None
     change = recent_change(store, ctx.spec.name, ctx.run_id, ignore_model=target)  # pinned runs are no setup
-    return (row["model"], change) if change is not None else None
+    return (row["model"], change) if change is not None and change.field == "model" else None
 
 
 def _engage_fallback(ctx: RunContext, name: str, drift_id: int | None, model: str, change: Any) -> None:

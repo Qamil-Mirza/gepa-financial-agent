@@ -65,16 +65,33 @@ def build_alert(store, drift_id: int) -> Alert:
                  ts=d["last_seen"] if d["last_seen"] is not None else d["ts"])
 
 
+def build_unrecorded_alert(store, *, workflow: str | None, run_id: str | None, drift_type: str, level: str,
+                           evidence: dict, ts: float) -> Alert:
+    """The alert for a drift whose write failed (`dispatch.notify_unrecorded`): no drift row to read, so the text
+    comes from the finding. The cause is read from the run when the store allows, else it says so."""
+    what = f"{drift_type}; the drift could not be recorded in PitStop's store (not deduplicated)"
+    if evidence:
+        what += f"; evidence: {_one_line(evidence)}"
+    try:
+        run = store.connect().execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone() if run_id else None
+        cause = _cause(store, workflow, run) if run is not None else "Unknown: the drift was seen outside a run."
+    except Exception as e:
+        cause = f"Unknown: the store could not be read ({type(e).__name__})."
+    action = ("Applied the drift's in-the-moment action (block, steer or halt) as usual; the drift is missing "
+              "from `pitstop drifts` (see the agent's log).")
+    return Alert(drift_id=None, workflow=workflow, level=level, drift_type=drift_type, what=what, cause=cause,
+                 action=action, run_id=run_id, ts=ts)
+
+
 def _cause(store, workflow: str | None, run) -> str:
     from ..detect.changes import recent_change
-    from ..sdk import fallback
 
     if run is None:
         return "Unknown: the drift was recorded outside a run."
     if workflow is not None:
-        # Runs during an active fallback record the pinned model; they are not a setup of their own.
-        state = fallback.active(store, workflow)
-        change = recent_change(store, workflow, run["id"], ignore_model=state["model"] if state else None)
+        # Runs redirected to a pinned fallback are skipped by recent_change itself (runs.fallback_from), so the
+        # cause is the same whether or not a fallback is active now.
+        change = recent_change(store, workflow, run["id"])
         if change is not None:
             at = datetime.fromtimestamp(change.at, timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
             what = "model" if change.field == "model" else "provider base_url"

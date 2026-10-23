@@ -18,7 +18,8 @@ def test_wheel_ships_only_the_sdk(tmp_path):
         pytest.skip("uv not on PATH; run the suite via `uv run pytest`")
     subprocess.run(["uv", "build", "--wheel", "--out-dir", str(tmp_path)], check=True, cwd=REPO_ROOT, env=_NO_KEYS)
     names = zipfile.ZipFile(next(tmp_path.glob("pitstop-*.whl"))).namelist()
-    for required in ("pitstop/assets/prompts/l1_gate_v1.txt", "pitstop/store/schema.sql"):
+    for required in ("pitstop/assets/prompts/l1_gate_v1.txt", "pitstop/assets/prompts/l1_gate_v2.txt",
+                     "pitstop/store/schema.sql"):
         assert required in names
     for gone in ("pitstop/demo/", "pitstop/ui/", "pitstop/orchestrator.py", "pitstop/assets/scenarios/",
                  "pitstop/supervisor/", "pitstop/assets/prompts/worker/", "pitstop/assets/prompts/gepa/",

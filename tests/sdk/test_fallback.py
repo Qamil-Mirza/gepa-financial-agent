@@ -92,7 +92,7 @@ def test_next_call_in_the_same_run_is_swapped(tmp_path):
     assert [c["model"] for c in fake.calls] == [MODEL_A] + [MODEL_B] * 5 + [FALLBACK]
 
 
-def test_refusal_spike_after_base_url_change_activates_fallback(tmp_path):
+def test_base_url_only_change_does_not_engage_fallback(tmp_path):
     _init(tmp_path)
     fake_a = FakeOpenAI([_ok()], base_url="https://a.example/v1/")
     fake_b = FakeOpenAI([make_response("I'm sorry, I can't do that"), _ok()], base_url="https://b.example/v1/")
@@ -102,13 +102,26 @@ def test_refusal_spike_after_base_url_change_activates_fallback(tmp_path):
     with workflow("wf", sensitivity="high", fallback_model=FALLBACK):
         w.chat.completions.create(model=MODEL_B, messages=MSGS)
         w.chat.completions.create(model=MODEL_B, messages=MSGS)
-    assert [c["model"] for c in fake_b.calls] == [MODEL_B, FALLBACK]
+    # the same model id on a new provider: sending the pinned id there is not a safe fix (decision 8)
+    assert [c["model"] for c in fake_b.calls] == [MODEL_B, MODEL_B]
     [drift] = list_drifts(get_runtime().store)
-    assert (drift["drift_type"], drift["level"], drift["action"]) == ("refusal_spike", "P1", "fallback")
-    [(_, _, payload)] = _events("fallback")
-    assert payload["change"]["field"] == "base_url"
-    assert (payload["change"]["before"], payload["change"]["after"]) == ("https://a.example/v1",
-                                                                         "https://b.example/v1")
+    assert (drift["drift_type"], drift["level"], drift["action"]) == ("refusal_spike", "P1", "record")
+    assert fallback.active(get_runtime().store, "wf") is None
+    assert _events("fallback") == []
+
+
+def test_fallback_from_unset_model(tmp_path):
+    _init(tmp_path)
+    _activate()
+    fake = FakeOpenAI([_ok()])
+    with workflow("wf", fallback_model=FALLBACK) as ctx:
+        pitstop.wrap(fake).chat.completions.create(messages=MSGS)  # no model kwarg (a client default, say)
+    assert fake.calls[0]["model"] == FALLBACK
+    [(_, name, payload)] = _events("llm_call")
+    assert (name, payload["fallback_from"]) == (FALLBACK, "(unset)")
+    row = get_runtime().store.connect().execute("SELECT fallback_from FROM runs WHERE id=?",
+                                                (ctx.run_id,)).fetchone()
+    assert row["fallback_from"] == "(unset)"
 
 
 def test_no_change_no_fallback(tmp_path):

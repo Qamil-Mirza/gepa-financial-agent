@@ -409,17 +409,7 @@ EMAIL_CONFIG = ('[alerts.email]\nsmtp_host = "smtp.example.com"\nfrom_addr = "pi
                 'to = ["oncall@example.com"]\nstarttls = false\n')
 
 
-@pytest.mark.parametrize("error,attempts", [
-    (smtplib.SMTPAuthenticationError(535, b"auth failed"), 1),
-    (smtplib.SMTPRecipientsRefused({"oncall@example.com": (550, b"no such user")}), 1),
-    (smtplib.SMTPSenderRefused(553, b"bad sender", "pitstop@example.com"), 1),
-    (smtplib.SMTPDataError(554, b"rejected"), 1),
-    (smtplib.SMTPServerDisconnected("gone"), 3),
-    (TimeoutError("timed out"), 3),
-], ids=["auth", "recipients", "sender", "data", "disconnected", "timeout"])
-def test_smtp_retries_only_transient_errors(tmp_path, monkeypatch, error, attempts):
-    _init(tmp_path, monkeypatch, EMAIL_CONFIG, env=())
-    _no_backoff(monkeypatch)
+def _smtp_failing(monkeypatch, error):
     tries = []
 
     class Failing:
@@ -436,10 +426,96 @@ def test_smtp_retries_only_transient_errors(tmp_path, monkeypatch, error, attemp
             raise error
 
     monkeypatch.setattr(channels, "_smtp", Failing)
+    return tries
+
+
+@pytest.mark.parametrize("error", [
+    smtplib.SMTPException("generic"),
+    smtplib.SMTPConnectError(554, b"no service"),
+    smtplib.SMTPAuthenticationError(535, b"auth failed"),
+    smtplib.SMTPRecipientsRefused({"oncall@example.com": (550, b"no such user")}),
+    smtplib.SMTPSenderRefused(553, b"bad sender", "pitstop@example.com"),
+    smtplib.SMTPDataError(554, b"rejected"),
+], ids=["generic", "connect-5xx", "auth", "recipients", "sender", "data"])
+def test_smtp_permanent_errors_not_retried(tmp_path, monkeypatch, error):
+    _init(tmp_path, monkeypatch, EMAIL_CONFIG, env=())
+    _no_backoff(monkeypatch)
+    tries = _smtp_failing(monkeypatch, error)
     _apply(Finding("tool_call_breakage", "degraded", False, {}))  # P1: routed to email
     assert dispatch.wait_idle()
-    assert len(tries) == attempts
-    assert [r["status"] for r in _rows()] == ["failed"]
+    assert len(tries) == 1
+    assert [(r["status"], r["error"]) for r in _rows()] == [("failed", type(error).__name__)]
+
+
+@pytest.mark.parametrize("error", [
+    TimeoutError("timed out"),
+    ConnectionRefusedError("refused"),
+    smtplib.SMTPServerDisconnected("gone"),
+    smtplib.SMTPResponseException(421, b"try again later"),
+    smtplib.SMTPConnectError(421, b"too busy"),
+], ids=["timeout", "refused", "disconnected", "response-4xx", "connect-4xx"])
+def test_smtp_transient_errors_retried(tmp_path, monkeypatch, error):
+    _init(tmp_path, monkeypatch, EMAIL_CONFIG, env=())
+    _no_backoff(monkeypatch)
+    tries = _smtp_failing(monkeypatch, error)
+    _apply(Finding("tool_call_breakage", "degraded", False, {}))
+    assert dispatch.wait_idle()
+    assert len(tries) == 3  # the first try and 2 retries
+    assert [(r["status"], r["error"]) for r in _rows()] == [("failed", type(error).__name__)]
+
+
+def test_p0_with_failed_drift_write_still_pages(tmp_path, monkeypatch, caplog):
+    from pitstop.detect import drifts
+
+    _init(tmp_path, monkeypatch, "[alerts.webhook]\n[alerts.slack]\n", env=("PITSTOP_WEBHOOK_URL",
+                                                                              "SLACK_WEBHOOK_URL"))
+    seen = _capture(monkeypatch)
+
+    def broken(*a, **kw):
+        raise RuntimeError("database is locked")
+
+    monkeypatch.setattr(drifts, "record_drift", broken)
+    [applied] = _apply(_p0())
+    assert applied.drift_id is None and applied.action == "block"
+    assert dispatch.wait_idle()
+    assert _hosts(seen) == ["hook.test", "hooks.slack.test"]
+    webhook = json.loads(next(r for r in seen if r.url.host == "hook.test").content)
+    assert (webhook["level"], webhook["workflow"], webhook["drift_type"]) == ("P0", "wf", "out_of_scope_action")
+    assert webhook["drift_id"] is None and webhook["run_id"]
+    assert "could not be recorded" in webhook["what"] and "send_email" in webhook["what"]
+    rows = _rows()
+    assert sorted(r["channel"] for r in rows) == ["slack", "webhook"]
+    assert {(r["drift_id"], r["level"], r["kind"], r["status"]) for r in rows} == {(None, "P0", "immediate", "sent")}
+    _apply(_p0())  # undeduplicated: every unrecorded occurrence pages
+    assert dispatch.wait_idle() and len(seen) == 4
+    # a P1 whose write failed is not paged (it would be on its next recorded occurrence)
+    _apply(Finding("tool_call_breakage", "degraded", False, {}))
+    assert dispatch.wait_idle() and len(seen) == 4
+
+
+def test_stale_pending_row_marked_superseded(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "[alerts.webhook]\n", env=("PITSTOP_WEBHOOK_URL",))
+    seen = _capture(monkeypatch)
+    did = _drift(rt, _p0(), "P0")
+    _pending_row(rt, did, "immediate", "P0", 600)  # left by a process killed mid-send
+    dispatch.notify(did)
+    assert dispatch.wait_idle() and len(seen) == 1
+    assert [(r["drift_id"], r["status"]) for r in _rows()] == [(did, "superseded"), (did, "sent")]
+
+
+def test_cause_ignores_fallback_runs_after_clear(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "")
+    now = time.time()
+    with rt.store.transaction() as c:
+        for rid, model, ts, fallback_from in (("r1", "model-a", now - 100, None), ("r2", "model-b", now - 50, None),
+                                              ("r3", "pinned", now - 30, "model-b"), ("r4", "model-b", now - 10, None)):
+            c.execute("INSERT INTO runs(id, workflow, criticality, started_at, model, base_url, fallback_from)"
+                      " VALUES (?,?,?,?,?,?,?)", (rid, "wf", "medium", ts, model, "https://api.example/v1",
+                                                  fallback_from))
+    # the fallback was engaged (r3 ran on the pinned model) and has since been cleared: no state in meta
+    did = record_drift(rt.store, run_id="r4", workflow="wf", level="P1", action="record",
+                       finding=Finding("tool_call_breakage", "degraded", False, {"failures": 3}))
+    assert "model changed from model-a to model-b" in build_alert(rt.store, did).cause
 
 
 def test_digest_counts_only_sent_drifts(tmp_path, monkeypatch):

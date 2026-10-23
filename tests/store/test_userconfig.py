@@ -105,6 +105,18 @@ def test_judge_config_validation(tmp_path, body):
         load_user_config(p)
 
 
+@pytest.mark.parametrize("url", ["", "j.example/v1", "ftp://bot:sk-secret@j.example/v1", "https://", "http:///v1",
+                                 "file:///etc/passwd", "https://[bad"])
+def test_empty_judge_base_url_rejected(tmp_path, url):
+    p = tmp_path / "config.toml"
+    p.write_text(f'[judge]\nbase_url = "{url}"\n')
+    with pytest.raises(ConfigInvalid, match="judge base_url") as exc:
+        load_user_config(p)
+    assert "sk-secret" not in str(exc.value) and "j.example" not in str(exc.value)  # the value is never echoed
+    p.write_text('[judge]\nbase_url = "http://localhost:8000/v1"\n')
+    assert load_user_config(p).judge.base_url == "http://localhost:8000/v1"
+
+
 @pytest.mark.parametrize("key", ["api_key_evn", "modle"])
 def test_judge_rejects_unknown_keys(tmp_path, key):
     p = tmp_path / "config.toml"

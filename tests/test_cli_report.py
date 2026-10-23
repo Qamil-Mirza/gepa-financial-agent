@@ -63,6 +63,21 @@ def test_drift_rows_sorted_by_level(tmp_path):
     assert rows[0]["count"] == 1 and rows[0]["drift_type"] == "a"
 
 
+def test_drifts_shows_cleared_fallback(tmp_path):
+    from pitstop.detect.changes import Change
+    from pitstop.sdk import fallback
+
+    store = Store(tmp_path / "pitstop.db")
+    for wf in ("wf", "wf2"):
+        record_drift(store, run_id=None, workflow=wf, finding=Finding("tool_call_breakage", "degraded", False, {}),
+                     level="P1", action="fallback")
+    fallback.activate(store, "wf2", model="pinned", drift_id=None, change=Change("model", "a", "b", "r0", 1.0))
+    assert {r["workflow"]: r["action"] for r in drift_rows(store)} == {"wf": "fallback (cleared)",
+                                                                       "wf2": "fallback"}
+    fallback.clear(store, "wf2")
+    assert {r["action"] for r in drift_rows(store)} == {"fallback (cleared)"}
+
+
 def test_cli_status_empty_db_is_friendly(tmp_path):
     env = {k: v for k, v in os.environ.items() if k not in ("CRUSOE_API_KEY", "YDC_API_KEY")}
     env["PITSTOP_HOME"] = str(tmp_path)

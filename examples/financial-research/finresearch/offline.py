@@ -106,10 +106,12 @@ class CannedResearch:
 
 def scripted_judge():
     """A sync OpenAI-compatible fake judge for PitStop's L1 gate. It reads only the proposed action from the gate's
-    message (not the recent calls, which may include earlier blocked ones) and rejects gaming/GeForce calls."""
+    message (the tool name line and the `<tool_args>` block, not the `<recent_calls>` block, which may include
+    earlier blocked calls) and rejects gaming/GeForce calls."""
     def create(**kw):
         message = "\n".join(str(m.get("content", "")) for m in kw.get("messages", []) if m.get("role") == "user")
-        proposed = _between(message, "Proposed action:", "The agent's most recent tool calls")
+        proposed = (_between(message, "Proposed action:", "<tool_args>") + "\n"
+                    + _between(message, "<tool_args>", "</tool_args>"))
         verdict = ({"serves_goal": False, "reason": JUDGE_REJECT} if OFF_TOPIC.search(proposed)
                    else {"serves_goal": True, "reason": "serves the directive (offline judge)"})
         m = SimpleNamespace(role="assistant", content=json.dumps(verdict), tool_calls=None)

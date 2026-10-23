@@ -49,12 +49,21 @@ def budget_rows(ledger, config) -> list[dict]:
 
 
 def drift_rows(store, workflow: str | None = None, open_only: bool = True) -> list[dict]:
+    """The action reads "fallback (cleared)" when it was a fallback and the workflow has no active one now."""
     drifts = list_drifts(store, workflow=workflow, open_only=open_only)
     drifts.sort(key=lambda d: -_last_seen(d))  # stable: most recently seen first within a level
     drifts.sort(key=lambda d: _LEVELS.index(d["level"]) if d["level"] in _LEVELS else len(_LEVELS))
     return [{"id": d["id"], "level": d["level"], "workflow": d["workflow"], "drift_type": d["drift_type"],
-             "action": d["action"], "count": d["occurrences"],
+             "action": _action(store, d), "count": d["occurrences"],
              "first_seen": d["ts"], "last_seen": _last_seen(d)} for d in drifts]
+
+
+def _action(store, d: dict) -> str:
+    from .sdk import fallback
+
+    if d["action"] == "fallback" and (d["workflow"] is None or fallback.active(store, d["workflow"]) is None):
+        return "fallback (cleared)"
+    return d["action"]
 
 
 def _last_seen(d: dict) -> float:

@@ -37,7 +37,8 @@ period = "total"        # one of the periods PitStop accepts, "total" = lifetime
 # calls count against the budgets above). These are the defaults; omit the table to keep them.
 # Only the NAME of the env var holding the key goes here, never the key. With no key set (and no
 # pitstop.init(judge_client=...)), gated calls follow on_gate_error: high workflows block them,
-# medium workflows run them.
+# medium workflows run them. base_url must be an http:// or https:// URL with a host. The judge
+# endpoint receives each gated tool's name and arguments and the agent's last 5 tool calls.
 # [judge]
 # model = "openai/gpt-oss-120b"
 # base_url = "https://api.inference.crusoecloud.com/v1"
