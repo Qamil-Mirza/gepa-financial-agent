@@ -19,7 +19,7 @@ import {
   type ReactFlowState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { getGraph, getRuns, type Graph, type GraphNode, type GraphWindow, type RunRow } from "../api/client";
 import { usePoll } from "../api/poll";
 import { plural } from "../format";
@@ -206,7 +206,16 @@ export default function RunGraph({ name, window: win, runId, onWindow, onRun }: 
     };
   }, [data]);
 
-  const onOpen = useCallback((id: string) => setOpenId((cur) => (cur === id ? null : id)), []);
+  const focusDrawer = useRef(false); // set by a person's open, consumed once by the drawer
+  const onOpen = useCallback((id: string) => {
+    focusDrawer.current = true;
+    setOpenId((cur) => (cur === id ? null : id));
+  }, []);
+  const takeFocus = useCallback(() => {
+    const want = focusDrawer.current;
+    focusDrawer.current = false;
+    return want;
+  }, []);
   const close = useCallback(() => {
     if (openId !== null) document.querySelector<HTMLElement>(`[data-node-open="${CSS.escape(openId)}"]`)?.focus();
     setOpenId(null);
@@ -319,7 +328,13 @@ export default function RunGraph({ name, window: win, runId, onWindow, onRun }: 
             </ReactFlowProvider>
           </div>
           {openNode && (
-            <NodeDrawer node={openNode} runsInScope={data.runs_in_scope} runsById={runsById} onClose={close} />
+            <NodeDrawer
+              node={openNode}
+              runsInScope={data.runs_in_scope}
+              runsById={runsById}
+              onClose={close}
+              takeFocus={takeFocus}
+            />
           )}
         </div>
       )}

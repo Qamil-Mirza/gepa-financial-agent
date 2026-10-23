@@ -1,6 +1,6 @@
 // The panel beside the run graph for one node: its statistics, its verdicts in words, and links to the runs it
 // appears in (newest first, up to 20). Not a modal: the graph stays usable; Escape or Close puts focus back on
-// the node.
+// the node. It takes focus only when the person opened it, never when a scope change re-mounts it.
 import { useEffect, useRef } from "react";
 import { Link } from "react-router";
 import type { GraphNode, RunRow } from "../api/client";
@@ -16,6 +16,8 @@ export interface NodeDrawerProps {
   /** The runs the page knows (the latest page), for a status and a time next to each run id. */
   runsById: ReadonlyMap<string, RunRow>;
   onClose: () => void;
+  /** True once, right after the person opened a node; a drawer re-mounted by a scope change leaves focus alone. */
+  takeFocus: () => boolean;
 }
 
 const RUN_STATUS: Record<string, string> = {
@@ -27,13 +29,15 @@ const RUN_STATUS: Record<string, string> = {
   running: "running",
 };
 
-export function NodeDrawer({ node, runsInScope, runsById, onClose }: NodeDrawerProps) {
+export function NodeDrawer({ node, runsInScope, runsById, onClose, takeFocus }: NodeDrawerProps) {
   const ref = useRef<HTMLElement>(null);
   const titleId = `node-${node.id.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
 
   useEffect(() => {
-    ref.current?.focus(); // the drawer took the node's click: tell the keyboard where it is
-  }, [node.id]);
+    // the drawer took the node's click: tell the keyboard where it is. Not when a window or run change re-mounted
+    // it: the person is on the scope controls and stays there.
+    if (takeFocus()) ref.current?.focus();
+  }, [node.id, takeFocus]);
 
   const badges = verdictBadges(node);
   const partialNote = node.time_partial ? " (some calls had no recorded latency)" : "";

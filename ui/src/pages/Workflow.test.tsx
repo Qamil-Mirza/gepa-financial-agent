@@ -148,6 +148,28 @@ describe("Workflow", () => {
     expect(screen.getByRole("radio", { name: "7d" })).toBeDisabled(); // one run has no window
   });
 
+  it("changing the window with a drawer open leaves focus on the window control", async () => {
+    vi.stubGlobal("fetch", vi.fn(fetchStub(API)));
+    renderPage();
+    const button = await screen.findByRole("button", { name: "writer, agent" }, { timeout: 5000 });
+    fireEvent.click(button);
+    const drawer = screen.getByRole("complementary", { name: "writer" });
+    expect(drawer).toHaveFocus(); // a person opened it: the keyboard follows
+
+    // the person moves to the scope controls and picks another window: the graph reloads and the drawer re-mounts
+    const radio = screen.getByRole("radio", { name: "7d" });
+    radio.focus();
+    fireEvent.click(radio);
+    expect(screen.queryByRole("complementary", { name: "writer" })).toBeNull(); // gone while the new graph loads
+    const again = await screen.findByRole("complementary", { name: "writer" }, { timeout: 5000 });
+    expect(again).toHaveTextContent("1 halted");
+    expect(radio).toHaveFocus(); // the re-mounted drawer did not steal it
+
+    // a fresh open still takes focus
+    fireEvent.click(screen.getByRole("button", { name: "m-b, model under writer" }));
+    expect(screen.getByRole("complementary", { name: "m-b" })).toHaveFocus();
+  });
+
   it("dismiss is optimistic and restores on failure", async () => {
     let fail: (() => void) | undefined;
     const base = fetchStub(API);
