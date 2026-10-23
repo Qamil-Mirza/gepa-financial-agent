@@ -4,9 +4,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { runHref, workflowHref } from "../routes";
 import { changes, explain, fetchStub, graph, runs, workflow } from "../test/fixtures";
 import { mockReactFlow } from "../test/reactflow";
-import { Workflow } from "./Workflow";
+import { mergeRuns, Workflow } from "./Workflow";
 
 mockReactFlow();
+
+const flush = () => act(async () => {});
 
 const NAME = "earnings-research";
 const API = {
@@ -48,7 +50,10 @@ function requested(fetchMock: ReturnType<typeof vi.fn>): string[] {
 }
 
 describe("Workflow", () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
 
   it("shows the header facts and the run graph by default", async () => {
     vi.stubGlobal("fetch", vi.fn(fetchStub(API)));
@@ -314,6 +319,61 @@ describe("Workflow", () => {
     expect(within(table).getAllByRole("row")).toHaveLength(runs.runs.length + 3 + 1);
     expect(screen.queryByRole("button", { name: /Load more/ })).toBeNull(); // the last page
     expect(screen.getByText("53 runs, newest first")).toBeVisible();
+  });
+
+  it("a poll refresh keeps every loaded run and puts new ones on top", async () => {
+    vi.useFakeTimers();
+    const base = runs.runs;
+    let firstPages = 0;
+    const newer = base.slice(0, 2).map((r, i) => ({ ...r, id: `new-${i}`, started_at: (r.started_at ?? 0) + 10 - i }));
+    // two new runs: the refreshed page 1 (the newest 50) no longer holds the two oldest of the first answer
+    const refreshed = { runs: [...newer, ...base.slice(0, 48)], next_before: base[47].started_at };
+    const page2 = {
+      runs: base.slice(0, 3).map((r, i) => ({ ...r, id: `older-${i}`, started_at: (r.started_at ?? 0) - 1000 - i })),
+      next_before: null,
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = new URL(String(input), "http://localhost");
+        if (url.pathname === "/api/runs") {
+          if (url.searchParams.has("before")) return json(page2);
+          firstPages += 1;
+          return json(firstPages === 1 ? runs : refreshed);
+        }
+        return fetchStub(API)(input);
+      }),
+    );
+    renderPage(workflowHref(NAME, "runs"));
+    await flush();
+    const table = screen.getByRole("table", { name: "Runs" });
+    fireEvent.click(screen.getByRole("button", { name: "Load more" }));
+    await flush();
+    expect(within(table).getAllByRole("row")).toHaveLength(50 + 3 + 1);
+
+    // 10 s: page 1 polls again with the two new runs on it and the two oldest pushed off
+    await act(() => vi.advanceTimersByTimeAsync(10_000));
+    expect(firstPages).toBe(2);
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(2 + 50 + 3); // nothing dropped
+    expect(within(rows[0]).getByRole("link", { name: "new-0" })).toBeInTheDocument();
+    expect(within(rows[1]).getByRole("link", { name: "new-1" })).toBeInTheDocument();
+    // the two runs that slid off page 1 keep their place between page 1 and page 2
+    expect(within(rows[50]).getByRole("link", { name: base[48].id.slice(0, 8) })).toBeInTheDocument();
+    expect(within(rows[51]).getByRole("link", { name: base[49].id.slice(0, 8) })).toBeInTheDocument();
+    expect(within(rows[52]).getByRole("link", { name: "older-0" })).toBeInTheDocument();
+    expect(screen.getByText("55 runs, newest first")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /Load more/ })).toBeNull(); // the cursor stays the last loaded page's
+  });
+
+  it("merges a page of runs without dropping or repeating one", () => {
+    const [a, b, c] = runs.runs;
+    const bNewer = { ...b, status: "ok", cost_usd: 1 };
+    const fresh = { ...a, id: "fresh", started_at: (a.started_at ?? 0) + 5 };
+    const merged = mergeRuns([a, b, c], [fresh, bNewer]);
+    expect(merged.map((r) => r.id)).toEqual(["fresh", a.id, b.id, c.id]);
+    expect(merged[2].cost_usd).toBe(1); // updated in place
+    expect(mergeRuns([], [c, a])).toEqual([a, c]); // newest first
   });
 
   it("unknown workflow shows not-found state", async () => {

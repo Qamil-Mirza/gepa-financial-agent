@@ -12,6 +12,7 @@ import {
   getWorkflow,
   type Changes,
   type GraphWindow,
+  type RunPage,
   type RunRow,
   type WorkflowDetail,
 } from "../api/client";
@@ -148,15 +149,30 @@ function ChangesTab({ name }: { name: string }) {
 
 // ---------- Runs ----------
 
-interface MorePages {
-  runs: RunRow[];
-  nextBefore: number | null;
+/** `incoming` merged into `kept`: a run already there is updated in place, a new one is added, none is dropped;
+ *  newest first (the server's order, by `started_at`), ties keeping their place. */
+export function mergeRuns(kept: RunRow[], incoming: RunRow[]): RunRow[] {
+  const byId = new Map(kept.map((r) => [r.id, r]));
+  for (const r of incoming) byId.set(r.id, r);
+  return [...byId.values()].sort((a, b) => (b.started_at ?? 0) - (a.started_at ?? 0));
+}
+
+interface KeptRuns {
+  /** The page-1 answer these rows last merged, so each poll answer is merged once. */
+  page: RunPage | null;
+  rows: RunRow[];
 }
 
 function RunsTab({ name }: { name: string }) {
   const first = usePoll((signal) => getRuns(name, null, { signal }), EVERY_MS, [name]);
   const stampedAt = useStampedAt(first.data);
-  const [more, setMore] = useState<MorePages | null>(null);
+  // Every run seen so far. Page 1 arrives again on each poll and is merged, never swapped in: new runs go on top,
+  // known ones refresh in place, and a run that new arrivals pushed off page 1 stays (it would otherwise be in no
+  // page until the next "Load more", which starts after the cursor).
+  const [kept, setKept] = useState<KeptRuns>({ page: null, rows: [] });
+  if (first.data && kept.page !== first.data) setKept({ page: first.data, rows: mergeRuns(kept.rows, first.data.runs) });
+  // the cursor: page 1's until a later page was loaded, then the last loaded page's
+  const [loaded, setLoaded] = useState<{ nextBefore: number | null } | null>(null);
   const [moreState, setMoreState] = useState<MoreState>({ kind: "idle" });
   const alive = useRef(true);
   useEffect(() => {
@@ -166,14 +182,15 @@ function RunsTab({ name }: { name: string }) {
     };
   }, []);
 
-  const cursor = more ? more.nextBefore : (first.data?.next_before ?? null);
+  const cursor = loaded ? loaded.nextBefore : (first.data?.next_before ?? null);
   const loadMore = async () => {
     if (cursor === null || moreState.kind === "loading") return;
     setMoreState({ kind: "loading" });
     try {
       const page = await getRuns(name, cursor);
       if (!alive.current) return;
-      setMore((prev) => ({ runs: [...(prev?.runs ?? []), ...page.runs], nextBefore: page.next_before }));
+      setKept((k) => ({ ...k, rows: mergeRuns(k.rows, page.runs) }));
+      setLoaded({ nextBefore: page.next_before });
       setMoreState({ kind: "idle" });
     } catch (e) {
       if (!alive.current) return;
@@ -184,10 +201,7 @@ function RunsTab({ name }: { name: string }) {
   if (first.loading) return <TabSkeleton what="runs" />;
   if (!first.data) return <ErrorState error={first.error} title="The runs didn't load" onRetry={first.refresh} />;
 
-  // the first page refreshes every poll; later pages stay. A run that slid from the first page onto a later one
-  // appears once.
-  const seen = new Set<string>();
-  const rows = [...first.data.runs, ...(more?.runs ?? [])].filter((r) => !seen.has(r.id) && seen.add(r.id));
+  const rows = kept.page === first.data ? kept.rows : mergeRuns(kept.rows, first.data.runs);
 
   if (rows.length === 0) {
     return (
