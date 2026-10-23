@@ -16,7 +16,9 @@ Checked once: while a guarded call's function runs, `checked(ctx, tool)` marks (
 `@pitstop.tool` of the same name called inside it skips its own guard (no L0, no gate, no tool_call event) and only
 runs the function and records its result, so a call guarded by an adapter and again by an inner `@pitstop.tool` is
 counted once. The decorator sets the mark around its own function; an adapter sets it around the framework's tool
-execution after `guard_call` let the call run.
+execution after `guard_call` let the call run. One call records one `tool_result` event: `record_tool_result` under
+the mark sets the mark's `recorded` flag (the mark object is shared with threads and tasks started inside the block),
+so an adapter records the result itself only when no inner `@pitstop.tool` did.
 PitStop's own failures never break the call; only `Halted` (and `BudgetExceeded` from the judge) propagate."""
 from __future__ import annotations
 
@@ -48,8 +50,16 @@ _RUN = GuardDecision("run")
 _GATED = ("high", "medium")
 _RECENT = 5  # the agent's recent tool calls shown to the gate's judge
 
-# (run_id, tool) pairs whose current call was already guarded; see `checked`.
-_checked: ContextVar[frozenset] = ContextVar("pitstop_tool_checked", default=frozenset())
+class Mark:
+    """The check-once mark of one guarded call; `recorded` turns True once its `tool_result` event was recorded."""
+    __slots__ = ("recorded",)
+
+    def __init__(self) -> None:
+        self.recorded = False
+
+
+# (run_id, tool) -> the Mark of the call already guarded there; see `checked`. Replaced, never mutated.
+_checked: ContextVar[dict] = ContextVar("pitstop_tool_checked", default={})
 
 
 class _NeedsGate(NamedTuple):
@@ -71,20 +81,26 @@ def tool_args_text(args: tuple, kwargs: dict) -> str:
 
 
 @contextmanager
-def checked(ctx: RunContext, tool: str) -> Iterator[None]:
+def checked(ctx: RunContext, tool: str) -> Iterator[Mark]:
     """Mark `tool` as already guarded in this run while the block runs: a `@pitstop.tool` of the same name inside
-    it skips its own guard. Use it around the tool's execution once `guard_call` returned "run"."""
+    it skips its own guard. Use it around the tool's execution once `guard_call` returned "run". Yields the Mark;
+    inside an enclosing mark for the same tool it yields that one, so the outermost caller sees `recorded`."""
     key = (ctx.run_id, tool)
     prev = _checked.get()
-    token = _checked.set(prev | {key})
+    if key in prev:
+        yield prev[key]
+        return
+    mark = Mark()
+    token = _checked.set({**prev, key: mark})
     try:
-        yield
+        yield mark
     finally:
         try:
             _checked.reset(token)
         except ValueError:  # exited from another Context: drop only this mark, never install the entering
-            if key not in prev:  # context's other marks there (they would skip L0 and the gate)
-                _checked.set(_checked.get() - {key})
+            cur = _checked.get()  # context's other marks there (they would skip L0 and the gate)
+            if cur.get(key) is mark:
+                _checked.set({k: v for k, v in cur.items() if k != key})
 
 
 def is_checked(ctx: RunContext, tool: str) -> bool:
@@ -116,6 +132,9 @@ def record_tool_result(ctx: RunContext, tool: str, *, result: Any = None, error:
                        agent: str | None = None) -> None:
     """Record a `tool_result` event: the error's repr when `error` is given, else the result's (capped)."""
     who = agent if agent is not None else ctx.agent
+    mark = _checked.get().get((ctx.run_id, tool))
+    if mark is not None:
+        mark.recorded = True
     payload = {"error": _summ(error)} if error is not None else {"result": _summ(result)}
     _safe(lambda: _event(ctx, "tool_result", tool, payload, who))
 

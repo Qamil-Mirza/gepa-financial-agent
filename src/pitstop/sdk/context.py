@@ -101,6 +101,8 @@ class RunContext:
     spend_spiked: bool = False
     # Guards the counters and histories when several threads share the run (e.g. the steer limit).
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
+    # Agents named by a framework hook (see set_framework_agent): id(base frame) -> (base frame, name).
+    framework_agents: dict = field(default_factory=dict, repr=False, compare=False)
 
     def tool_history_for(self, agent: str | None) -> deque:
         hist = self.tool_history.get(agent)
@@ -110,14 +112,42 @@ class RunContext:
 
     @property
     def agent(self) -> str | None:
-        """The agent name set by the innermost `agent()` scope of the calling task, for this run."""
-        cur = _agent_var.get()
-        return cur.name if cur is not None and cur.run_id == self.run_id else None
+        """The agent name of the calling task, for this run: the framework-named agent on top of its innermost
+        `agent()` scope (see set_framework_agent), else that scope's name."""
+        cur = self._frame()
+        named = self.framework_agents.get(id(cur))
+        if named is not None and named[0] is cur:
+            return named[1]
+        return cur.name if cur is not None else None
 
     @property
     def agent_goal(self) -> str | None:
+        cur = self._frame()
+        named = self.framework_agents.get(id(cur))
+        if named is not None and named[0] is cur:
+            return None  # a framework-named agent has no PitStop goal: the gate falls back to the workflow goal
+        return cur.goal if cur is not None else None
+
+    def set_framework_agent(self, name: str | None) -> None:
+        """Name the agent for the calling task's innermost `agent()` scope (or the workflow's top level), as if an
+        `agent(name)` scope were entered on top of it, replacing the one named before; None removes it.
+
+        For framework hooks that run in a child asyncio task of the agent run (the OpenAI Agents SDK runs each hook
+        through asyncio.gather), where entering a scope would never reach the run's own task. The name applies to
+        every task whose innermost scope is the one the hook saw, i.e. the scope the framework run was started in:
+        its model calls, tools and events, until it is replaced or removed. A scope entered inside (say, in a tool
+        body) names its own calls as usual. Concurrent framework runs started in the same scope share the name;
+        give each its own `agent()` scope to keep them apart."""
+        base = self._frame()
+        with self.lock:
+            if name is None:
+                self.framework_agents.pop(id(base), None)
+            else:
+                self.framework_agents[id(base)] = (base, name)  # holds the frame: its id is never reused meanwhile
+
+    def _frame(self) -> _AgentFrame | None:
         cur = _agent_var.get()
-        return cur.goal if cur is not None and cur.run_id == self.run_id else None
+        return cur if cur is not None and cur.run_id == self.run_id else None
 
 
 class _AgentFrame(NamedTuple):

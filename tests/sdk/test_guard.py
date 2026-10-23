@@ -186,7 +186,7 @@ def test_observe_only_without_ctx_uses_spec(tmp_path):
 def test_checked_exit_in_another_context_never_leaks_marks(tmp_path):
     import contextvars
 
-    from pitstop.sdk.guard import _checked
+    from pitstop.sdk.guard import Mark, _checked
 
     _init(tmp_path)
     with workflow("wf") as ctx:
@@ -194,11 +194,34 @@ def test_checked_exit_in_another_context_never_leaks_marks(tmp_path):
         cm = checked(ctx, "t")
 
         def enter():
-            _checked.set(frozenset({(ctx.run_id, "outer")}))  # an outer mark in the entering context only
+            _checked.set({(ctx.run_id, "outer"): Mark()})  # an outer mark in the entering context only
             cm.__enter__()
 
         entering.run(enter)
         foreign = contextvars.Context()
         foreign.run(cm.__exit__, None, None, None)
-        assert foreign.run(_checked.get) == frozenset()  # neither "outer" nor "t" installed there
-        assert entering.run(_checked.get) == frozenset({(ctx.run_id, "outer"), (ctx.run_id, "t")})
+        assert foreign.run(_checked.get) == {}  # neither "outer" nor "t" installed there
+        assert set(entering.run(_checked.get)) == {(ctx.run_id, "outer"), (ctx.run_id, "t")}
+
+
+def test_checked_mark_tells_whether_the_result_was_recorded(tmp_path):
+    """One call, one tool_result: an adapter records the result only when an inner @pitstop.tool did not. The
+    mark is shared with nested checked() blocks of the same tool and with worker threads started inside."""
+    _init(tmp_path)
+
+    @pitstop.tool(name="t")
+    def inner(x):
+        return x
+
+    with workflow("wf") as ctx:
+        with checked(ctx, "t") as mark:
+            assert mark.recorded is False
+            with checked(ctx, "t") as again:
+                assert again is mark
+            assert asyncio.run(asyncio.to_thread(inner, 1)) == 1
+            assert mark.recorded is True
+        with checked(ctx, "t") as fresh:
+            assert fresh is not mark and fresh.recorded is False
+            record_tool_result(ctx, "other", result=1)
+            assert fresh.recorded is False  # another tool's result is not this call's
+    assert len(_events("tool_result")) == 2 and _events("tool_call") == []

@@ -674,3 +674,26 @@ def test_refusal_check_keeps_config_invalid_fail_closed(tmp_path, monkeypatch):
     with pytest.raises(Halted, match="pitstop config invalid"):
         with workflow("wf"):
             pass
+
+
+async def test_framework_agent_names_the_calling_scope(tmp_path):
+    """set_framework_agent (for framework hooks that run in a child task) names the agent of every task whose
+    innermost scope is the one the hook saw; an inner agent() scope still names its own calls."""
+    pitstop.init(home=tmp_path)
+    with workflow("wf") as ctx:
+        with agent("outer", goal="og"):
+            await asyncio.create_task(_name("lead"))  # like a hook: a child task, its context a copy
+            assert (ctx.agent, ctx.agent_goal) == ("lead", None)
+            with agent("sub", goal="sg"):
+                assert (ctx.agent, ctx.agent_goal) == ("sub", "sg")
+            await asyncio.create_task(_name("next"))  # replaces the name set before
+            assert ctx.agent == "next"
+            await asyncio.create_task(_name(None))
+            assert (ctx.agent, ctx.agent_goal) == ("outer", "og")
+        assert ctx.agent is None  # the top level was never named
+        await asyncio.create_task(_name("top"))
+        assert ctx.agent == "top"
+
+
+async def _name(name):
+    current_run().set_framework_agent(name)

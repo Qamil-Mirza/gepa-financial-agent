@@ -190,6 +190,34 @@ $ uv run pitstop alerts digest                # open P2/P3 drifts not yet sent; 
 $ uv run pitstop alerts digest --force        # send now regardless of the last digest
 ```
 
+## OpenAI Agents SDK
+
+Install `pip install "pitstop[openai-agents]"`. Guard the agent's tools, pass the run hooks, and give the SDK a wrapped client:
+
+```python
+import pitstop
+from agents import Agent, Runner, function_tool, set_default_openai_client
+from openai import AsyncOpenAI
+from pitstop.sdk.adapters.openai_agents import Hooks, guard
+
+set_default_openai_client(pitstop.wrap(AsyncOpenAI()), use_for_tracing=False)   # metered, budgeted
+# or per agent: model=OpenAIResponsesModel("gpt-5", openai_client=pitstop.wrap(AsyncOpenAI()))
+
+agent = guard(Agent(name="support", instructions="...", tools=[search, send_email]),
+              side_effects={"send_email"})
+
+with pitstop.workflow("support", goal="Answer the ticket", criticality="medium", tools=("search", "send_email")):
+    result = await Runner.run(agent, question, hooks=Hooks())   # raises pitstop.Halted / BudgetExceeded
+```
+
+`guard(agent, side_effects=...)` adds PitStop's tool input guardrail to each of the agent's function tools (once, however often you call it) and returns the same agent; the tools named in `side_effects` are side-effect tools, and a name that is none of the agent's function tools raises `ValueError`. Each tool call then goes through the same checks as a `@pitstop.tool` call before it runs: a pending halt, the scope and loop checks, and the pre-action gate for side-effect tools on `high` and `medium` workflows. A blocked call doesn't run: the model gets `{"blocked_by":"pitstop","reason":...}` as the tool's result (a steer gets the corrective text). A tool whose body is itself a `@pitstop.tool` of the same name is checked once, not twice, and each call records one result. `guard` changes the tools in place, so a tool shared with another agent is guarded there too; call `guard` on each agent of a handoff chain. `tool_guardrail(side_effects=...)` is the bare guardrail, for `function_tool(..., tool_input_guardrails=[...])`; without `guard`, the tool body is not marked as checked and its results aren't recorded.
+
+`Hooks()` names the running agent: the agent's model calls, tool calls and halt events carry its name (after a handoff, the new agent's), and the run is tagged `adapter = openai-agents`. A `pitstop.agent(...)` scope entered inside the run still names its own calls. Two `Runner.run` calls running at once in the same scope share one name; give each its own `pitstop.agent(...)` scope to keep them apart. Hooks also raise a pending halt before the next model call, even when the model isn't metered. Subclass `Hooks` (and call `super()`) to add your own run hooks.
+
+`pitstop.Halted` and `pitstop.BudgetExceeded` reach the caller of `Runner.run`, including a budget hit inside a tool body that the SDK would otherwise hand to the model as an error message. Their class there is also an `agents.exceptions.AgentsException`, the only kind the SDK re-raises unchanged; `except pitstop.Halted` works as usual.
+
+Limits: only function tools are guarded, because the SDK runs tool input guardrails for function tools only; hosted tools (web search, file search, code interpreter, computer use), MCP server tools and handoffs are not checked. Model calls are metered and budgeted only through a `pitstop.wrap`-ed client.
+
 ## Already tracing with OpenTelemetry?
 
 If your agent is already traced with OpenTelemetry GenAI spans (Langfuse, Logfire, OpenLLMetry, OpenInference/Phoenix or the GenAI semantic conventions), PitStop can read those spans without touching your agent code. Install `pip install "pitstop[otel]"` and add its span processor to your tracer provider:
