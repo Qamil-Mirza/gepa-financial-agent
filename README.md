@@ -168,7 +168,7 @@ Drifts are routed by urgency (P0-P3, see the [design spec](docs/superpowers/spec
 | **P2** | This week: quality degrading within contract | Daily digest: email, Slack, webhook |
 | **P3** | Trend: topic shift, slow token or latency creep | Daily digest: email, Slack, webhook |
 
-Every alert says what drifted, what likely changed (the run's model or provider change in the last 24 hours, or "no change detected" with the run's model and `base_url`) and what PitStop did (blocked, steered, halted, fell back or recorded). P0/P1 alerts are sent from a background thread, so a slow channel never blocks your agent, and it finishes sending before the process exits (a normal exit or an uncaught exception such as `Halted`; not a kill). Waiting for it can delay the exit: by up to about 16.5 s for each unreachable HTTP channel and 31.5 s for each unreachable SMTP channel (3 attempts with a 5 s or 10 s timeout, plus the backoff), since an alert's channels are sent one after another. Each open drift alerts once per channel (deduplicated per workflow and drift type); a drift that escalates from P1 to P0 alerts again. A P0/P1 send that fails with a network error, a 5xx or a 429 is retried twice (after 0.5 s and 1 s); an SMTP refusal (authentication, sender, recipients or message rejected) and any other HTTP status are not retried; a send that still fails is retried at the drift's next occurrence, and a send left unfinished by a killed process stops blocking after 2 minutes. Each attempt is a row in the `alerts` table (`sent` or `failed` with an error such as `HTTP 500`).
+Every alert says what drifted, what likely changed (for a drift from [`pitstop scan`](#background-checks-pitstop-scan), the run tags L5 attribution found changed; otherwise the run's model or provider change in the last 24 hours, or "no change detected" with the run's model and `base_url`) and what PitStop did (blocked, steered, halted, fell back or recorded). P0/P1 alerts are sent from a background thread, so a slow channel never blocks your agent, and it finishes sending before the process exits (a normal exit or an uncaught exception such as `Halted`; not a kill). Waiting for it can delay the exit: by up to about 16.5 s for each unreachable HTTP channel and 31.5 s for each unreachable SMTP channel (3 attempts with a 5 s or 10 s timeout, plus the backoff), since an alert's channels are sent one after another. Each open drift alerts once per channel (deduplicated per workflow and drift type); a drift that escalates from P1 to P0 alerts again. A P0/P1 send that fails with a network error, a 5xx or a 429 is retried twice (after 0.5 s and 1 s); an SMTP refusal (authentication, sender, recipients or message rejected) and any other HTTP status are not retried; a send that still fails is retried at the drift's next occurrence, and a send left unfinished by a killed process stops blocking after 2 minutes. Each attempt is a row in the `alerts` table (`sent` or `failed` with an error such as `HTTP 500`).
 
 A channel is used only when its `[alerts.<channel>]` table is in `config.toml` **and** its env var is set. Secrets live only in environment variables: `config.toml` holds the variable's name, and an inline `routing_key`, `api_key`, `webhook_url`, `password` or `url` is rejected as an invalid config. PitStop never stores or logs a secret (it hides httpx's own request log line while sending), but third-party HTTP instrumentation in your process can still record the full Slack or webhook URL: for example Sentry's httpx breadcrumbs or the OpenTelemetry HTTPX instrumentor. Scrub those URLs there, or keep that instrumentation off in processes that send alerts.
 
@@ -189,6 +189,41 @@ $ uv run pitstop alerts digest                # open P2/P3 drifts not yet sent; 
                                               # exits 1 when every channel failed
 $ uv run pitstop alerts digest --force        # send now regardless of the last digest
 ```
+
+### Background checks: `pitstop scan`
+
+The checks above run inside each call. `pitstop scan` looks across runs: it reads each finished run once and feeds its per-run numbers into one change detector per workflow and metric (L2, a two-sided tabular CUSUM). Each detector's state is saved in the local DB (the `l2_state` table), so it carries over between passes and processes.
+
+| Metric | Per run | Drift type | Alarms when it goes |
+|---|---|---|---|
+| `tool_error_rate` | errored tool results / tool calls (runs with tool calls) | `tool_call_breakage` | up |
+| `refusal_rate` | refused agent calls / agent calls | `refusal_spike` | up |
+| `tokens_per_call` | mean prompt + completion tokens per agent call | `cost_or_latency_creep` | up |
+| `llm_calls` | number of agent calls | `cost_or_latency_creep` | up |
+| `cost_usd` | agent spend (OTel and observed estimates included) | `cost_or_latency_creep` | up |
+| `duration_s` | run wall time | `cost_or_latency_creep` | up |
+| `output_chars` | mean characters per agent reply | `quality_drop` | up or down |
+
+How a detector behaves:
+
+- **It learns first.** The first 30 runs that report a metric only learn its baseline (mean and spread); nothing can alarm before that. The baseline is then frozen.
+- **Then it accumulates evidence.** Each later run adds how far it sits from the baseline (in baseline standard deviations, minus a 0.5 slack) to a running sum; an alarm fires when the sum passes 10 / 8 / 6 for sensitivity `low` / `normal` / `high`. A large jump alarms on its first run; a smaller one takes a few runs.
+- **It is tuned against crying wolf.** The spread is widened for a 30-run sample and floored: 0.15 for the rates, so on a zero baseline one fully failed run does not alarm at `normal` or `low` sensitivity but two in a row do (`high` alarms on the first); 5% of the baseline for the others, with a small minimum, so a flat baseline does not alarm on its first different value. In simulation at `normal`, about 3% of steady two-sided streams (under 1% of up-only ones) alarm at least once in 300 runs, and a 3-standard-deviation step is caught within 10 runs, about 5 runs after it starts on average. Small, slow drifts can go unflagged.
+- **After an alarm it relearns.** The detector resets and learns a new baseline from the next 30 runs, so the same metric does not alarm again until then.
+
+On an alarm, `scan` runs L5 attribution around the run where the shift began (see [What changed?](#what-changed)) and records a drift with action `record`, deduplicated with an open drift of the same workflow and drift type. The level follows the urgency table: `tool_call_breakage` and `refusal_spike` are P1 (P2 on `low` workflows), the others P2 (P3 on `low`). When the attribution names a `model`, `base_url` or `prompt_versions` change, the drift is raised to P1 (P2 on `low` workflows), never lowered. P0/P1 drifts alert right away, with the attribution summary as the "what likely changed" line; P2/P3 go in the digest.
+
+Run it from cron, or let it loop. The M3 server will run the same pass on a schedule.
+
+```text
+$ uv run pitstop scan                 # one pass over up to 500 finished, unscanned runs
+scanned 45 runs, 2 alarms
+P1 research cost_or_latency_creep (tokens_per_call): model changed from m1 to m2 (100% of runs since 2026-10-22T14:35Z)
+P1 research cost_or_latency_creep (cost_usd): model changed from m1 to m2 (100% of runs since 2026-10-22T14:35Z)
+$ uv run pitstop scan --every 300     # a pass every 5 minutes until Ctrl-C
+```
+
+Runs still in progress wait for a later pass. `refused` and `dropped` runs are marked scanned but add nothing. Two scanners at once (two cron jobs, or a cron job and `--every`) are safe: each run is claimed and fed to its detectors in one transaction, so it is counted once. The drifts appear in `pitstop drifts`, and `pitstop explain <drift-id>` repeats the attribution with the metric's mean before and after; the drift's evidence holds the metric, the direction, the alarming value, the baseline mean and spread, the change point (`change_at`) and the attribution.
 
 ### What changed?
 
@@ -440,7 +475,7 @@ Results go to `~/.pitstop/runs/eval-<prompt>-<timestamp>/`. The baseline result 
 From the [design spec](docs/superpowers/specs/2026-10-20-pitstop-runtime-design.md), §10. There is no fixed deadline.
 
 1. **Cleanup and restructure. Done.** One installable package, the example agent still runs, tests pass in one command.
-2. **SDK and detection.** M2a is done: `wrap`, `workflow`, `agent`, `tool`, `prompt`, the hard-stop budget ledger, L0 detection with P0-P3 urgency, steer/block/halt actions, and the `pitstop status`, `pitstop drifts` and `pitstop budget` commands. M2b is done: hardened config and store (schema v4, migrations, `pitstop budget reconcile`), `wrap` for the OpenAI and Anthropic SDKs, the L1 pre-action gate, fallback to a pinned model, and P0/P1 alerts (PagerDuty, Opsgenie, Slack, email, webhook). M2c is next: an OpenTelemetry span processor with verdicts as span events, OpenAI Agents SDK and LangGraph adapters, L2 change-point statistics, L5 attribution, a background `scan` pass, and moving the research swarm to `examples/financial-research/`.
+2. **SDK and detection.** M2a is done: `wrap`, `workflow`, `agent`, `tool`, `prompt`, the hard-stop budget ledger, L0 detection with P0-P3 urgency, steer/block/halt actions, and the `pitstop status`, `pitstop drifts` and `pitstop budget` commands. M2b is done: hardened config and store (schema v4, migrations, `pitstop budget reconcile`), `wrap` for the OpenAI and Anthropic SDKs, the L1 pre-action gate, fallback to a pinned model, and P0/P1 alerts (PagerDuty, Opsgenie, Slack, email, webhook). M2c is built, with its wrap-up next: an OpenTelemetry span processor with verdicts as span events, OpenAI Agents SDK and LangGraph adapters, L2 change-point statistics, L5 attribution (`pitstop explain`), the background `pitstop scan` pass, and moving the research swarm to `examples/financial-research/`.
 3. **Dashboard. Planned.** Pit wall, run graph, what changed, runs and settings on real data, plus the L3 run judge and L4 endpoint canaries. The first end-to-end demo.
 4. **Correction. Planned.** Managed prompts, replay, the GEPA loop with its gate, manual and auto modes, canary and rollback.
 5. **Later. Not designed yet.** Remote collection over HTTP, more framework adapters, editing settings from the UI, a LiteLLM gateway plugin.

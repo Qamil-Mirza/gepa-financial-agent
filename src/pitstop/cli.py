@@ -5,6 +5,8 @@
                                                               # that died or calls still running
   pitstop fallback status | clear <workflow>   # workflows pinned to their fallback model
   pitstop alerts test [--channel NAME] | digest [--force]   # check alert channels; send the P2/P3 digest
+  pitstop explain <drift-id>         # which run tags changed around a drift (L5 attribution)
+  pitstop scan [--every SECONDS]     # L2 change detection over finished runs; records attributed drifts
 
 The local DB and config.toml live under $PITSTOP_HOME (default ~/.pitstop); see pitstop.config. The research
 example's commands (run, check, compare, timeline, serve, demo) are on the `finresearch` console script
@@ -124,6 +126,29 @@ def cmd_explain(args) -> None:
         console.print(f"runs compared: {a.n_before} before, {a.n_after} after")
 
 
+def _scan_once(store) -> None:
+    from .detect.scan import scan
+
+    report = scan(store)
+    console.print(f"scanned {report.runs} runs, {len(report.alarms)} alarms")
+    for a in report.alarms:
+        console.print(escape(f"{a.level} {a.workflow} {a.drift_type} ({a.metric}): {a.summary}"), soft_wrap=True)
+    console.file.flush()
+
+
+def cmd_scan(args) -> None:
+    """One `scan` pass (L2 over finished runs, L5 attribution on each alarm); with --every, a pass every SECONDS
+    until Ctrl-C (exit 0)."""
+    rt = _runtime()
+    try:
+        _scan_once(rt.store)
+        while args.every is not None:
+            time.sleep(args.every)
+            _scan_once(rt.store)
+    except KeyboardInterrupt:
+        return
+
+
 def cmd_budget(args) -> None:
     if getattr(args, "budget_cmd", None) == "reconcile":
         cmd_budget_reconcile(args)
@@ -234,6 +259,13 @@ def _minutes(v: str) -> float:
     return m
 
 
+def _seconds(v: str) -> float:
+    s = float(v)
+    if not s > 0:  # also rejects nan
+        raise argparse.ArgumentTypeError(f"must be a positive number of seconds, got {v!r}")
+    return s
+
+
 def main() -> None:
     p = argparse.ArgumentParser(prog="pitstop")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -242,6 +274,8 @@ def main() -> None:
     g.add_argument("--workflow"); g.add_argument("--all", action="store_true", help="include resolved drifts")
     e = sub.add_parser("explain", help="which run tags changed around a drift (L5 attribution)")
     e.add_argument("drift_id", type=int, help="a drift id from `pitstop drifts --all`")
+    sc = sub.add_parser("scan", help="L2 change detection over finished runs; records attributed drifts")
+    sc.add_argument("--every", type=_seconds, metavar="SECONDS", help="repeat every SECONDS until Ctrl-C")
     b = sub.add_parser("budget")
     bsub = b.add_subparsers(dest="budget_cmd")  # optional: bare `pitstop budget` shows the budgets
     rc = bsub.add_parser("reconcile", help="list (or --release) old reservations, left by processes that died"
@@ -262,7 +296,7 @@ def main() -> None:
     ad.add_argument("--force", action="store_true", help="send even if the last digest was under 24 h ago")
     args = p.parse_args()
     handler = {"status": cmd_status, "drifts": cmd_drifts, "budget": cmd_budget, "explain": cmd_explain,
-               "fallback": cmd_fallback, "alerts": cmd_alerts}[args.cmd]
+               "scan": cmd_scan, "fallback": cmd_fallback, "alerts": cmd_alerts}[args.cmd]
     handler(args)
 
 

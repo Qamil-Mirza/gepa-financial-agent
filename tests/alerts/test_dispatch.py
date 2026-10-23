@@ -256,6 +256,45 @@ def test_alert_body_names_model_change(tmp_path, monkeypatch):
                                                 "(model model-b at base_url https://api.example/v1).")
 
 
+def _scan_model_change(store):
+    """30 runs on m1 at ~120 tokens, then 15 on m2 at ~300, started three days ago (older than the 24 h window
+    `recent_change` looks at); then one `scan` pass."""
+    from pitstop.detect.scan import scan
+
+    from tests.detect.run_factory import make_run
+
+    t0 = time.time() - 3 * 86400
+    for i in range(45):
+        model, tokens = ("m1", 100) if i < 30 else ("m2", 280)
+        make_run(store, "wf", started_at=t0 + i * 60, ended_at=t0 + i * 60 + 5, model=model,
+                 llm_calls=((tokens + i % 3, 20, 400),))
+    return scan(store)
+
+
+def test_scan_p1_alerts_once_per_channel(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch)
+    seen = _capture(monkeypatch)
+    report = _scan_model_change(rt.store)
+    assert len(report.alarms) == 2 and {a.level for a in report.alarms} == {"P1"}  # one drift, two metrics
+    assert dispatch.wait_idle()
+    assert _hosts(seen) == ["hook.test", "hooks.slack.test"]  # P1 routes; the second alarm is deduplicated
+
+
+def test_alert_cause_uses_attribution(tmp_path, monkeypatch):
+    rt = _init(tmp_path, monkeypatch, "")
+    report = _scan_model_change(rt.store)
+    did = report.alarms[0].drift_id
+    alert = build_alert(rt.store, did)
+    assert alert.cause == report.alarms[-1].summary[0].upper() + report.alarms[-1].summary[1:] + "."
+    assert alert.cause.startswith("Model changed from m1 to m2 (100% of runs since ")
+    assert "What likely changed: " + alert.cause in alert.body
+    # a drift whose newest evidence has no attribution keeps the run-based cause
+    record_drift(rt.store, run_id=alert.run_id, workflow="wf", level="P1", action="record",
+                 finding=Finding("cost_or_latency_creep", "degraded", False, {"metric": "x"}))
+    assert build_alert(rt.store, did).cause == ("No model or provider change detected for this run "
+                                                "(model m2 at base_url https://a/v1).")
+
+
 def test_alert_for_refused_run_says_it_was_refused(tmp_path, monkeypatch):
     rt = _init(tmp_path, monkeypatch, "")
     with rt.store.transaction() as c:

@@ -1,4 +1,5 @@
-"""The alert message: built from a drift row, the run it was last seen in and the recent model/provider change."""
+"""The alert message: built from a drift row, the run it was last seen in and the recent model/provider change (or
+the drift's L5 attribution)."""
 from __future__ import annotations
 
 import json
@@ -43,8 +44,9 @@ class Alert:
 
 def build_alert(store, drift_id: int) -> Alert:
     """The alert for drift `drift_id` at its current (possibly escalated) level. The run is the drift's latest
-    occurrence; the cause is that run's model or provider change (`recent_change`) or, without one, the run's
-    model and base_url. KeyError when the drift does not exist."""
+    occurrence. The cause is the newest evidence entry's L5 attribution summary (`detail.attribution.summary`, an
+    L2 drift recorded by `pitstop scan`) when it has one, else that run's model or provider change
+    (`recent_change`) or, without one, the run's model and base_url. KeyError when the drift does not exist."""
     conn = store.connect()
     d = conn.execute("SELECT * FROM drifts WHERE id=?", (drift_id,)).fetchone()
     if d is None:
@@ -61,7 +63,7 @@ def build_alert(store, drift_id: int) -> Alert:
     if d["level"] == "P0" and run is not None and run["criticality"] == "high" and d["action"] != "halt":
         action += " The run halts at its next call boundary (high-criticality workflow)."
     return Alert(drift_id=d["id"], workflow=d["workflow"], level=d["level"], drift_type=d["drift_type"], what=what,
-                 cause=_cause(store, d["workflow"], run), action=action, run_id=run_id,
+                 cause=_attributed_cause(latest) or _cause(store, d["workflow"], run), action=action, run_id=run_id,
                  ts=d["last_seen"] if d["last_seen"] is not None else d["ts"])
 
 
@@ -81,6 +83,17 @@ def build_unrecorded_alert(store, *, workflow: str | None, run_id: str | None, d
               "from `pitstop drifts` (see the agent's log).")
     return Alert(drift_id=None, workflow=workflow, level=level, drift_type=drift_type, what=what, cause=cause,
                  action=action, run_id=run_id, ts=ts)
+
+
+def _attributed_cause(entry: dict) -> str | None:
+    """The L5 attribution summary of an evidence entry as a sentence, or None when it has none."""
+    detail = entry.get("detail")
+    attribution = detail.get("attribution") if isinstance(detail, dict) else None
+    summary = attribution.get("summary") if isinstance(attribution, dict) else None
+    if not isinstance(summary, str) or not summary.strip():
+        return None
+    summary = " ".join(summary.split())[:300]
+    return summary[0].upper() + summary[1:] + ("" if summary.endswith(".") else ".")
 
 
 def _cause(store, workflow: str | None, run) -> str:
