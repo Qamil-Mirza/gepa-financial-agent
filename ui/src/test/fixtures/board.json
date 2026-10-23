@@ -1,0 +1,114 @@
+{
+  "workflows": [
+    {
+      "name": "earnings-research",
+      "criticality": "high",
+      "flag": "red",
+      "flag_label": "Halted",
+      "open": {
+        "P0": 1,
+        "P1": 1,
+        "P2": 0,
+        "P3": 0
+      },
+      "headline": "[P0] earnings-research: out_of_scope_action",
+      "headline_level": "P0",
+      "last_run": {
+        "id": "a58113718d7148c59abf3ccd07903de7",
+        "status": "halted",
+        "started_at": 1792773350.689031,
+        "ended_at": 1792773350.692777
+      },
+      "runs_today": 95,
+      "spend_today_usd": 0.6572427,
+      "budget_usd": 2.0,
+      "adapters": [
+        "wrap"
+      ],
+      "fallback_active": false
+    },
+    {
+      "name": "support-triage",
+      "criticality": "medium",
+      "flag": "yellow",
+      "flag_label": "Degraded",
+      "open": {
+        "P0": 0,
+        "P1": 1,
+        "P2": 0,
+        "P3": 0
+      },
+      "headline": "[P1] support-triage: unproductive_loop",
+      "headline_level": "P1",
+      "last_run": {
+        "id": "8f5b85ff799148008894662605cca161",
+        "status": "ok",
+        "started_at": 1792773350.519107,
+        "ended_at": 1792773350.523445
+      },
+      "runs_today": 13,
+      "spend_today_usd": 0.0330624,
+      "budget_usd": null,
+      "adapters": [
+        "wrap"
+      ],
+      "fallback_active": false
+    },
+    {
+      "name": "nightly-digest",
+      "criticality": "low",
+      "flag": "green",
+      "flag_label": "Healthy",
+      "open": {
+        "P0": 0,
+        "P1": 0,
+        "P2": 0,
+        "P3": 0
+      },
+      "headline": null,
+      "headline_level": null,
+      "last_run": {
+        "id": "4eac7d6caec3457da6f8102da2e03bf2",
+        "status": "ok",
+        "started_at": 1792773350.532151,
+        "ended_at": 1792773350.5342798
+      },
+      "runs_today": 14,
+      "spend_today_usd": 0.016617299999999998,
+      "budget_usd": null,
+      "adapters": [
+        "wrap"
+      ],
+      "fallback_active": false
+    },
+    {
+      "name": "kb-sync",
+      "criticality": "low",
+      "flag": "green",
+      "flag_label": "Healthy",
+      "open": {
+        "P0": 0,
+        "P1": 0,
+        "P2": 0,
+        "P3": 0
+      },
+      "headline": null,
+      "headline_level": null,
+      "last_run": {
+        "id": "599f74a3a1b74f47b5f94f16b66cbf5c",
+        "status": "ok",
+        "started_at": 1792773350.4259388,
+        "ended_at": 1792773350.429098
+      },
+      "runs_today": 10,
+      "spend_today_usd": 0.0120564,
+      "budget_usd": null,
+      "adapters": [
+        "wrap"
+      ],
+      "fallback_active": false
+    }
+  ],
+  "budgets": [],
+  "now": 1792773350.9448252
+}

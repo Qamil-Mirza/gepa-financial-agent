@@ -1,0 +1,52 @@
+[
+  {
+    "id": "drift:3",
+    "ts": 1792773350.709357,
+    "kind": "drift",
+    "workflow": "earnings-research",
+    "level": "P1",
+    "text": "Drift opened: cost_or_latency_creep",
+    "run_id": "eda59ed240a64b02a2859e9708ae9a84",
+    "drift_id": 3
+  },
+  {
+    "id": "halt:1847",
+    "ts": 1792773350.692675,
+    "kind": "halt",
+    "workflow": "earnings-research",
+    "level": null,
+    "text": "Halted: out_of_scope_action (P0) on high-criticality workflow 'earnings-research'",
+    "run_id": "a58113718d7148c59abf3ccd07903de7",
+    "drift_id": null
+  },
+  {
+    "id": "drift:2",
+    "ts": 1792773350.6926231,
+    "kind": "drift",
+    "workflow": "earnings-research",
+    "level": "P0",
+    "text": "Drift opened: out_of_scope_action",
+    "run_id": "a58113718d7148c59abf3ccd07903de7",
+    "drift_id": 2
+  },
+  {
+    "id": "model_change:eda59ed240a64b02a2859e9708ae9a84",
+    "ts": 1792773350.538684,
+    "kind": "model_change",
+    "workflow": "earnings-research",
+    "level": null,
+    "text": "Model changed: m-a → m-b",
+    "run_id": "eda59ed240a64b02a2859e9708ae9a84",
+    "drift_id": null
+  },
+  {
+    "id": "drift:1",
+    "ts": 1792773350.472665,
+    "kind": "drift",
+    "workflow": "support-triage",
+    "level": "P1",
+    "text": "Drift opened: unproductive_loop",
+    "run_id": "92d903bf4fd6449394f64fd03ae7a5c5",
+    "drift_id": 1
+  }
+]

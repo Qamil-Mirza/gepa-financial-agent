@@ -97,10 +97,12 @@ def _mean(store, runs: list[dict], metric: str | None) -> float | None:
     return sum(values) / len(values) if values else None
 
 
-def _summary(changes: tuple[TagChange, ...], n_before: int, at: float) -> str:
+def _summary(changes: tuple[TagChange, ...], n_before: int, n_after: int, at: float) -> str:
     iso = _iso_minute(at)
     if n_before == 0:
         return f"no runs before {iso} to compare"
+    if n_after == 0:
+        return f"No runs after {iso} to compare yet."
     if not changes:
         return f"no run tag changed around {iso}; likely an input or upstream shift"
     return "; ".join(f"{c.tag} changed from {'(unset)' if c.before is None else c.before} to {c.after}"
@@ -113,7 +115,7 @@ def attribute(store, workflow: str, at: float, *, metric: str | None = None, win
     after = _window(store, workflow, at, window, before=False)
     changes = _changes(before, after)
     return Attribution(workflow, at, changes, len(before), len(after), metric, _mean(store, before, metric),
-                       _mean(store, after, metric), _summary(changes, len(before), at))
+                       _mean(store, after, metric), _summary(changes, len(before), len(after), at))
 
 
 def explains_change(a: Attribution) -> bool:

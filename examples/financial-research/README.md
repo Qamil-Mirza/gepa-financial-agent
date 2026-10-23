@@ -28,7 +28,7 @@ uv run pitstop drifts              # lists the P0 out_of_scope_action drift (act
 uv run finresearch demo            # http://127.0.0.1:8770, use --port if 8770 is taken
 ```
 
-`finresearch run --offline` (`finresearch/offline.py`) uses a scripted worker model, canned research answers marked OFFLINE and a scripted judge for the gate (`pitstop.init(judge_client=...)`) that rejects calls about consumer gaming. In the default scenario the NVIDIA data-center agent is told from step 2 to research GeForce gaming instead; its gaming research calls are blocked and never run. `--no-inject-drift` removes the injection, and the run records no drift.
+`finresearch run --offline` (`finresearch/offline.py`) uses a scripted worker model, canned research answers marked OFFLINE and a scripted judge for the gate (`pitstop.init(judge_client=...)`) that rejects calls about consumer gaming. In the default scenario the NVIDIA data-center agent is told from step 2 to research GeForce gaming instead; its gaming research calls are blocked and never run. `--no-inject-drift` removes the injection, and the run records no drift. `--offline` exits 2 if combined with `--no-report`, `--mode replay`, `--cache-dir` or `--max-research-calls`, which it would ignore.
 
 The demo page replays a bundled snapshot of a real paired run: two Nemotron Nano supervisors (the original prompt and the GEPA-rewritten one) each watch and correct their own three research agents. These commands also work offline on a run directory you already have:
 

@@ -1,0 +1,271 @@
+/* The settings page: one row per section, its title and where the setting comes from on the left, the values on
+   the right (stacked on a narrow screen). Tables reuse the runs table's styles; names, paths and env var names
+   wrap so the page never scrolls sideways. "set" / "not set" are words with a filled or hollow mark. */
+
+.settings {
+  min-width: 0;
+  max-width: 1040px;
+}
+
+.settings-head {
+  padding-bottom: var(--space-5);
+}
+
+.settings-lede {
+  margin-top: var(--space-2);
+  max-width: 68ch;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.set-loading {
+  margin-top: var(--space-4);
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+
+.settings .error-state {
+  margin-top: var(--space-4);
+}
+
+.set-section {
+  display: grid;
+  grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
+  gap: var(--space-3) var(--space-6);
+  padding: var(--space-5) 0 var(--space-6);
+  border-top: 1px solid var(--line-soft);
+  min-width: 0;
+}
+
+.set-aside {
+  min-width: 0;
+}
+
+.set-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.set-source {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+
+.set-source code {
+  color: var(--ink-2);
+}
+
+.set-body {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.set-lede,
+.set-empty,
+.set-note {
+  font-size: 14px;
+  color: var(--ink-2);
+  max-width: 68ch;
+  overflow-wrap: anywhere;
+}
+
+.set-warn {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--p1);
+  overflow-wrap: anywhere;
+}
+
+.set-subtitle {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+/* ---------- tables ---------- */
+
+.set-table {
+  white-space: normal; /* names wrap instead of widening the table */
+}
+
+.set-table th[scope="row"] {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink);
+  background: none;
+}
+
+.set-table tbody tr:last-child th {
+  border-bottom: 0;
+}
+
+.set-nowrap {
+  white-space: nowrap;
+}
+
+.set-name,
+.set-env {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.set-table td {
+  color: var(--ink-2);
+}
+
+.set-table .money {
+  color: var(--ink);
+}
+
+/* ---------- facts (judge, worker, home) ---------- */
+
+.set-facts {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-6);
+}
+
+.set-facts-wide {
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.set-facts > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.set-facts dt {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.set-facts dd {
+  margin: 1px 0 0;
+  font-size: 14px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.set-facts dd code {
+  font-size: 13px;
+}
+
+.set-error {
+  color: var(--p1);
+  font-weight: 600;
+}
+
+/* ---------- env var state ---------- */
+
+.env {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+}
+
+.env-mark {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+}
+
+.env-set {
+  color: var(--ink);
+}
+
+.env-set .env-mark {
+  color: var(--ok);
+  background: currentColor;
+}
+
+.env-unset {
+  color: var(--ink-3);
+}
+
+/* ---------- alert routes ---------- */
+
+.set-routes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.route {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-4);
+  align-items: baseline;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: var(--text-sm);
+}
+
+.route-level {
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.route-channels {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+
+.route-live {
+  color: var(--ink-2);
+  text-align: right;
+}
+
+.route-none {
+  color: var(--ink-3);
+}
+
+.set-facts dd .env {
+  margin-left: 2px;
+}
+
+@media (max-width: 760px) {
+  .set-table th,
+  .set-table td {
+    padding: 7px 5px;
+  }
+
+  .set-table th:first-child,
+  .set-table td:first-child {
+    padding-left: 8px;
+  }
+
+  .set-table th:last-child,
+  .set-table td:last-child {
+    padding-right: 8px;
+  }
+
+  .set-section {
+    grid-template-columns: minmax(0, 1fr);
+    padding-bottom: var(--space-5);
+  }
+
+  .route {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .route-live {
+    text-align: left;
+  }
+}

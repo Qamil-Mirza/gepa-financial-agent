@@ -23,6 +23,7 @@ import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
 from concurrent.futures import wait as _wait
+from typing import Callable
 
 from ..userconfig import ALERT_CHANNELS
 from . import channels
@@ -78,13 +79,14 @@ def _usable(alerts, names) -> list:
     return out
 
 
-def notify(drift_id: int) -> None:
-    """Queue the immediate alert for a P0/P1 drift and return at once. A no-op when no P0/P1 channel is usable."""
+def notify(drift_id: int, *, store=None) -> None:
+    """Queue the immediate alert for a P0/P1 drift and return at once. A no-op when no P0/P1 channel is usable.
+    The alert is built from and recorded in `store` when given (`scan` passes its own), else the runtime's."""
     rt = _runtime()
     alerts = rt.config.alerts
     if not any(_usable(alerts, alerts.routes[level]) for level in IMMEDIATE_LEVELS):
         return
-    fut = _pool.submit(_deliver, rt.store, alerts, drift_id)
+    fut = _pool.submit(_deliver, store if store is not None else rt.store, alerts, drift_id)
     with _lock:
         _futures.add(fut)
     fut.add_done_callback(_done)
@@ -96,17 +98,19 @@ def _done(fut: Future) -> None:
 
 
 def notify_unrecorded(*, workflow: str | None, run_id: str | None, drift_type: str, level: str,
-                      evidence: dict) -> None:
+                      evidence: dict, store=None, warn: Callable[[str], None] | None = None) -> None:
     """Queue a best-effort, undeduplicated alert for a drift whose write failed (`apply_findings` calls it for a
     P0) and return at once. Sent to `level`'s routes; each send is an `alerts` row with drift_id NULL when the
-    store takes it, and goes out even when it does not. A no-op when no routed channel is usable."""
+    store takes it, and goes out even when it does not. A no-op when no routed channel is usable. `store` as for
+    `notify`. `warn`, when given, receives the job's failure messages instead of the log (a caller's
+    once-per-key gate); it is called from the alerts thread."""
     rt = _runtime()
     alerts = rt.config.alerts
     if level not in IMMEDIATE_LEVELS or not _usable(alerts, alerts.routes[level]):
         return
     fields = {"workflow": workflow, "run_id": run_id, "drift_type": drift_type, "level": level,
               "evidence": evidence, "ts": time.time()}
-    fut = _pool.submit(_deliver_unrecorded, rt.store, alerts, fields)
+    fut = _pool.submit(_deliver_unrecorded, store if store is not None else rt.store, alerts, fields, warn)
     with _lock:
         _futures.add(fut)
     fut.add_done_callback(_done)
@@ -138,26 +142,37 @@ def _deliver(store, alerts, drift_id: int) -> None:
             log.warning("pitstop: could not close the alert worker's store connection (%s)", type(e).__name__)
 
 
-def _deliver_unrecorded(store, alerts, fields: dict) -> None:
+def _deliver_unrecorded(store, alerts, fields: dict, warn: Callable[[str], None] | None = None) -> None:
     try:
         alert = build_unrecorded_alert(store, **fields)
         for ch in _usable(alerts, alerts.routes[alert.level]):
-            row_ids = []
+            # Send first: a locked store must not delay a page. The row is written with the outcome afterwards.
+            error = _attempt(store, [], ch, alert, retries=RETRY_BACKOFF_S)
             try:
                 with store.transaction(immediate=True) as c:
-                    row_ids = [_insert(c, None, alert.level, ch.name, "immediate")]
-            except Exception as e:  # the store that lost the drift may refuse this row too: send anyway
-                log.warning("pitstop: could not record the unrecorded drift's %s alert (%s)", ch.name,
-                            type(e).__name__)
-            _attempt(store, row_ids, ch, alert, retries=RETRY_BACKOFF_S)
+                    row_id = _insert(c, None, alert.level, ch.name, "immediate")
+                    c.execute("UPDATE alerts SET status=?, error=? WHERE id=?",
+                              ("sent" if error is None else "failed", error, row_id))
+            except Exception as e:  # the store that lost the drift may refuse this row too
+                _say(warn, f"pitstop: could not record the unrecorded drift's {ch.name} alert ({type(e).__name__})")
     except Exception as e:
-        log.warning("pitstop: alert for an unrecorded %s drift failed (%s)", fields.get("drift_type"),
-                    type(e).__name__)
+        _say(warn, f"pitstop: alert for an unrecorded {fields.get('drift_type')} drift failed ({type(e).__name__})")
     finally:
         try:
             store.close_local()
         except Exception as e:
             log.warning("pitstop: could not close the alert worker's store connection (%s)", type(e).__name__)
+
+
+def _say(warn: Callable[[str], None] | None, msg: str) -> None:
+    """Log `msg` as a warning, or hand it to the caller's `warn` (falling back to the log if that fails)."""
+    if warn is not None:
+        try:
+            warn(msg)
+            return
+        except Exception:
+            pass
+    log.warning("%s", msg)
 
 
 # A row that still counts: sent, or pending and fresh enough that its sender may still be alive.
@@ -224,7 +239,9 @@ def _attempt(store, row_ids: list[int], ch, alert: Alert, *, retries: tuple[floa
         if error is None or not (_retryable(error) if retryable is None else retryable):
             break
     status = "sent" if error is None else "failed"
-    for last in (False, True) if row_ids else ():  # one retry: a stuck pending row would block this channel until it goes stale
+    for last in (
+        (False, True) if row_ids else ()
+    ):  # one retry: a stuck pending row would block this channel until it goes stale
         try:
             _update(store, row_ids, status, error)
             break

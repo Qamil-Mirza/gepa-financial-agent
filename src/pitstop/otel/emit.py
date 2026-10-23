@@ -8,6 +8,20 @@ from typing import Any
 
 EVENT = "pitstop.verdict"
 MAX_REASON = 300
+_UNSET: Any = object()
+_OTEL: Any = _UNSET  # the opentelemetry.trace module once imported, None when it is not installed
+
+
+def _otel_trace() -> Any:
+    """The `opentelemetry.trace` module, or None; a failed import is attempted once per process."""
+    global _OTEL
+    if _OTEL is _UNSET:
+        try:
+            from opentelemetry import trace
+            _OTEL = trace
+        except Exception:
+            _OTEL = None
+    return _OTEL
 
 
 def emit_verdict(*, run_id: str | None, drift_type: str, level: Any, action: str, drift_id: int | None,
@@ -17,8 +31,9 @@ def emit_verdict(*, run_id: str | None, drift_type: str, level: Any, action: str
     chars) and `pitstop.drift_id` (omitted when unknown, like run_id). Never raises."""
     try:
         if span is None:
-            from opentelemetry import trace
-
+            trace = _otel_trace()
+            if trace is None:
+                return
             span = trace.get_current_span()
         if not span.is_recording():
             return

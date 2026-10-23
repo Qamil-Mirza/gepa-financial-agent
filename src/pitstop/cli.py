@@ -7,15 +7,20 @@
   pitstop alerts test [--channel NAME] | digest [--force]   # check alert channels; send the P2/P3 digest
   pitstop explain <drift-id>         # which run tags changed around a drift (L5 attribution)
   pitstop scan [--every SECONDS]     # L2 change detection over finished runs; records attributed drifts
+  pitstop ui [--host 127.0.0.1] [--port 8787] [--no-open] [--no-worker] [--scan-every SECONDS]
+                                     # the local dashboard (needs the `ui` extra); `serve` = `ui --no-open`
 
 The local DB and config.toml live under $PITSTOP_HOME (default ~/.pitstop); see pitstop.config. The research
-example's commands (run, check, compare, timeline, serve, demo) are on the `finresearch` console script
+example's commands (run, check, compare, timeline, serve, demo) are on that example's own console script
 (examples/financial-research).
 """
 from __future__ import annotations
 
 import argparse
+import errno
+import ipaddress
 import math
+import socket
 import sys
 import time
 from datetime import datetime
@@ -70,7 +75,18 @@ def cmd_status(args) -> None:
         console.print(EMPTY_MSG)
         return
     t = Table(title="Workflows")
-    for col in ("workflow", "criticality", "runs today", "P0", "P1", "P2", "P3", "spend today", "budget", "last status"):
+    for col in (
+        "workflow",
+        "criticality",
+        "runs today",
+        "P0",
+        "P1",
+        "P2",
+        "P3",
+        "spend today",
+        "budget",
+        "last status",
+    ):
         t.add_column(col)
     for r in workflow_rows(rt.store, time.time(), tz=rt.ledger.tz):
         t.add_row(r["workflow"], str(r["criticality"]), str(r["runs_today"]), str(r["open_p0"]), str(r["open_p1"]),
@@ -107,8 +123,9 @@ def cmd_explain(args) -> None:
 
     rt = _runtime()
     target = explain_target(rt.store, args.drift_id)
-    if target is None or target["workflow"] is None:
-        console.print(f"no drift {args.drift_id}" if target is None else f"drift {args.drift_id} has no workflow")
+    if target is None or target["workflow"] is None or target["at"] is None:
+        console.print(f"no drift {args.drift_id}" if target is None else f"drift {args.drift_id} has no workflow"
+                      if target["workflow"] is None else f"drift {args.drift_id} has no time to compare around")
         sys.exit(1)
     a = attribute(rt.store, target["workflow"], target["at"], metric=target["metric"])
     console.print(escape(a.summary), soft_wrap=True)
@@ -254,10 +271,92 @@ def cmd_alerts(args) -> None:
         console.print("No digest sent: no new open P2/P3 drifts, or no digest channel is configured.")
 
 
+UI_EXTRA_MSG = 'The dashboard needs the ui extra: uv sync in the repo, or pip install "pitstop[ui]" once published'
+WILDCARD_HOST_MSG = ("--host {host} would accept requests for any host name; pass a concrete address (e.g. this "
+                     "machine's LAN IP). The dashboard has no login.")
+NO_AUTH_WARNING = ("Warning: listening on {host}, which is not a loopback address. The dashboard shows prompts and "
+                   "tool arguments and has no authentication.")
+
+
+def _is_loopback(host: str) -> bool:
+    if host.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host.strip("[]")).is_loopback
+    except ValueError:  # a host name
+        return False
+
+
+def _is_wildcard(host: str) -> bool:
+    try:
+        return ipaddress.ip_address(host.strip("[]")).is_unspecified
+    except ValueError:  # a host name
+        return False
+
+
+def _listen(host: str, port: int) -> socket.socket:
+    """A listening socket on host:port, bound here so a port in use is a clean exit 2 and the browser can connect
+    as soon as it opens (connections queue until uvicorn accepts them)."""
+    bare = host.strip("[]")
+    sock = None
+    try:
+        try:
+            family = socket.AF_INET6 if ipaddress.ip_address(bare).version == 6 else socket.AF_INET
+        except ValueError:  # a host name, e.g. localhost
+            family = socket.getaddrinfo(bare, port, type=socket.SOCK_STREAM)[0][0]
+        sock = socket.socket(family, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # as uvicorn does: rebinding after a restart
+        sock.bind((bare, port))
+        sock.listen(2048)
+    except OSError as e:  # socket.gaierror for an unknown host name is an OSError too
+        if sock is not None:
+            sock.close()
+        if e.errno == errno.EADDRINUSE:
+            console.print(f"port {port} is in use; pass --port", soft_wrap=True)
+        else:
+            console.print(f"cannot listen on {escape(host)}:{port} ({type(e).__name__}: {escape(str(e))})",
+                          soft_wrap=True)
+        sys.exit(2)
+    return sock
+
+
+def cmd_ui(args) -> None:
+    """The local dashboard: the API, the built UI and (unless --no-worker) the background scan worker, served by
+    uvicorn until Ctrl-C. Fails fast with exit 2 on a missing `ui` extra, an invalid config, a too-new store or a
+    port it cannot listen on."""
+    try:
+        import fastapi  # noqa: F401
+        import uvicorn
+    except ImportError:
+        console.print(UI_EXTRA_MSG, markup=False, soft_wrap=True)
+        sys.exit(2)
+    rt = _runtime()
+    import webbrowser
+
+    from .server.app import DEFAULT_HOSTS, create_app, normalize_host
+    from .server.worker import Worker
+
+    host = args.host
+    if _is_wildcard(host):  # the Host check would then accept only `Host: 0.0.0.0` (R10): refuse it
+        console.print(WILDCARD_HOST_MSG.format(host=host), markup=False, soft_wrap=True)
+        sys.exit(2)
+    if not _is_loopback(host):
+        console.print(NO_AUTH_WARNING.format(host=host), markup=False, soft_wrap=True)
+    sock = _listen(host, args.port)
+    worker = None if args.no_worker else Worker(rt.store, scan_every_s=args.scan_every)
+    app = create_app(rt, allowed_hosts=DEFAULT_HOSTS + (normalize_host(host),), worker=worker)
+    url = f"http://{normalize_host(host)}:{sock.getsockname()[1]}"
+    console.print(f"PitStop dashboard: {url}", markup=False, soft_wrap=True)
+    if not args.no_open:
+        webbrowser.open(url)
+    server = uvicorn.Server(uvicorn.Config(app, log_level="warning", proxy_headers=False))
+    server.run(sockets=[sock])
+
+
 def _minutes(v: str) -> float:
     m = float(v)
-    if not m >= 0:  # also rejects nan
-        raise argparse.ArgumentTypeError(f"must be a non-negative number of minutes, got {v!r}")
+    if not (m >= 0 and math.isfinite(m)):  # rejects nan and inf
+        raise argparse.ArgumentTypeError(f"must be a non-negative, finite number of minutes, got {v!r}")
     return m
 
 
@@ -268,7 +367,33 @@ def _seconds(v: str) -> float:
     return s
 
 
-def main() -> None:
+def _scan_every(v: str) -> float:
+    from .server.worker import MAX_SCAN_EVERY_S  # no fastapi: the worker module is plain Python
+
+    s = _seconds(v)
+    if s > MAX_SCAN_EVERY_S:  # the worker's sleep overflows threading.TIMEOUT_MAX on a huge value
+        raise argparse.ArgumentTypeError(f"must be at most {MAX_SCAN_EVERY_S:g} seconds (a day), got {v!r}")
+    return s
+
+
+def _port(v: str) -> int:
+    n = int(v)
+    if not 0 <= n <= 65535:
+        raise argparse.ArgumentTypeError(f"must be a port number from 0 to 65535, got {v!r}")
+    return n
+
+
+def _ui_args(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--host", default="127.0.0.1",
+                   help="address to listen on (default 127.0.0.1; any other address exposes the dashboard, which "
+                        "has no login; a wildcard such as 0.0.0.0 is refused)")
+    p.add_argument("--port", type=_port, default=8787, help="port to listen on (default 8787; 0 picks a free one)")
+    p.add_argument("--no-worker", action="store_true", help="do not run the background scan and digest worker")
+    p.add_argument("--scan-every", type=_scan_every, default=60.0, metavar="SECONDS",
+                   help="seconds between the worker's scan passes (default 60, at most 86400)")
+
+
+def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="pitstop")
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("status")
@@ -296,9 +421,16 @@ def main() -> None:
     at.add_argument("--channel", choices=ALERT_CHANNELS, help="only this channel")
     ad = asub.add_parser("digest", help="send the digest of open P2/P3 drifts (once per 24 h; run it from cron)")
     ad.add_argument("--force", action="store_true", help="send even if the last digest was under 24 h ago")
-    args = p.parse_args()
+    u = sub.add_parser("ui", help="the local dashboard; opens it in the browser (needs the ui extra)")
+    _ui_args(u)
+    u.add_argument("--no-open", action="store_true", help="do not open the browser")
+    sv = sub.add_parser("serve", help="the local dashboard without opening the browser (ui --no-open)")
+    _ui_args(sv)
+    sv.set_defaults(no_open=True)
+    args = p.parse_args(argv)
     handler = {"status": cmd_status, "drifts": cmd_drifts, "budget": cmd_budget, "explain": cmd_explain,
-               "scan": cmd_scan, "fallback": cmd_fallback, "alerts": cmd_alerts}[args.cmd]
+               "scan": cmd_scan, "fallback": cmd_fallback, "alerts": cmd_alerts, "ui": cmd_ui,
+               "serve": cmd_ui}[args.cmd]
     handler(args)
 
 

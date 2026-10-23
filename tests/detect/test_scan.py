@@ -43,6 +43,21 @@ def _model_change(store, **kw):
     _runs(store, 15, start=30, model="m2", tokens=300, **kw)
 
 
+def test_scan_alarm_with_failed_attribution(tmp_path, monkeypatch):
+    from pitstop.detect import scan as scan_mod
+
+    def boom(*a, **k):
+        raise RuntimeError("attribution exploded")
+
+    monkeypatch.setattr(scan_mod, "attribute", boom)
+    store = Store(tmp_path / "p.db")
+    _model_change(store)
+    report = scan(store)
+    assert report.alarms
+    assert {a.summary for a in report.alarms} == {"attribution failed (RuntimeError)"}
+    assert all(a.drift_id is not None for a in report.alarms)  # the drift is still recorded
+
+
 def test_stationary_workflow_no_alarms(tmp_path):
     store = Store(tmp_path / "p.db")
     _runs(store, 60)
@@ -246,3 +261,30 @@ def test_scan_cli_invalid_config_exits_2(tmp_path):
     out = _cli(tmp_path, "scan")
     assert out.returncode == 2
     assert "Invalid PitStop config" in out.stdout
+
+
+def test_scan_alerts_use_scan_store(tmp_path, monkeypatch):
+    import httpx
+
+    import pitstop
+    from pitstop.alerts import channels, dispatch
+
+    monkeypatch.setenv("PITSTOP_WEBHOOK_URL", "https://hook.test/in")
+    (tmp_path / "a").mkdir()
+    (tmp_path / "a" / "config.toml").write_text("[alerts.webhook]\n")
+    rt = pitstop.init(home=tmp_path / "a")  # the runtime is on store A
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        return httpx.Response(200)
+
+    monkeypatch.setattr(channels, "_http_client", lambda: httpx.Client(transport=httpx.MockTransport(handler)))
+    store_b = Store(tmp_path / "b.db")
+    _model_change(store_b)
+    report = scan(store_b)
+    assert report.alarms and dispatch.wait_idle()
+    assert len(seen) == 1 and json.loads(seen[0].content)["drift_id"] == report.alarms[0].drift_id
+    rows = [dict(r) for r in store_b.connect().execute("SELECT * FROM alerts")]
+    assert [(r["channel"], r["status"]) for r in rows] == [("webhook", "sent")]
+    assert rt.store.connect().execute("SELECT COUNT(*) FROM alerts").fetchone()[0] == 0

@@ -79,6 +79,7 @@ def test_trace_becomes_run_with_events(home):
     assert call["span_id"] == result["span_id"] != llm["span_id"]
     assert llm["agent"] == call["agent"] == result["agent"] == "analyst"
     payload = json.loads(llm["payload"])
+    assert payload.pop("latency_s") >= 0
     assert payload == {"tool_calls": 1, "finish_reason": "tool_calls", "content_chars": None, "meter": "agent",
                        "prompt_tokens": 1000, "completion_tokens": 500, "refused": False, "source": "otel"}
     assert llm["cost_usd"] == pytest.approx((1000 * 0.05 + 500 * 0.20) / 1e6)
@@ -139,8 +140,9 @@ def test_refusals_in_trace_record_refusal_spike(home):
         with tracer.start_as_current_span("chat", attributes={"gen_ai.operation.name": "chat"}):
             pass  # no model: does not tag the run
         for _ in range(2):
-            with tracer.start_as_current_span("chat", attributes={**CHAT,
-                                                                  "gen_ai.response.finish_reasons": ("content_filter",)}):
+            with tracer.start_as_current_span(
+                "chat", attributes={**CHAT, "gen_ai.response.finish_reasons": ("content_filter",)}
+            ):
                 pass
     [run] = _runs()
     assert run["model"] == "openai/gpt-oss-120b"
@@ -305,3 +307,172 @@ def test_import_pitstop_without_extras(tmp_path):
     out = subprocess.run([sys.executable, "-c", code], cwd=tmp_path, env=env, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
     assert out.stdout.strip() == "[]"
+
+
+TOOL = {"gen_ai.operation.name": "execute_tool", "gen_ai.tool.name": "search", "gen_ai.tool.call.arguments": "{}"}
+
+
+def test_agent_name_from_end_attributes(home):
+    """An agent name (or the agent operation itself) set on a span after it started is read at its end."""
+    tracer, _, _ = _tracing(workflow="w")
+    with tracer.start_as_current_span("root"):
+        with tracer.start_as_current_span("invoke_agent", attributes=AGENT) as a:
+            a.set_attribute("gen_ai.agent.name", "analyst")
+        with tracer.start_as_current_span("worker") as b:  # an agent span only by its end-time attributes
+            b.set_attribute("gen_ai.operation.name", "invoke_agent")
+            b.set_attribute("gen_ai.agent.name", "writer")
+    [run] = _runs()
+    agents = [(e["name"], e["agent"]) for e in _events(run["id"]) if e["kind"] == "agent"]
+    assert agents == [("analyst", "analyst"), ("writer", "writer")]
+
+
+def test_child_ending_after_root_keeps_status(home):
+    from opentelemetry.trace import set_span_in_context
+
+    tracer, _, proc = _tracing(workflow="w")
+    root = tracer.start_span("root")
+    ctx = set_span_in_context(root)
+    tracer.start_span("chat", context=ctx, attributes=CHAT).end()  # the run row is written
+    late_tool = tracer.start_span("execute_tool search", context=ctx, attributes=TOOL)
+    late_llm = tracer.start_span("chat", context=ctx, attributes=CHAT)
+    root.set_status(Status(StatusCode.ERROR))
+    root.end()
+    late_tool.end()
+    late_llm.end()
+    [run] = _runs()
+    assert run["status"] == "error" and run["ended_at"] is not None
+    assert [e["kind"] for e in _events(run["id"])] == ["llm_call", "tool_call", "tool_result", "llm_call"]
+
+    # A trace whose only GenAI span ends after its root: no run row is inserted after the root ended.
+    root2 = tracer.start_span("root2")
+    late = tracer.start_span("chat", context=set_span_in_context(root2), attributes=CHAT)
+    root2.end()
+    late.end()
+    assert len(_runs()) == 1
+
+    # The race: a child's end found the open trace, then its root ended before the child wrote the run row.
+    root3 = tracer.start_span("root3")
+    racing = tracer.start_span("chat", context=set_span_in_context(root3), attributes=CHAT)
+    real = proc._record
+
+    def record(trace, span, view):
+        if span.context.span_id == racing.get_span_context().span_id and not root3.end_time:
+            root3.end()  # the root's on_end runs in between (re-entrant here, another thread in production)
+        real(trace, span, view)
+
+    proc._record = record
+    racing.end()
+    assert [r["status"] for r in _runs()] == ["error"]  # never a run left `running`
+    assert proc._traces == {}
+
+
+def test_concurrent_span_ends_from_threads(home):
+    import threading
+
+    from opentelemetry.trace import set_span_in_context
+
+    tracer, _, proc = _tracing(workflow="w")
+    roots = [tracer.start_span(f"root{i}") for i in range(4)]
+    ctxs = [set_span_in_context(r) for r in roots]
+    for c in ctxs:  # each trace has its run row before the roots start ending
+        tracer.start_span("chat", context=c, attributes=CHAT).end()
+    spans = [[tracer.start_span("chat", context=ctxs[(t * 50 + j) % 4], attributes=CHAT) for j in range(50)]
+             for t in range(8)]
+    barrier = threading.Barrier(9)
+    errors = []
+
+    def end_spans(batch):
+        try:
+            barrier.wait(10)
+            for s in batch:
+                s.end()
+        except BaseException as e:
+            errors.append(e)
+
+    def end_roots():
+        try:
+            barrier.wait(10)
+            for r in roots:
+                r.end()
+        except BaseException as e:
+            errors.append(e)
+
+    threads = [threading.Thread(target=end_spans, args=(b,)) for b in spans] + [threading.Thread(target=end_roots)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(30)
+    assert errors == []
+    runs = _runs()
+    assert len(runs) == 4
+    for r in runs:
+        assert r["status"] == "ok"
+        assert len(_events(r["id"])) >= 100
+    assert proc._traces == {}
+
+
+def test_unrecorded_p0_warning_once(tmp_path, monkeypatch, caplog):
+    """A P0 whose drift (and alert row) the store refuses still pages each time, but its failures are logged
+    through the processor's once-per-key gate."""
+    import httpx
+
+    from pitstop.alerts import channels, dispatch
+
+    (tmp_path / "config.toml").write_text("[alerts.webhook]\n")
+    monkeypatch.setenv("PITSTOP_WEBHOOK_URL", "https://hook.test/in")
+    pitstop.init(home=tmp_path)
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        return httpx.Response(200)
+
+    monkeypatch.setattr(channels, "_http_client", lambda: httpx.Client(transport=httpx.MockTransport(handler)))
+    tracer, _, _ = _tracing(workflow="w", criticality="high")
+    with tracer.start_as_current_span("root"):
+        with tracer.start_as_current_span("chat", attributes=CHAT):
+            pass
+
+    def locked(*a, **k):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(get_runtime().store, "transaction", locked)
+    caplog.set_level(logging.WARNING, logger="pitstop")
+    for _ in range(2):
+        with tracer.start_as_current_span("root"):
+            for _ in range(3):  # an unproductive loop: P0 on a high workflow, its drift write fails
+                _tool(tracer)
+        assert dispatch.wait_idle()
+    assert len(seen) == 2  # each unrecorded P0 still paged
+    warnings = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
+    assert len([m for m in warnings if "unrecorded" in m]) == 1, warnings
+    assert len(warnings) == len(set(warnings)), warnings
+
+
+def test_otel_events_have_latency(home):
+    tracer, _, _ = _tracing(workflow="research")
+    with tracer.start_as_current_span("invoke_agent analyst", attributes={
+            "gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": "analyst"}) as root:
+        with tracer.start_as_current_span("chat openai/gpt-oss-120b", attributes=CHAT):
+            pass
+        _tool(tracer)
+    [run] = _runs()
+    by_kind = {e["kind"]: json.loads(e["payload"]) for e in _events(run["id"])}
+    assert by_kind["llm_call"]["latency_s"] >= 0 and by_kind["tool_result"]["latency_s"] >= 0
+    assert "latency_s" not in by_kind["agent"] and root is not None
+
+
+def test_agent_event_names_its_parent_agent(home):
+    """An agent event carries its nearest agent ancestor's name, walking through spans PitStop does not record, so
+    the run graph can nest it when its parent span is unrecorded."""
+    tracer, _, _ = _tracing(workflow="w")
+    with tracer.start_as_current_span("root"):
+        with tracer.start_as_current_span("invoke_agent planner", attributes={**AGENT, "gen_ai.agent.name": "planner"}):
+            with tracer.start_as_current_span("chain"):  # an "other" span: never recorded
+                with tracer.start_as_current_span("invoke_agent researcher",
+                                                  attributes={**AGENT, "gen_ai.agent.name": "researcher"}):
+                    pass
+    [run] = _runs()
+    agents = {e["name"]: json.loads(e["payload"]) for e in _events(run["id"]) if e["kind"] == "agent"}
+    assert agents["researcher"]["parent"] == "planner"
+    assert agents["planner"]["parent"] is None  # "root" is no agent

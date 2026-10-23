@@ -30,7 +30,7 @@ def _budget():
 def _worker(FakeLLMClass, exc):
     return ResearchWorker(AgentSpec(agent_id="a", directive="Research X."), swarm_objective="o",
                           llm=FakeLLMClass(_raise(exc)), research=None, collector=TrajectoryCollector(),
-                          prompts_dir=WORKER_PROMPTS)
+                          prompts_dir=WORKER_PROMPTS, watched=False)
 
 
 @pytest.mark.parametrize("exc", [_budget(), Halted("steer limit exceeded")])

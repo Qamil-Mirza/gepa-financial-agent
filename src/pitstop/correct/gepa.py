@@ -16,7 +16,8 @@ from ..sdk.errors import Halted
 log = logging.getLogger("pitstop.correct.gepa")
 
 class CrusoeReflectionLM:
-    """GEPA LanguageModel protocol implemented on our own client (no litellm). Separately configured from the supervisor."""
+    """GEPA LanguageModel protocol implemented on our own client (no litellm). Separately configured from the
+    supervisor."""
 
     def __init__(self, client: ModelClient, max_tokens: int = 8192, temperature: float = 1.0) -> None:
         self.client, self.max_tokens, self.temperature = client, max_tokens, temperature
@@ -25,7 +26,9 @@ class CrusoeReflectionLM:
         messages = [{"role": "user", "content": prompt}] if isinstance(prompt, str) else prompt
         r = self.client.complete(messages, max_tokens=self.max_tokens, temperature=self.temperature)
         if not r.text.strip():
-            raise RuntimeError(f"empty reflection output (finish_reason={r.finish_reason}); raise max_tokens or disable thinking")
+            raise RuntimeError(
+                f"empty reflection output (finish_reason={r.finish_reason}); raise max_tokens or disable thinking"
+            )
         return r.text
 
     @property
@@ -114,13 +117,30 @@ def run_optimization(seed_policy: Policy, train: list[Any], val: list[Any],
     evaluator = _HaltGuard(evaluator, halted, lock)
     reflection_lm = _HaltGuard(reflection_lm, halted, lock)
     config = oa.GEPAConfig(
-        engine=oa.EngineConfig(max_metric_calls=cfg.max_metric_calls, run_dir=str(run_dir), seed=cfg.seed,
-                               parallel=cfg.max_workers > 1, max_workers=cfg.max_workers, raise_on_exception=False,
-                               display_progress_bar=False, acceptance_criterion=cfg.acceptance_criterion),
-        reflection=oa.ReflectionConfig(reflection_lm=reflection_lm, reflection_minibatch_size=cfg.reflection_minibatch_size,
-                                       skip_perfect_score=cfg.perfect_score is not None, perfect_score=cfg.perfect_score),
+        engine=oa.EngineConfig(
+            max_metric_calls=cfg.max_metric_calls,
+            run_dir=str(run_dir),
+            seed=cfg.seed,
+            parallel=cfg.max_workers > 1,
+            max_workers=cfg.max_workers,
+            raise_on_exception=False,
+            display_progress_bar=False,
+            acceptance_criterion=cfg.acceptance_criterion,
+        ),
+        reflection=oa.ReflectionConfig(
+            reflection_lm=reflection_lm,
+            reflection_minibatch_size=cfg.reflection_minibatch_size,
+            skip_perfect_score=cfg.perfect_score is not None,
+            perfect_score=cfg.perfect_score,
+        ),
     )
-    log.info("starting GEPA: train=%d val=%d max_metric_calls=%d run_dir=%s", len(train), len(val), cfg.max_metric_calls, run_dir)
+    log.info(
+        "starting GEPA: train=%d val=%d max_metric_calls=%d run_dir=%s",
+        len(train),
+        len(val),
+        cfg.max_metric_calls,
+        run_dir,
+    )
     t0 = time.time()
     try:
         result = oa.optimize_anything(
@@ -139,7 +159,9 @@ def run_optimization(seed_policy: Policy, train: list[Any], val: list[Any],
         log.warning("GEPA aborted: %s", h.reason)
         raise h
     elapsed = time.time() - t0
-    best_text = result.best_candidate if isinstance(result.best_candidate, str) else next(iter(result.best_candidate.values()))
+    best_text = (
+        result.best_candidate if isinstance(result.best_candidate, str) else next(iter(result.best_candidate.values()))
+    )
     if result.best_idx != 0:  # the seed is kept byte-for-byte so an unchanged prompt keeps its version hash
         best_text = strip_code_fences(best_text)
     best = Policy.from_text(best_text, name=f"gepa_{run_dir.name}")

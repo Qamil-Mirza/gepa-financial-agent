@@ -39,7 +39,7 @@ def tool(fn: Callable | None = None, *, side_effects: bool = False, name: str | 
                     except BaseException as e:
                         record_tool_result(ctx, tname, error=e)
                         raise
-                record_tool_result(ctx, tname, result=result)
+                    record_tool_result(ctx, tname, result=result)  # inside the block: the mark times it
                 return result
             return awrapper
 
@@ -58,7 +58,7 @@ def tool(fn: Callable | None = None, *, side_effects: bool = False, name: str | 
                 except BaseException as e:
                     record_tool_result(ctx, tname, error=e)
                     raise
-            record_tool_result(ctx, tname, result=result)
+                record_tool_result(ctx, tname, result=result)  # inside the block: the mark times it
             return result
         return wrapper
 

@@ -20,7 +20,8 @@ only invalid tool arguments.
 Model calls are metered only through a `pitstop.wrap`-ed client (`ChatOpenAI(client=wrap(OpenAI()).chat.completions,
 ...)`): that is where budgets are enforced. A model call the wrapped client did not meter (any other chat model) is
 observed instead (plan decision 12): `wrap_model_call` records an `llm_call` event with the same payload keys as
-`wrap`'s plus `"observed": true`, tokens from the reply's `usage_metadata` and a price-table cost estimate, and runs
+`wrap`'s plus `"observed": true`, named by the model the request named (the chat model's `model_name` or `model`,
+else the one the reply names), tokens from the reply's `usage_metadata` and a price-table cost estimate, and runs
 the L0 model-call checks on it (invalid tool calls count as parse failures, refusals as refusals). It never writes a
 ledger row, so an observed call cannot trip a budget; the first one names the run's model when no wrapped call did.
 Whether a wrapped client metered the call is known per model call: the handler runs inside `metered_cell()`
@@ -197,7 +198,7 @@ class PitStopMiddleware(AgentMiddleware):
         if msg is None:
             return
         meta = msg.response_metadata or {}
-        model = meta.get("model_name") or meta.get("model") or _model_name(request)
+        model = _model_name(request) or meta.get("model_name") or meta.get("model")
         calls = [{"name": tc.get("name"), "arguments": tool_args_text((), tc.get("args") or {})}
                  for tc in msg.tool_calls or []]
         invalid = [{"name": tc.get("name"), "arguments": tc.get("args")} for tc in msg.invalid_tool_calls or []]
@@ -278,6 +279,7 @@ def _ai_message(response: Any) -> AIMessage | None:
 
 
 def _model_name(request: Any) -> str | None:
+    """The model the request named: its chat model's `model_name` or `model` attribute, when a non-empty string."""
     model = getattr(request, "model", None)
     for attr in ("model_name", "model"):
         v = getattr(model, attr, None)

@@ -74,3 +74,12 @@ def list_drifts(store, *, workflow: str | None = None, open_only: bool = True) -
             pass
         out.append(d)
     return out
+
+
+def dismiss_drift(store, drift_id: int) -> str:
+    """Dismiss an open drift: "dismissed", "not_open" (already closed or dismissed) or "not_found". A later
+    occurrence of the same finding opens a new drift."""
+    with store.transaction(immediate=True) as c:
+        if c.execute("UPDATE drifts SET status='dismissed' WHERE id=? AND status='open'", (drift_id,)).rowcount:
+            return "dismissed"
+        return "not_open" if c.execute("SELECT 1 FROM drifts WHERE id=?", (drift_id,)).fetchone() else "not_found"

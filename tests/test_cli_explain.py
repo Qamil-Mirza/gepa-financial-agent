@@ -72,3 +72,21 @@ def test_explain_unknown_drift_exits_1(tmp_path):
     assert out.returncode == 1
     assert "no drift 42" in out.stdout + out.stderr
     assert "Traceback" not in out.stderr
+
+
+def test_explain_exit_2_on_invalid_config(tmp_path):
+    (tmp_path / "config.toml").write_text("[budgets\n")
+    out = _cli(tmp_path, "explain", "1")
+    assert out.returncode == 2
+    assert "Invalid PitStop config" in out.stdout
+    assert "Traceback" not in out.stderr
+
+
+def test_explain_workflowless_drift_exits_1(tmp_path):
+    store = Store(tmp_path / "pitstop.db")
+    did = record_drift(store, run_id=None, workflow=None, level="P2", action="record",
+                       finding=Finding("tool_call_breakage", "degraded", False, {"rate": 0.5}))
+    out = _cli(tmp_path, "explain", str(did))
+    assert out.returncode == 1
+    assert f"drift {did} has no workflow" in out.stdout
+    assert "Traceback" not in out.stderr

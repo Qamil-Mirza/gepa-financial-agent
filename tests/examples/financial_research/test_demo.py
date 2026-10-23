@@ -338,7 +338,9 @@ def test_server_live_pair_one_at_a_time(tmp_path, serve, FakeLLMClass, fixture_r
     with httpx.Client(base_url=base, timeout=5) as c:
         started = c.post("/api/live/start", json={"objective": "typed objective"}).json()
         pair_id = started["run_id"]
-        assert [a["agent_id"] for a in started["agents"]] == [a.agent_id for a in Scenario.model_validate(SCENARIO).agents]
+        assert [a["agent_id"] for a in started["agents"]] == [
+            a.agent_id for a in Scenario.model_validate(SCENARIO).agents
+        ]
         assert all(a["label"] for a in started["agents"])
         assert pair_id.startswith("pair-") and (tmp_path / "runs" / pair_id / "pair.json").is_file()
         busy = c.post("/api/live/start", json={"objective": "again"})

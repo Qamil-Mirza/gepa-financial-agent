@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "version": "0.1.0",
+  "schema_version": 5,
+  "home": "/home/you/.pitstop",
+  "worker": {
+    "enabled": false,
+    "running": false,
+    "last_scan_at": null,
+    "last_scan_runs": null,
+    "last_error": null,
+    "scan_every_s": null
+  }
+}

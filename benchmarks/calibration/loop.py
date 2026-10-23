@@ -1,7 +1,8 @@
 """Recursive improvement loop for PitStop's live supervisor (see benchmarks/calibration/recursive.py).
 
   uv run python -m benchmarks.calibration.loop calibrate --judge-model <id>     # judge vs known hard-pair labels
-  uv run python -m benchmarks.calibration.loop round                            # swarm -> judge -> mine -> optimize -> gate
+  uv run python -m benchmarks.calibration.loop round                            # swarm -> judge -> mine
+                                                                                # -> optimize -> gate
   uv run python -m benchmarks.calibration.loop swarm|judge|mine|optimize|gate [--round N]   # one stage at a time
   uv run python -m benchmarks.calibration.loop status
 
@@ -16,6 +17,7 @@ import argparse
 import asyncio
 import json
 import os
+import sys
 from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
@@ -68,25 +70,47 @@ def cmd_calibrate(args, s: Settings, state: LoopState) -> int:
         drift = [r for r in valid if r["label"] == "drift"]
         ok = [r for r in valid if r["label"] == "ok"]
         caught = [r for r in drift if r["drifted"]]
-        return {"n": len(rs), "valid": len(valid),
-                "agreement": round(sum(r["drifted"] == (r["label"] == "drift") for r in valid) / len(valid), 3) if valid else None,
-                "drift_recall": round(len(caught) / len(drift), 3) if drift else None,
-                "ok_specificity": round(sum(not r["drifted"] for r in ok) / len(ok), 3) if ok else None,
-                "type_match_when_caught": round(sum(r["drift_type"] == r["expect_type"] for r in caught) / len(caught), 3) if caught else None}
+        return {
+            "n": len(rs),
+            "valid": len(valid),
+            "agreement": round(sum(r["drifted"] == (r["label"] == "drift") for r in valid) / len(valid), 3)
+            if valid
+            else None,
+            "drift_recall": round(len(caught) / len(drift), 3) if drift else None,
+            "ok_specificity": round(sum(not r["drifted"] for r in ok) / len(ok), 3) if ok else None,
+            "type_match_when_caught": round(sum(r["drift_type"] == r["expect_type"] for r in caught) / len(caught), 3)
+            if caught
+            else None,
+        }
 
-    report = {"judge_model": judge.model, "splits": args.splits, "overall": score(rows),
-              f"confidence>={args.min_confidence}": score([r for r in rows if r["confidence"] >= args.min_confidence]),
-              "by_category": {k: score([r for r in rows if r["category"] == k]) for k in sorted({r["category"] for r in rows})},
-              "usage": judge.client.tracker.snapshot()}
+    report = {
+        "judge_model": judge.model,
+        "splits": args.splits,
+        "overall": score(rows),
+        f"confidence>={args.min_confidence}": score([r for r in rows if r["confidence"] >= args.min_confidence]),
+        "by_category": {
+            k: score([r for r in rows if r["category"] == k]) for k in sorted({r["category"] for r in rows})
+        },
+        "usage": judge.client.tracker.snapshot(),
+    }
     if args.runs:
         inj = []
         for run_dir in sorted(Path(p) for p in args.runs):
             meta, records = load_run(run_dir)
             for agent, inp in final_inputs(records).items():
                 gt, v = meta.get("ground_truth", {}).get(agent, {}), judge.judge(inp)
-                inj.append({"run": run_dir.name, "agent": agent, "injected": gt.get("drift_injected"),
-                            "injected_step": gt.get("onset_step"), "judge_drifted": v.drifted, "judge_onset": v.onset_step,
-                            "judge_valid": v.valid, "judge_confidence": v.confidence})
+                inj.append(
+                    {
+                        "run": run_dir.name,
+                        "agent": agent,
+                        "injected": gt.get("drift_injected"),
+                        "injected_step": gt.get("onset_step"),
+                        "judge_drifted": v.drifted,
+                        "judge_onset": v.onset_step,
+                        "judge_valid": v.valid,
+                        "judge_confidence": v.confidence,
+                    }
+                )
         agree = [r for r in inj if r["judge_valid"] and r["injected"] == r["judge_drifted"]]
         onset = [r for r in agree if r["injected"] and r["judge_onset"] is not None]
         report["runs_vs_injection"] = {
@@ -135,9 +159,13 @@ def cmd_swarm(args, s: Settings, state: LoopState) -> int:
                                 research=research, prompts_dir=PROMPTS / "worker", runs_dir=rd / "runs",
                                 verbose_events=False, correct_on_drift=not args.no_correct, synthesizer=synth,
                                 watch=False))  # measure the supervisor alone (no SDK gate)
-        await asyncio.gather(*(sw.run_all() for sw in swarms))
+        return await asyncio.gather(*(sw.run_all() for sw in swarms))
 
-    asyncio.run(go())
+    halted = [r for r in asyncio.run(go()) if r.halted is not None]
+    if halted:
+        for r in halted:
+            print(f"swarm run {r.run_id} halted: {r.halted}", file=sys.stderr)
+        return 1
     (rd / "swarm.json").write_text(json.dumps({"supervisor_model": args.supervisor_model, "prompt": state.current,
                                                "prompt_version": sup.prompt_version, "scenarios": args.scenarios,
                                                "correct_on_drift": not args.no_correct, "report": not args.no_report,
@@ -187,12 +215,21 @@ def cmd_mine(args, s: Settings, state: LoopState) -> int:
     agents = [a for sm in summary.values() for a in sm.values() if "judge" in a]
     drifted = [a for a in agents if a["judge"]["drifted"]]
     caught = [a for a in drifted if a["first_alert_step"] is not None]
-    totals = {"agents_judged": len(agents), "agents_skipped": sum(len(sm) for sm in summary.values()) - len(agents),
-              "judge_drifted_agents": len(drifted), "supervisor_caught": len(caught),
-              "mean_delay_steps": round(sum(a["first_alert_step"] - a["judge"]["onset_step"] for a in caught) / len(caught), 2)
-              if caught else None,
-              "decision_agreement": round(sum(a.get("agree", 0) for a in agents) / max(1, sum(a["decisions"] for a in agents)), 3),
-              "mined": dict(Counter(r["category"] for r in rows))}
+    totals = {
+        "agents_judged": len(agents),
+        "agents_skipped": sum(len(sm) for sm in summary.values()) - len(agents),
+        "judge_drifted_agents": len(drifted),
+        "supervisor_caught": len(caught),
+        "mean_delay_steps": round(
+            sum(a["first_alert_step"] - a["judge"]["onset_step"] for a in caught) / len(caught), 2
+        )
+        if caught
+        else None,
+        "decision_agreement": round(
+            sum(a.get("agree", 0) for a in agents) / max(1, sum(a["decisions"] for a in agents)), 3
+        ),
+        "mined": dict(Counter(r["category"] for r in rows)),
+    }
     (rd / "mining_summary.json").write_text(json.dumps({"totals": totals, "per_run": summary}, indent=2) + "\n")
     print(f"round {args.round}: supervisor vs hindsight judge")
     print(json.dumps(totals, indent=1))
@@ -209,8 +246,10 @@ def cmd_optimize(args, s: Settings, state: LoopState) -> int:
     train = mined + replay
     val = [c for c in load_hard_cases("val") for _ in range(args.val_repeats)]
     seed = Policy.from_text(state.current_path().read_text().strip(), name=Path(state.current).stem)
-    print(f"round {args.round}: GEPA from {state.current} ({seed.version}); train = {len(mined)} mined "
-          f"{dict(Counter(c.category for c in mined))} + {len(replay)} replay; val = {len(val)} (fixed); test not loaded")
+    print(
+        f"round {args.round}: GEPA from {state.current} ({seed.version}); train = {len(mined)} mined "
+        f"{dict(Counter(c.category for c in mined))} + {len(replay)} replay; val = {len(val)} (fixed); test not loaded"
+    )
     sup_client = client(s, args.supervisor_model, args.workers)
     reflection = CrusoeReflectionLM(client(s, args.reflection_model, 1))
     cfg = OptimizeConfig(max_metric_calls=args.max_metric_calls, reflection_minibatch_size=args.minibatch,
@@ -322,8 +361,16 @@ def main(argv: list[str] | None = None) -> int:
         done = {r["round"] for r in state.rounds}
         args.round = max(done) + 1 if done and args.stage in ("round", "swarm") else max(done | {0}) if done else 0
     round_dir(args.round).mkdir(parents=True, exist_ok=True)
-    return {"calibrate": cmd_calibrate, "swarm": cmd_swarm, "judge": cmd_judge, "mine": cmd_mine,
-            "optimize": cmd_optimize, "gate": cmd_gate, "round": cmd_round, "status": cmd_status}[args.stage](args, s, state)
+    return {
+        "calibrate": cmd_calibrate,
+        "swarm": cmd_swarm,
+        "judge": cmd_judge,
+        "mine": cmd_mine,
+        "optimize": cmd_optimize,
+        "gate": cmd_gate,
+        "round": cmd_round,
+        "status": cmd_status,
+    }[args.stage](args, s, state)
 
 
 if __name__ == "__main__":

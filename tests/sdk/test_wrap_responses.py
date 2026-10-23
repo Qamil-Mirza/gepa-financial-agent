@@ -431,6 +431,14 @@ def test_legacy_completions_estimate_and_max_tokens(tmp_path):
     assert COMPLETIONS.max_output_tokens({"prompt": "x", "max_tokens": 9}) == 9
 
 
+def test_mixed_int_str_completions_prompt_counts_both():
+    from pitstop.sdk.wrap.shapes import COMPLETIONS
+
+    n = COMPLETIONS.estimate_prompt_tokens({"prompt": [1, 2, "hello world"]})
+    assert n > 2
+    assert n == 2 + COMPLETIONS.estimate_prompt_tokens({"prompt": "hello world"})  # each str as a string prompt
+
+
 def test_completions_token_id_prompt_estimate():
     """A token-id prompt is already in tokens: list[int] counts its length, list[list[int]] the sum."""
     from pitstop.sdk.wrap.shapes import COMPLETIONS

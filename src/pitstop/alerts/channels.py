@@ -45,13 +45,19 @@ def _smtp(host: str, port: int) -> smtplib.SMTP:
 
 def _smtp_retryable(e: BaseException) -> bool:
     """A retry may pass after a dropped connection or a 4xx (transient) reply. Anything else is final: a 5xx reply
-    (auth, sender, recipients, data, a refused greeting), refused recipients, a missing feature, a generic
+    (auth, sender, recipients, data, a refused greeting), recipients refused unless all with a 4xx, a failed
+    certificate check, a missing feature, a generic
     SMTPException. SMTPException subclasses OSError, so it is checked first."""
     if isinstance(e, smtplib.SMTPServerDisconnected):
         return True
+    if isinstance(e, smtplib.SMTPRecipientsRefused):  # {recipient: (code, message)}: retry only if all are 4xx
+        codes = [r[0] for r in e.recipients.values()]
+        return bool(codes) and all(isinstance(c, int) and 400 <= c < 500 for c in codes)
     if isinstance(e, smtplib.SMTPResponseException):
         return isinstance(e.smtp_code, int) and 400 <= e.smtp_code < 500
     if isinstance(e, smtplib.SMTPException):
+        return False
+    if isinstance(e, ssl.SSLCertVerificationError):  # an untrusted or mismatched certificate: a retry sees the same
         return False
     return isinstance(e, OSError)  # timeouts, refused or reset connections, DNS failures
 

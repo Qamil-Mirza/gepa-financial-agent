@@ -255,10 +255,15 @@ class TimelineBuilder:
 
     def report_written(self, report: dict, timestamp: Optional[str] = None) -> TimelineEntry:
         problems = bool(report.get("error") or report.get("invalid_citations") or report.get("unverified_figures"))
-        return self._emit(TimelineKind.REPORT_WRITTEN, "warning" if problems else "info",
-                          f"Report written: {report.get('title')}", source="agent", timestamp=timestamp,
-                          detail=_clip(report.get("error") or f"{len(report.get('cited_finding_ids', []))} findings cited"),
-                          data=report)
+        return self._emit(
+            TimelineKind.REPORT_WRITTEN,
+            "warning" if problems else "info",
+            f"Report written: {report.get('title')}",
+            source="agent",
+            timestamp=timestamp,
+            detail=_clip(report.get("error") or f"{len(report.get('cited_finding_ids', []))} findings cited"),
+            data=report,
+        )
 
     def agent_finished(self, agent_id: str, step: int, report: Optional[str] = None,
                        timestamp: Optional[str] = None) -> TimelineEntry:

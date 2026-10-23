@@ -17,6 +17,7 @@ Never commit `.env` or any API key. If you do, revoke the key immediately.
 
 - `src/pitstop`: the installable package: the SDK, the `pitstop` CLI and `pitstop.correct` (the GEPA engine).
 - `examples`: runnable demos (`quickstart` shows the SDK with no keys; `financial-research` is the research swarm and the GEPA demo page, a workspace member with the `finresearch` CLI).
+- `ui`: the local dashboard (React, built into `src/pitstop/server/static/` and served by `pitstop ui`).
 - `benchmarks`: eval sets and detector calibration tooling (`hard_pairs`, `calibration`, `held_out`, `synth`).
 - `tests`: the offline test suite (`sdk`, `detect`, `budget`, `alerts`, `store`, `correct`, `benchmarks`, `examples/financial_research`, repo hygiene).
 - `docs`: design specs and plans under `docs/superpowers/`; hackathon-era documents under `docs/history/`.
@@ -33,6 +34,29 @@ The test suite is offline: sockets are blocked via `pytest-socket`. Loopback (12
 ### Before deleting a tracked directory
 
 Run `git clean -ndX <dir>` to list ignored local files inside it (runs, caches, `.env`) and move them out first.
+
+## The dashboard (`ui/`)
+
+The dashboard is a React app in `ui/` (Node 22, npm). `npm --prefix ui run build` writes it into `src/pitstop/server/static/` (git-ignored), which `pitstop ui` serves and the wheel bundles. Dependencies are pinned to exact versions in `ui/package-lock.json`; install them with `npm ci`, and pin any new one exactly (`ui/.npmrc` sets `save-exact`).
+
+```sh
+npm --prefix ui ci                  # install the locked dependencies
+npm --prefix ui run dev             # Vite on http://localhost:5173, proxying /api to a running `pitstop ui` on 8787
+npm --prefix ui run typecheck
+npm --prefix ui test -- --run       # Vitest with jsdom, on JSON fixtures; never a real server
+npm --prefix ui run build           # into src/pitstop/server/static/
+```
+
+For live data while developing, run `uv run pitstop ui` in a second terminal, or the offline demo: `uv run python examples/quickstart/dashboard_demo.py --home /tmp/pitstop-demo`, then `PITSTOP_HOME=/tmp/pitstop-demo uv run pitstop ui`.
+
+The UI's API types come from the server's models. After changing `src/pitstop/server/models.py` or an endpoint, regenerate the schema and the types, and commit both `ui/openapi.json` and `ui/src/api/schema.d.ts` (`tests/server/test_openapi_snapshot.py` fails until you do):
+
+```sh
+uv run python -c "import json; from pitstop.server.app import export_openapi; open('ui/openapi.json', 'w').write(json.dumps(export_openapi(), indent=2, sort_keys=True) + '\n')"
+npm --prefix ui run gen:api
+```
+
+The Vitest fixtures in `ui/src/test/fixtures/` are real API responses on the demo data. Regenerate them with `uv run python ui/scripts/gen_fixtures.py` (it seeds its own temp home and never touches `~/.pitstop`).
 
 ## Branches and pull requests
 

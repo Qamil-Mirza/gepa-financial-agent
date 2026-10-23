@@ -93,7 +93,10 @@ async def test_pair_view_keeps_the_panes_apart(tmp_path, FakeLLMClass, fixture_r
     assert (v["source"], v["mode"], v["run_id"], v["in_progress"], v["in_charge"]) == \
         ("recorded", "pair", pair.pair_id, False, "both")
     assert v["objective"] == "FIXTURE objective"
-    assert [(a["agent_id"], a["drift_at_step"], a["max_steps"]) for a in v["agents"]] == [("good", None, 3), ("bad", 1, 3)]
+    assert [(a["agent_id"], a["drift_at_step"], a["max_steps"]) for a in v["agents"]] == [
+        ("good", None, 3),
+        ("bad", 1, 3),
+    ]
     assert set(v["agents"][0]) == {"agent_id", "label", "directive", "max_steps", "drift_at_step"}
     assert v["supervisors"]["a"]["model"] == "fake-left" and v["supervisors"]["b"]["model"] == "fake-right"
     for key in ("events", "decisions", "timeline", "agent_reports", "team_report"):

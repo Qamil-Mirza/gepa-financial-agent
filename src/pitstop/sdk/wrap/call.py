@@ -185,6 +185,7 @@ class _Call:
         self.got_result = False
         self.closed = False
         self.obs = Observed()
+        self.started = time.monotonic()  # latency_s runs from here to the recorded event (a stream: its end)
         self.cell = _metered_cell.get()  # the adapter's per-model-call cell, marked when this call is recorded
 
     @classmethod
@@ -344,7 +345,8 @@ class _Call:
         o = self.obs
         payload: dict[str, Any] = {"tool_calls": o.tool_calls, "finish_reason": o.finish_reason,
                                    "content_chars": o.content_chars, "meter": self.meter,
-                                   "prompt_tokens": prompt, "completion_tokens": completion, "refused": refused}
+                                   "prompt_tokens": prompt, "completion_tokens": completion, "refused": refused,
+                                   "latency_s": round(time.monotonic() - self.started, 4)}
         if estimated:
             payload["usage_estimated"] = estimated  # True (character estimate) or "worst_case"
         if self.unmetered:

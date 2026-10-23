@@ -24,22 +24,25 @@ def recent_change(store, workflow: str, run_id: str, *, ignore_model: str | None
 
     Earlier runs of the workflow (started no later than this one) are walked newest first, skipping runs with no
     model, runs whose agent calls were redirected to the pinned fallback (`runs.fallback_from` set), runs observed
-    through OpenTelemetry (adapter `otel`: their model is the response's and their base_url is built from
-    `server.address`) and runs on `ignore_model`: a fallback run is not a setup of its own, whether or not the
-    fallback is still active. The
+    through a different path than this one and runs on `ignore_model`: a fallback run is not a setup of its own,
+    whether or not the fallback is still active. Like is compared with like: OpenTelemetry runs (adapter `otel`:
+    their model is the response's and their base_url is built from `server.address`) are compared only with
+    earlier `otel` runs, and every other run only with non-`otel` runs. The
     first run on a different (model, base_url) is the previous setup; the model is compared first, then the
     base_url. `at` is when the current setup started: the earliest run on it after the previous one. None when
     this run has no model yet, no earlier setup differs, or the change is older than the window."""
     now = time.time() if now is None else now
     conn = store.connect()
-    cur = conn.execute("SELECT rowid, model, base_url, started_at FROM runs WHERE id=? AND workflow=?",
+    cur = conn.execute("SELECT rowid, model, base_url, started_at, adapter FROM runs WHERE id=? AND workflow=?",
                        (run_id, workflow)).fetchone()
     if cur is None or cur["model"] is None or cur["started_at"] is None:
         return None
     at = cur["started_at"]
+    otel = cur["adapter"] == "otel"
+    adapter_clause = "adapter = 'otel'" if otel else "(adapter IS NULL OR adapter != 'otel')"
     earlier = conn.execute(
         "SELECT id, model, base_url, started_at FROM runs WHERE workflow=? AND id<>? AND model IS NOT NULL"
-        " AND fallback_from IS NULL AND (adapter IS NULL OR adapter != 'otel')"
+        f" AND fallback_from IS NULL AND {adapter_clause}"
         " AND (started_at < ? OR (started_at = ? AND rowid < ?)) ORDER BY started_at DESC, rowid DESC",
         (workflow, run_id, at, at, cur["rowid"]))
     for prev in earlier:  # a cursor: stops reading at the first decisive row

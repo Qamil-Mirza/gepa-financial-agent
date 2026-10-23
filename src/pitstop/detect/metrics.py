@@ -11,7 +11,7 @@
 - `output_chars`: mean of `content_chars` over agent calls where it is set (OTel writes null).
 - `llm_calls`: the number of agent calls (0 included).
 - `cost_usd`: the sum of `events.cost_usd` over agent calls (OTel and observed estimates included; null counts 0).
-- `duration_s`: `ended_at - started_at`.
+- `duration_s`: `ended_at - started_at` (left out when the end precedes the start: clock skew).
 
 A metric is left out when the run has no data for it: no `tool_call` events, no agent calls (the rates and
 `cost_usd`), no non-null value (the means), or no end time. A `refused` run (it never started) or a `dropped` one
@@ -101,6 +101,6 @@ def run_metrics(store, run_id: str) -> dict[str, float]:
     if chars:
         out["output_chars"] = sum(chars) / len(chars)
     started, ended = _num(run["started_at"]), _num(run["ended_at"])
-    if started is not None and ended is not None:
+    if started is not None and ended is not None and ended >= started:  # clock skew: never negative
         out["duration_s"] = ended - started
     return out

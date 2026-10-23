@@ -63,7 +63,8 @@ def build_alert(store, drift_id: int) -> Alert:
     if d["level"] == "P0" and run is not None and run["criticality"] == "high" and d["action"] != "halt":
         action += " The run halts at its next call boundary (high-criticality workflow)."
     return Alert(drift_id=d["id"], workflow=d["workflow"], level=d["level"], drift_type=d["drift_type"], what=what,
-                 cause=_attributed_cause(latest) or _cause(store, d["workflow"], run), action=action, run_id=run_id,
+                 cause=(_attributed_cause(latest) or _budget_cause(d["drift_type"], run, latest.get("detail"))
+                        or _cause(store, d["workflow"], run)), action=action, run_id=run_id,
                  ts=d["last_seen"] if d["last_seen"] is not None else d["ts"])
 
 
@@ -76,7 +77,8 @@ def build_unrecorded_alert(store, *, workflow: str | None, run_id: str | None, d
         what += f"; evidence: {_one_line(evidence)}"
     try:
         run = store.connect().execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone() if run_id else None
-        cause = _cause(store, workflow, run) if run is not None else "Unknown: the drift was seen outside a run."
+        cause = (_budget_cause(drift_type, run, evidence) or _cause(store, workflow, run)) if run is not None \
+            else "Unknown: the drift was seen outside a run."
     except Exception as e:
         cause = f"Unknown: the store could not be read ({type(e).__name__})."
     action = ("Applied the drift's in-the-moment action (block, steer or halt) as usual; the drift is missing "
@@ -94,6 +96,18 @@ def _attributed_cause(entry: dict) -> str | None:
         return None
     summary = " ".join(summary.split())[:300]
     return summary[0].upper() + summary[1:] + ("" if summary.endswith(".") else ".")
+
+
+def _budget_cause(drift_type: str, run, detail: object) -> str | None:
+    """For a `budget_exhausted` drift on a refused run, the budget that is used up, from the drift's evidence
+    (`scope`, `spent_usd`, `limit_usd`; see `RunContext._record_refusal`). None otherwise or when it is incomplete."""
+    if drift_type != "budget_exhausted" or run is None or run["status"] != "refused" or not isinstance(detail, dict):
+        return None
+    scope, spent, limit = detail.get("scope"), detail.get("spent_usd"), detail.get("limit_usd")
+    if not isinstance(scope, str) or not all(isinstance(v, (int, float)) and not isinstance(v, bool)
+                                             for v in (spent, limit)):
+        return None
+    return f"Budget {scope} is used up ({spent:.2f} of {limit:.2f} USD)."
 
 
 def _cause(store, workflow: str | None, run) -> str:

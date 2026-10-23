@@ -1,0 +1,58 @@
+{
+  "tile": {
+    "name": "earnings-research",
+    "criticality": "high",
+    "flag": "red",
+    "flag_label": "Halted",
+    "open": {
+      "P0": 1,
+      "P1": 1,
+      "P2": 0,
+      "P3": 0
+    },
+    "headline": "[P0] earnings-research: out_of_scope_action",
+    "headline_level": "P0",
+    "last_run": {
+      "id": "a58113718d7148c59abf3ccd07903de7",
+      "status": "halted",
+      "started_at": 1792773350.689031,
+      "ended_at": 1792773350.692777
+    },
+    "runs_today": 95,
+    "spend_today_usd": 0.6572427,
+    "budget_usd": 2.0,
+    "adapters": [
+      "wrap"
+    ],
+    "fallback_active": false
+  },
+  "goal": "Summarize each quarter's earnings for the internal research desk",
+  "sensitivity": "normal",
+  "fix_mode": "manual",
+  "drifts": [
+    {
+      "id": 2,
+      "level": "P0",
+      "drift_type": "out_of_scope_action",
+      "action": "block",
+      "occurrences": 1,
+      "first_seen": 1792773350.6926231,
+      "last_seen": 1792773350.6926231,
+      "title": "[P0] earnings-research: out_of_scope_action",
+      "cause": "The model changed from m-a to m-b (first run on it at 2026-10-23 16:35 UTC).",
+      "doing": "Blocked the side-effect tool call; the agent got a blocked result instead. The run halts at its next call boundary (high-criticality workflow)."
+    },
+    {
+      "id": 3,
+      "level": "P1",
+      "drift_type": "cost_or_latency_creep",
+      "action": "record",
+      "occurrences": 2,
+      "first_seen": 1792773350.709357,
+      "last_seen": 1792773350.711663,
+      "title": "[P1] earnings-research: cost_or_latency_creep",
+      "cause": "Model changed from m-a to m-b (100% of runs since 2026-10-23T16:35Z).",
+      "doing": "Recorded the drift; no in-the-moment action."
+    }
+  ]
+}

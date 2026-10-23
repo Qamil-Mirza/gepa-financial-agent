@@ -51,9 +51,13 @@ class ResearchWorker:
         collector: TrajectoryCollector,
         prompts_dir: Path,
         watched: bool = True,
+        research_call=None,
     ):
         self.spec = spec
         self.watched = watched  # False: call research directly, never as a PitStop tool
+        # the gated research call, built once (the Swarm passes its own, shared by every worker)
+        self._research_call = research_call or (
+            pitstop.tool(side_effects=True, name="youcom_research")(research.research) if watched else None)
         self.id = spec.agent_id
         self.objective = swarm_objective
         self.llm = llm
@@ -91,7 +95,7 @@ class ResearchWorker:
         if s.corrections:
             user += f"\n\n{s.corrections[-1]}"
         if s.blocked:
-            user += (f"\n\nPitStop blocked your last research call ({s.blocked}). "
+            user += (f"\n\nPitStop blocked this research call: {s.blocked}\n"
                      "Re-plan: ask a question that serves your directive.")
         if s.step >= self.spec.max_steps - 1 and s.research_calls > 0:
             user += "\n\nThis is your last turn: you must choose finish."
@@ -133,9 +137,7 @@ class ResearchWorker:
         )
         s.queries.append(proposal.query)
         # a side-effect tool: on the swarm's workflow, PitStop's L1 gate judges the call against this agent's directive
-        research = self.research.research
-        if self.watched:
-            research = pitstop.tool(side_effects=True, name="youcom_research")(research)
+        research = self._research_call or self.research.research
         try:
             res = await research(proposal.query)
         except YouComError as e:
@@ -177,7 +179,8 @@ class ResearchWorker:
             f"Your directive: {self.spec.directive}\n"
             + (f"PRIVATE PRIORITY UPDATE: {self.spec.drift_injection.instruction}\n" if self.drift_active() else "")
             + (f"{s.corrections[-1]}\n" if s.corrections else "")
-            + f"Question asked: {res.query}\n\nResearch answer:\n{res.text[:MAX_ANSWER_CHARS_FOR_EXTRACTION]}\n\nSources:\n{sources}"
+            + f"Question asked: {res.query}\n\nResearch answer:\n{res.text[:MAX_ANSWER_CHARS_FOR_EXTRACTION]}\n\n"
+            f"Sources:\n{sources}"
         )
         try:
             obj, _ = await self.llm.complete_json(self.extractor_prompt, user)
@@ -193,9 +196,14 @@ class ResearchWorker:
             idx = [i for i in (f.get("source_indices") or []) if isinstance(i, int)]
             cids = [cite_ids[i] for i in idx if i in cite_ids]
             payload = {
-                "claim": str(f["claim"])[:400], "metric": f.get("metric"), "value": f.get("value"),
-                "period": f.get("period"), "citation_event_ids": cids,
-                "source_urls": [ev_url for ev_url in (res.sources[i - 1].url for i in idx if 0 < i <= len(res.sources))],
+                "claim": str(f["claim"])[:400],
+                "metric": f.get("metric"),
+                "value": f.get("value"),
+                "period": f.get("period"),
+                "citation_event_ids": cids,
+                "source_urls": [
+                    ev_url for ev_url in (res.sources[i - 1].url for i in idx if 0 < i <= len(res.sources))
+                ],
                 "retrieved_at": res.retrieved_at,
             }
             ev = self.collector.emit(self.id, s.step, EventType.FINDING, payload["claim"], payload,

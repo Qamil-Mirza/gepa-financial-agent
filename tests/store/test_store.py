@@ -228,8 +228,11 @@ def test_v3_migration_backfills_drifts(tmp_path):
 def test_v2_db_migrates_to_v3(tmp_path):
     path = tmp_path / "v2.db"
     conn = sqlite3.connect(path)
-    conn.executescript(V1_SCHEMA.replace("price_known INTEGER DEFAULT 1)", "price_known INTEGER DEFAULT 1, budget_usd REAL)")
-                       .replace("('schema_version', '1')", "('schema_version', '2')"))
+    conn.executescript(
+        V1_SCHEMA.replace("price_known INTEGER DEFAULT 1)", "price_known INTEGER DEFAULT 1, budget_usd REAL)").replace(
+            "('schema_version', '1')", "('schema_version', '2')"
+        )
+    )
     conn.commit()
     conn.close()
     store = Store(path)

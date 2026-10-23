@@ -1,0 +1,1488 @@
+{
+  "points": [
+    {
+      "run_id": "bb761197f46f493d83537deecedff57e",
+      "started_at": 1792773350.096818,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050235,
+        "tokens_per_call": 2660.8,
+        "output_chars": 29.4,
+        "duration_s": 0.04084491729736328
+      }
+    },
+    {
+      "run_id": "6a9906977535456fbd9a3fa7bf37e53d",
+      "started_at": 1792773350.142171,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.005063399999999999,
+        "tokens_per_call": 2685.0,
+        "output_chars": 29.2,
+        "duration_s": 0.005409955978393555
+      }
+    },
+    {
+      "run_id": "fb7ccd20dedc4afc9d6865d4042ad011",
+      "started_at": 1792773350.15083,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050304,
+        "tokens_per_call": 2672.0,
+        "output_chars": 29.4,
+        "duration_s": 0.005202054977416992
+      }
+    },
+    {
+      "run_id": "a9b9effbe9c949e39ffc17592b62d402",
+      "started_at": 1792773350.156116,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.005088,
+        "tokens_per_call": 2699.0,
+        "output_chars": 29.4,
+        "duration_s": 0.005124092102050781
+      }
+    },
+    {
+      "run_id": "df654b0005ba4248b991fe43b75411f3",
+      "started_at": 1792773350.1670668,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051027,
+        "tokens_per_call": 2697.4,
+        "output_chars": 29.2,
+        "duration_s": 0.0066852569580078125
+      }
+    },
+    {
+      "run_id": "e644784cb7cb4d6ba15d74d066f2b768",
+      "started_at": 1792773350.178584,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051558,
+        "tokens_per_call": 2725.0,
+        "output_chars": 29.4,
+        "duration_s": 0.005394935607910156
+      }
+    },
+    {
+      "run_id": "928b92498c6c4b7780175e17772adfd4",
+      "started_at": 1792773350.184072,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.005108399999999999,
+        "tokens_per_call": 2711.4,
+        "output_chars": 29.4,
+        "duration_s": 0.005941867828369141
+      }
+    },
+    {
+      "run_id": "c632460b43e34433963d3c468f967add",
+      "started_at": 1792773350.193254,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050774999999999995,
+        "tokens_per_call": 2687.2,
+        "output_chars": 29.6,
+        "duration_s": 0.0053730010986328125
+      }
+    },
+    {
+      "run_id": "5ec811150f684de4bda25f8cbde4e78a",
+      "started_at": 1792773350.198723,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050763,
+        "tokens_per_call": 2678.6,
+        "output_chars": 29.4,
+        "duration_s": 0.005269050598144531
+      }
+    },
+    {
+      "run_id": "9e57c75f3e244bc5b04ba5b72a08655e",
+      "started_at": 1792773350.209331,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050013,
+        "tokens_per_call": 2639.4,
+        "output_chars": 29.2,
+        "duration_s": 0.005138874053955078
+      }
+    },
+    {
+      "run_id": "7391c1e478f142f3b83761d036490278",
+      "started_at": 1792773350.2180119,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050505,
+        "tokens_per_call": 2687.8,
+        "output_chars": 29.4,
+        "duration_s": 0.004214048385620117
+      }
+    },
+    {
+      "run_id": "a131833d7bb54ed3a49c518ff138d094",
+      "started_at": 1792773350.222273,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050658000000000005,
+        "tokens_per_call": 2678.2,
+        "output_chars": 29.4,
+        "duration_s": 0.0041239261627197266
+      }
+    },
+    {
+      "run_id": "7d419bdb405c4452a63159c21b8d3549",
+      "started_at": 1792773350.228692,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050316,
+        "tokens_per_call": 2672.2,
+        "output_chars": 29.2,
+        "duration_s": 0.0041158199310302734
+      }
+    },
+    {
+      "run_id": "28b1079b893844b8bc81d615b602895d",
+      "started_at": 1792773350.236942,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0049803,
+        "tokens_per_call": 2648.8,
+        "output_chars": 29.4,
+        "duration_s": 0.004297018051147461
+      }
+    },
+    {
+      "run_id": "924dca6e8385462ca57770df5788098a",
+      "started_at": 1792773350.241293,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.005086499999999999,
+        "tokens_per_call": 2682.4,
+        "output_chars": 29.4,
+        "duration_s": 0.0041849613189697266
+      }
+    },
+    {
+      "run_id": "7fdfcf4a5811461191575c897665a808",
+      "started_at": 1792773350.248696,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0049638,
+        "tokens_per_call": 2623.4,
+        "output_chars": 29.6,
+        "duration_s": 0.0042057037353515625
+      }
+    },
+    {
+      "run_id": "3c9a843f73774b47a02411f5f7e8ccf4",
+      "started_at": 1792773350.252954,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051549,
+        "tokens_per_call": 2731.6,
+        "output_chars": 29.4,
+        "duration_s": 0.004292011260986328
+      }
+    },
+    {
+      "run_id": "803c41ecb56e46d7b4952a6e5b0ba328",
+      "started_at": 1792773350.2595541,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051228,
+        "tokens_per_call": 2711.4,
+        "output_chars": 29.2,
+        "duration_s": 0.004338741302490234
+      }
+    },
+    {
+      "run_id": "87c7bdc7a7e441f29237e909f8c949a8",
+      "started_at": 1792773350.2682571,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051363,
+        "tokens_per_call": 2719.8,
+        "output_chars": 29.4,
+        "duration_s": 0.004106998443603516
+      }
+    },
+    {
+      "run_id": "2b482bc0a3b94d22961cbfc7f3a3a369",
+      "started_at": 1792773350.2724092,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050877,
+        "tokens_per_call": 2713.2,
+        "output_chars": 29.4,
+        "duration_s": 0.004647731781005859
+      }
+    },
+    {
+      "run_id": "4f0ddadc330a475fa820a3600195a404",
+      "started_at": 1792773350.28025,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050157,
+        "tokens_per_call": 2659.8,
+        "output_chars": 29.2,
+        "duration_s": 0.004152774810791016
+      }
+    },
+    {
+      "run_id": "3971209ab2a04bc28c0e2a219533ba48",
+      "started_at": 1792773350.28445,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050508,
+        "tokens_per_call": 2674.2,
+        "output_chars": 29.4,
+        "duration_s": 0.004002094268798828
+      }
+    },
+    {
+      "run_id": "4f0f0d9baeda4aa2931863fcee5b46f9",
+      "started_at": 1792773350.290668,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.005141099999999999,
+        "tokens_per_call": 2722.4,
+        "output_chars": 29.4,
+        "duration_s": 0.004105091094970703
+      }
+    },
+    {
+      "run_id": "a5bebdf7481b4995b7e6a0eb6188d360",
+      "started_at": 1792773350.298785,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.005072699999999999,
+        "tokens_per_call": 2688.2,
+        "output_chars": 29.6,
+        "duration_s": 0.004116058349609375
+      }
+    },
+    {
+      "run_id": "3f007381cb0a44658a198bf1b13073cb",
+      "started_at": 1792773350.302946,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050607,
+        "tokens_per_call": 2676.6,
+        "output_chars": 29.4,
+        "duration_s": 0.00423884391784668
+      }
+    },
+    {
+      "run_id": "6cffbb9cc92e4c2d858c1dd242f29721",
+      "started_at": 1792773350.310368,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050037,
+        "tokens_per_call": 2662.6,
+        "output_chars": 29.2,
+        "duration_s": 0.004058837890625
+      }
+    },
+    {
+      "run_id": "ea7c8247766e44b182d886c7566d1d29",
+      "started_at": 1792773350.316711,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.005119200000000001,
+        "tokens_per_call": 2706.0,
+        "output_chars": 29.4,
+        "duration_s": 0.004441976547241211
+      }
+    },
+    {
+      "run_id": "8a80446bc69046cb9363bfd3154ee26e",
+      "started_at": 1792773350.321198,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051099000000000006,
+        "tokens_per_call": 2710.0,
+        "output_chars": 29.4,
+        "duration_s": 0.004002809524536133
+      }
+    },
+    {
+      "run_id": "6a15c3227db248ec9cde7b57c44fb33d",
+      "started_at": 1792773350.329292,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051258,
+        "tokens_per_call": 2739.8,
+        "output_chars": 29.2,
+        "duration_s": 0.0041310787200927734
+      }
+    },
+    {
+      "run_id": "82666fb7809a425499d9f14f2e6879f3",
+      "started_at": 1792773350.3334699,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.005131799999999999,
+        "tokens_per_call": 2718.0,
+        "output_chars": 29.4,
+        "duration_s": 0.004370212554931641
+      }
+    },
+    {
+      "run_id": "d9f8010b034f46cf9f0a3b2127dbc784",
+      "started_at": 1792773350.341173,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.005100899999999999,
+        "tokens_per_call": 2710.0,
+        "output_chars": 29.4,
+        "duration_s": 0.0040819644927978516
+      }
+    },
+    {
+      "run_id": "4eab60f2ff394d5cb3e028fd7f5d6d2d",
+      "started_at": 1792773350.347469,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050067,
+        "tokens_per_call": 2649.0,
+        "output_chars": 29.6,
+        "duration_s": 0.004144906997680664
+      }
+    },
+    {
+      "run_id": "771aa5317eb849338d5d80b292fdfb87",
+      "started_at": 1792773350.3516579,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050991000000000005,
+        "tokens_per_call": 2711.2,
+        "output_chars": 29.4,
+        "duration_s": 0.004075050354003906
+      }
+    },
+    {
+      "run_id": "e1c1d99d1d5640a9a7e4efcdfc6f941e",
+      "started_at": 1792773350.359823,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051600000000000005,
+        "tokens_per_call": 2738.6,
+        "output_chars": 29.2,
+        "duration_s": 0.004064083099365234
+      }
+    },
+    {
+      "run_id": "6b5b3ea8e8cf403ab4e4ff8a3f0ba904",
+      "started_at": 1792773350.363935,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051156,
+        "tokens_per_call": 2719.8,
+        "output_chars": 29.4,
+        "duration_s": 0.004116058349609375
+      }
+    },
+    {
+      "run_id": "cfc54d28366e43359de4b8c919fa6363",
+      "started_at": 1792773350.371583,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0049479,
+        "tokens_per_call": 2623.6,
+        "output_chars": 29.4,
+        "duration_s": 0.004206180572509766
+      }
+    },
+    {
+      "run_id": "6d1df492f1ce426790e23fde41f2b790",
+      "started_at": 1792773350.378047,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051440999999999995,
+        "tokens_per_call": 2734.0,
+        "output_chars": 29.2,
+        "duration_s": 0.004472970962524414
+      }
+    },
+    {
+      "run_id": "917687296ea64b9cb18514cd1f5c7e40",
+      "started_at": 1792773350.382567,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.005111999999999999,
+        "tokens_per_call": 2701.8,
+        "output_chars": 29.4,
+        "duration_s": 0.0040318965911865234
+      }
+    },
+    {
+      "run_id": "a002088d23634c618aaf29c77a1a5832",
+      "started_at": 1792773350.390569,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051275999999999995,
+        "tokens_per_call": 2713.4,
+        "output_chars": 29.4,
+        "duration_s": 0.004517078399658203
+      }
+    },
+    {
+      "run_id": "52a7bc9f448d4eb0b854cd0b7e9f0715",
+      "started_at": 1792773350.398276,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051156,
+        "tokens_per_call": 2712.6,
+        "output_chars": 29.6,
+        "duration_s": 0.004180908203125
+      }
+    },
+    {
+      "run_id": "bca8c841d10a4da4ad9fd4cc19247d85",
+      "started_at": 1792773350.402503,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051705,
+        "tokens_per_call": 2746.2,
+        "output_chars": 29.4,
+        "duration_s": 0.004163980484008789
+      }
+    },
+    {
+      "run_id": "8493f83f172e4c038c668397eca82fc9",
+      "started_at": 1792773350.408936,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051138,
+        "tokens_per_call": 2698.8,
+        "output_chars": 29.2,
+        "duration_s": 0.0043261051177978516
+      }
+    },
+    {
+      "run_id": "a4bbefaedf134cf588629cbc757daa11",
+      "started_at": 1792773350.413308,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051275999999999995,
+        "tokens_per_call": 2739.8,
+        "output_chars": 29.4,
+        "duration_s": 0.004225969314575195
+      }
+    },
+    {
+      "run_id": "afd40e788f4244dc8929f83ca600b06b",
+      "started_at": 1792773350.4216452,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051534,
+        "tokens_per_call": 2727.6,
+        "output_chars": 29.4,
+        "duration_s": 0.0042459964752197266
+      }
+    },
+    {
+      "run_id": "3bf8d95a35cd4f32a87558c66e2a3cfb",
+      "started_at": 1792773350.429151,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.005062500000000001,
+        "tokens_per_call": 2684.4,
+        "output_chars": 29.2,
+        "duration_s": 0.004284858703613281
+      }
+    },
+    {
+      "run_id": "de7f6690907b46b6813a0640d0bc8955",
+      "started_at": 1792773350.433481,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050885999999999995,
+        "tokens_per_call": 2694.0,
+        "output_chars": 29.4,
+        "duration_s": 0.004155158996582031
+      }
+    },
+    {
+      "run_id": "b303b0baddda4c3c8c2f33fad9822e96",
+      "started_at": 1792773350.44001,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050718,
+        "tokens_per_call": 2676.8,
+        "output_chars": 29.4,
+        "duration_s": 0.0042400360107421875
+      }
+    },
+    {
+      "run_id": "c4c5b4fa2d1e4f90abeaf23b4acdebfd",
+      "started_at": 1792773350.444303,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051051,
+        "tokens_per_call": 2703.2,
+        "output_chars": 29.6,
+        "duration_s": 0.004441976547241211
+      }
+    },
+    {
+      "run_id": "acaf463283c64e5ebdf23374f96d02a4",
+      "started_at": 1792773350.453126,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050583,
+        "tokens_per_call": 2678.6,
+        "output_chars": 29.4,
+        "duration_s": 0.004141092300415039
+      }
+    },
+    {
+      "run_id": "54d8596cf675412da3410017ae20756b",
+      "started_at": 1792773350.459506,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050643,
+        "tokens_per_call": 2685.6,
+        "output_chars": 29.2,
+        "duration_s": 0.004115104675292969
+      }
+    },
+    {
+      "run_id": "27a27c6d9679445692c7a01924640fa8",
+      "started_at": 1792773350.463665,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050547,
+        "tokens_per_call": 2682.2,
+        "output_chars": 29.4,
+        "duration_s": 0.004559993743896484
+      }
+    },
+    {
+      "run_id": "6b00304897084c7abba1d8e710dd6a80",
+      "started_at": 1792773350.48421,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051375,
+        "tokens_per_call": 2737.4,
+        "output_chars": 29.4,
+        "duration_s": 0.004333972930908203
+      }
+    },
+    {
+      "run_id": "778c1d2ff4114917abf0fd6366049cf8",
+      "started_at": 1792773350.491107,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.005068199999999999,
+        "tokens_per_call": 2675.6,
+        "output_chars": 29.2,
+        "duration_s": 0.004403114318847656
+      }
+    },
+    {
+      "run_id": "b8a390e30ff74b6fb00a960ff6848e38",
+      "started_at": 1792773350.4955661,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050547000000000005,
+        "tokens_per_call": 2681.6,
+        "output_chars": 29.4,
+        "duration_s": 0.00436091423034668
+      }
+    },
+    {
+      "run_id": "0715692874444372a6c906d2236e7286",
+      "started_at": 1792773350.504191,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.005107799999999999,
+        "tokens_per_call": 2720.6,
+        "output_chars": 29.4,
+        "duration_s": 0.0041730403900146484
+      }
+    },
+    {
+      "run_id": "567d6f9b6f974354bc0c503d86223563",
+      "started_at": 1792773350.5084102,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0049878,
+        "tokens_per_call": 2640.6,
+        "output_chars": 29.6,
+        "duration_s": 0.004180908203125
+      }
+    },
+    {
+      "run_id": "a74da0ed361c48058239356ab451eba5",
+      "started_at": 1792773350.514841,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050148,
+        "tokens_per_call": 2658.0,
+        "output_chars": 29.4,
+        "duration_s": 0.004215717315673828
+      }
+    },
+    {
+      "run_id": "f354d9e04a5c4f389326b9d05e8d95a3",
+      "started_at": 1792773350.523492,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0049445999999999995,
+        "tokens_per_call": 2626.2,
+        "output_chars": 29.2,
+        "duration_s": 0.004434823989868164
+      }
+    },
+    {
+      "run_id": "cdb62788f15d4f52986e1cb5a2312bf3",
+      "started_at": 1792773350.527976,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0050382,
+        "tokens_per_call": 2659.2,
+        "output_chars": 29.4,
+        "duration_s": 0.004128932952880859
+      }
+    },
+    {
+      "run_id": "d54a5aca66ad44ddb2b3d7498e33527b",
+      "started_at": 1792773350.534327,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0051546000000000005,
+        "tokens_per_call": 2737.4,
+        "output_chars": 29.4,
+        "duration_s": 0.004308938980102539
+      }
+    },
+    {
+      "run_id": "eda59ed240a64b02a2859e9708ae9a84",
+      "started_at": 1792773350.538684,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0102171,
+        "tokens_per_call": 5435.6,
+        "output_chars": 29.2,
+        "duration_s": 0.00418400764465332
+      }
+    },
+    {
+      "run_id": "53e44c5b08e04a36b9c3a0ca25c1d877",
+      "started_at": 1792773350.542913,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010300799999999999,
+        "tokens_per_call": 5456.6,
+        "output_chars": 29.4,
+        "duration_s": 0.00416111946105957
+      }
+    },
+    {
+      "run_id": "2384653206ca4529bf32aa55bbb53787",
+      "started_at": 1792773350.5471191,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010066499999999999,
+        "tokens_per_call": 5320.8,
+        "output_chars": 29.4,
+        "duration_s": 0.0042438507080078125
+      }
+    },
+    {
+      "run_id": "2d36f93307d74ca29724824f136f555b",
+      "started_at": 1792773350.551408,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010209,
+        "tokens_per_call": 5441.0,
+        "output_chars": 29.6,
+        "duration_s": 0.004355907440185547
+      }
+    },
+    {
+      "run_id": "e76b1547c7a7467984053a4e282c25cf",
+      "started_at": 1792773350.55581,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0103005,
+        "tokens_per_call": 5463.6,
+        "output_chars": 29.4,
+        "duration_s": 0.0041959285736083984
+      }
+    },
+    {
+      "run_id": "349529ae775b48bf93c5ceb8c5f026f3",
+      "started_at": 1792773350.5600488,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0102432,
+        "tokens_per_call": 5451.2,
+        "output_chars": 29.2,
+        "duration_s": 0.004239082336425781
+      }
+    },
+    {
+      "run_id": "33013ce8a8404cf9b777755baeae654b",
+      "started_at": 1792773350.5643342,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0101373,
+        "tokens_per_call": 5390.8,
+        "output_chars": 29.4,
+        "duration_s": 0.0042917728424072266
+      }
+    },
+    {
+      "run_id": "39189a68eab94ee886efabeac96b2900",
+      "started_at": 1792773350.568672,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0100728,
+        "tokens_per_call": 5326.2,
+        "output_chars": 29.4,
+        "duration_s": 0.004421234130859375
+      }
+    },
+    {
+      "run_id": "8d448ee52be9407aacdd76e93dbb9079",
+      "started_at": 1792773350.573138,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0100542,
+        "tokens_per_call": 5342.0,
+        "output_chars": 29.2,
+        "duration_s": 0.004766225814819336
+      }
+    },
+    {
+      "run_id": "7e5e4c2619554e519a9c2ea89f7a75ee",
+      "started_at": 1792773350.57795,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0102168,
+        "tokens_per_call": 5443.8,
+        "output_chars": 29.4,
+        "duration_s": 0.004445791244506836
+      }
+    },
+    {
+      "run_id": "cab1326ae5314351a4691464e4d34b0a",
+      "started_at": 1792773350.582443,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010044899999999999,
+        "tokens_per_call": 5334.6,
+        "output_chars": 29.4,
+        "duration_s": 0.004297018051147461
+      }
+    },
+    {
+      "run_id": "c07eb6bf12014eea90cf13a1366ca17a",
+      "started_at": 1792773350.5867891,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0101832,
+        "tokens_per_call": 5398.0,
+        "output_chars": 29.6,
+        "duration_s": 0.004308938980102539
+      }
+    },
+    {
+      "run_id": "e6808c106b91429c8818d407c144b764",
+      "started_at": 1792773350.591149,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010038,
+        "tokens_per_call": 5277.8,
+        "output_chars": 29.4,
+        "duration_s": 0.004606008529663086
+      }
+    },
+    {
+      "run_id": "af8672c7073a4161ba614f347936d5dc",
+      "started_at": 1792773350.5958111,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0099891,
+        "tokens_per_call": 5283.0,
+        "output_chars": 29.2,
+        "duration_s": 0.0045659542083740234
+      }
+    },
+    {
+      "run_id": "b32dff6c65974b95b7e74a49783db4b7",
+      "started_at": 1792773350.600424,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0100173,
+        "tokens_per_call": 5335.4,
+        "output_chars": 29.4,
+        "duration_s": 0.004227876663208008
+      }
+    },
+    {
+      "run_id": "3a8996f5cf5843e4886ec4569626f117",
+      "started_at": 1792773350.6046982,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0101091,
+        "tokens_per_call": 5334.2,
+        "output_chars": 29.4,
+        "duration_s": 0.004187822341918945
+      }
+    },
+    {
+      "run_id": "f597606a633f424d94708a1736a7b9d3",
+      "started_at": 1792773350.6089332,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.009991199999999999,
+        "tokens_per_call": 5297.6,
+        "output_chars": 29.2,
+        "duration_s": 0.0043468475341796875
+      }
+    },
+    {
+      "run_id": "eadcd5fed636459086fac848c65b0879",
+      "started_at": 1792773350.613328,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0100857,
+        "tokens_per_call": 5300.0,
+        "output_chars": 29.4,
+        "duration_s": 0.004230976104736328
+      }
+    },
+    {
+      "run_id": "33f2e0e77e4243028200583cec53eafe",
+      "started_at": 1792773350.617601,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0101067,
+        "tokens_per_call": 5396.2,
+        "output_chars": 29.4,
+        "duration_s": 0.00427699089050293
+      }
+    },
+    {
+      "run_id": "07cbb18c193c4cdb974d866ff0aee9d1",
+      "started_at": 1792773350.621922,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010174200000000001,
+        "tokens_per_call": 5397.4,
+        "output_chars": 29.6,
+        "duration_s": 0.004239797592163086
+      }
+    },
+    {
+      "run_id": "0dcf036f75a843f8b17a16b8b7b72754",
+      "started_at": 1792773350.626209,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0101412,
+        "tokens_per_call": 5358.0,
+        "output_chars": 29.4,
+        "duration_s": 0.004287004470825195
+      }
+    },
+    {
+      "run_id": "4219db5defdc4136a0d6f79a2d02bd69",
+      "started_at": 1792773350.630542,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010134,
+        "tokens_per_call": 5400.6,
+        "output_chars": 29.2,
+        "duration_s": 0.0043048858642578125
+      }
+    },
+    {
+      "run_id": "880c7280380e4b93bd789c453e5f15a8",
+      "started_at": 1792773350.634892,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010139099999999998,
+        "tokens_per_call": 5338.0,
+        "output_chars": 29.4,
+        "duration_s": 0.004220008850097656
+      }
+    },
+    {
+      "run_id": "a9cdb5cff894494e8cde5ba9a01a8af9",
+      "started_at": 1792773350.6391628,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0099114,
+        "tokens_per_call": 5275.6,
+        "output_chars": 29.4,
+        "duration_s": 0.0047931671142578125
+      }
+    },
+    {
+      "run_id": "cd2a5ef6da5047359d856ba95de262d0",
+      "started_at": 1792773350.644004,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010019400000000001,
+        "tokens_per_call": 5321.2,
+        "output_chars": 29.2,
+        "duration_s": 0.004313945770263672
+      }
+    },
+    {
+      "run_id": "3250af8eb7974a08bbf7c43ecc133094",
+      "started_at": 1792773350.648364,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010204199999999998,
+        "tokens_per_call": 5401.2,
+        "output_chars": 29.4,
+        "duration_s": 0.004228115081787109
+      }
+    },
+    {
+      "run_id": "2b636392e57a4ff1acb38094ac08c3b9",
+      "started_at": 1792773350.652639,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0100734,
+        "tokens_per_call": 5342.8,
+        "output_chars": 29.4,
+        "duration_s": 0.004302024841308594
+      }
+    },
+    {
+      "run_id": "680834bdd0f74d6cb69e4876123443c7",
+      "started_at": 1792773350.656987,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010301999999999999,
+        "tokens_per_call": 5454.4,
+        "output_chars": 29.6,
+        "duration_s": 0.0042378902435302734
+      }
+    },
+    {
+      "run_id": "12fc219f34c94a82b990a7993aad8f3d",
+      "started_at": 1792773350.661272,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010167299999999999,
+        "tokens_per_call": 5387.4,
+        "output_chars": 29.4,
+        "duration_s": 0.004315853118896484
+      }
+    },
+    {
+      "run_id": "1c07dc9aadf34cf9af2858e8a7df5bc0",
+      "started_at": 1792773350.665635,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0101307,
+        "tokens_per_call": 5380.4,
+        "output_chars": 29.2,
+        "duration_s": 0.004822969436645508
+      }
+    },
+    {
+      "run_id": "67d6ec0c71134ebb9d4d2e2fc30a0603",
+      "started_at": 1792773350.67051,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0099759,
+        "tokens_per_call": 5268.8,
+        "output_chars": 29.4,
+        "duration_s": 0.004661083221435547
+      }
+    },
+    {
+      "run_id": "5631b6d0e52f4b848d03a2f9e1d5182b",
+      "started_at": 1792773350.675225,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.0102759,
+        "tokens_per_call": 5452.6,
+        "output_chars": 29.4,
+        "duration_s": 0.0046520233154296875
+      }
+    },
+    {
+      "run_id": "fb20d37686c94415ac93f347f820b709",
+      "started_at": 1792773350.679929,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010149599999999998,
+        "tokens_per_call": 5381.6,
+        "output_chars": 29.2,
+        "duration_s": 0.004681110382080078
+      }
+    },
+    {
+      "run_id": "dcc6c146bb89491684a3ef347764c254",
+      "started_at": 1792773350.684659,
+      "status": "ok",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 5.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.010241700000000001,
+        "tokens_per_call": 5419.6,
+        "output_chars": 29.4,
+        "duration_s": 0.004327058792114258
+      }
+    },
+    {
+      "run_id": "a58113718d7148c59abf3ccd07903de7",
+      "started_at": 1792773350.689031,
+      "status": "halted",
+      "source": "sdk",
+      "metrics": {
+        "llm_calls": 4.0,
+        "tool_error_rate": 0.0,
+        "refusal_rate": 0.0,
+        "cost_usd": 0.008072099999999999,
+        "tokens_per_call": 5100.0,
+        "output_chars": 34.25,
+        "duration_s": 0.00374603271484375
+      }
+    }
+  ],
+  "markers": [
+    {
+      "at": 1792773350.538684,
+      "kind": "model",
+      "before": "m-a",
+      "after": "m-b",
+      "run_id": "eda59ed240a64b02a2859e9708ae9a84",
+      "drift_id": null,
+      "metric": null,
+      "source": "sdk"
+    },
+    {
+      "at": 1792773350.538684,
+      "kind": "l2_alarm",
+      "before": null,
+      "after": null,
+      "run_id": "eda59ed240a64b02a2859e9708ae9a84",
+      "drift_id": 3,
+      "metric": "tokens_per_call",
+      "source": null
+    }
+  ],
+  "metrics": [
+    {
+      "name": "tool_error_rate",
+      "label": "Tool errors",
+      "unit": "%"
+    },
+    {
+      "name": "refusal_rate",
+      "label": "Refusals",
+      "unit": "%"
+    },
+    {
+      "name": "tokens_per_call",
+      "label": "Tokens per call",
+      "unit": ""
+    },
+    {
+      "name": "llm_calls",
+      "label": "LLM calls",
+      "unit": ""
+    },
+    {
+      "name": "cost_usd",
+      "label": "Cost per run",
+      "unit": "$"
+    },
+    {
+      "name": "duration_s",
+      "label": "Duration",
+      "unit": "s"
+    },
+    {
+      "name": "output_chars",
+      "label": "Output length",
+      "unit": "chars"
+    }
+  ]
+}

@@ -41,4 +41,10 @@ def test_pitstop_console_script_lists_only_sdk_commands():
     out = subprocess.run(["pitstop", "--help"], capture_output=True, text=True)
     assert out.returncode == 0
     commands = set(re.search(r"\{([a-z,]+)\}", out.stdout).group(1).split(","))
-    assert commands == {"status", "drifts", "budget", "explain", "scan", "fallback", "alerts"}
+    assert commands == {"status", "drifts", "budget", "explain", "scan", "fallback", "alerts", "ui", "serve"}
+
+
+def test_core_has_no_finresearch_imports():
+    hits = [str(p.relative_to(REPO_ROOT)) for p in (REPO_ROOT / "src" / "pitstop").rglob("*.py")
+            if "finresearch" in p.read_text()]
+    assert hits == []

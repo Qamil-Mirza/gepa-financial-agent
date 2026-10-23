@@ -75,12 +75,21 @@ def _failure(res: dict) -> Optional[str]:
 
 def _slim_decision(r: dict, index: int) -> dict:
     d = r["result"]["decision"]
-    return {"index": index, "failed": _failure(r["result"]), "agent_id": r["agent_id"], "step": r["step"], "phase": r["phase"], "status": d["status"],
-            "confidence": d["confidence"], "drift_type": d.get("drift_type"),
-            "alert_level": r.get("alert_level"), "alert_note": r.get("alert_note"),
-            "explanation": _trunc(d.get("explanation"), EXPLANATION_CHARS),
-            "evidence_event_ids": d.get("evidence_event_ids", []),
-            "cutoff_seq": r["input"].get("observation_cutoff_seq")}
+    return {
+        "index": index,
+        "failed": _failure(r["result"]),
+        "agent_id": r["agent_id"],
+        "step": r["step"],
+        "phase": r["phase"],
+        "status": d["status"],
+        "confidence": d["confidence"],
+        "drift_type": d.get("drift_type"),
+        "alert_level": r.get("alert_level"),
+        "alert_note": r.get("alert_note"),
+        "explanation": _trunc(d.get("explanation"), EXPLANATION_CHARS),
+        "evidence_event_ids": d.get("evidence_event_ids", []),
+        "cutoff_seq": r["input"].get("observation_cutoff_seq"),
+    }
 
 
 # Entries a "why did it say that?" panel can show; lifecycle entries are left out.
@@ -173,12 +182,17 @@ def _team_report(run_dir: Path, meta: dict) -> Optional[dict]:
         md = str(full.get("markdown") or "")
     count = lambda k, n: len(full[k]) if isinstance(full.get(k), list) else rec.get(n, 0)
     pick = lambda k: full.get(k) if k in full else rec.get(k)
-    return {"title": title, "markdown": _trunc(_report_body(md, title), REPORT_CHARS),
-            "error": pick("error") or None,
-            "findings_included": count("included", "findings_included"),
-            "findings_excluded": count("excluded", "findings_excluded"),
-            "cited_finding_ids": pick("cited_finding_ids") or [], "unverified_figures": pick("unverified_figures") or [],
-            "invalid_citations": pick("invalid_citations") or [], "model": str(pick("model") or "")}
+    return {
+        "title": title,
+        "markdown": _trunc(_report_body(md, title), REPORT_CHARS),
+        "error": pick("error") or None,
+        "findings_included": count("included", "findings_included"),
+        "findings_excluded": count("excluded", "findings_excluded"),
+        "cited_finding_ids": pick("cited_finding_ids") or [],
+        "unverified_figures": pick("unverified_figures") or [],
+        "invalid_citations": pick("invalid_citations") or [],
+        "model": str(pick("model") or ""),
+    }
 
 
 LAYOUT_FILE = "demo.json"  # {"left": "primary"|"shadow", "right": ...}; written by the demo's earlier live runs
@@ -246,9 +260,16 @@ def build_pair_view(pair_dir: Path, *, live: Optional[Any] = None) -> dict:
         records = read_jsonl_complete(run_dir / "decisions.jsonl") if run_dir else []
         scen = meta.get("scenario") or (sw.scenario.model_dump(mode="json") if sw else None)
         given = {"model": sw.supervisor.llm.model, "prompt_version": sw.supervisor.prompt_version} if sw else None
-        panes[k] = {"run_id": rid or "", "run_dir": run_dir, "meta": meta, "events": events, "records": records,
-                    "scen": scen, "reports": _final_reports(events),
-                    "sup": _supervisor_of(meta.get("supervisor"), given, records) or {"model": "", "prompt_version": ""}}
+        panes[k] = {
+            "run_id": rid or "",
+            "run_dir": run_dir,
+            "meta": meta,
+            "events": events,
+            "records": records,
+            "scen": scen,
+            "reports": _final_reports(events),
+            "sup": _supervisor_of(meta.get("supervisor"), given, records) or {"model": "", "prompt_version": ""},
+        }
     known = next((p["scen"] for p in panes.values() if p["scen"]), None)  # the same scenario on both sides
     for p in panes.values():
         p["scen"] = p["scen"] or known or _scenario_from_logs(

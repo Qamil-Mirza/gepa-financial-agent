@@ -128,9 +128,13 @@ class Swarm:
         if verbose_events:
             self.collector.subscribe(self._print_event)
         self.board: list[SwarmMessage] = []
+        # the gated research tool is decorated once per swarm, not per call
+        self._research_tool = (pitstop.tool(side_effects=True, name=RESEARCH_TOOL)(research.research)
+                               if watch else None)
         self.workers = [
             ResearchWorker(spec, swarm_objective=scenario.swarm_objective, llm=worker_llm,
-                           research=research, collector=self.collector, prompts_dir=prompts_dir, watched=watch)
+                           research=research, collector=self.collector, prompts_dir=prompts_dir, watched=watch,
+                           research_call=self._research_tool)
             for spec in scenario.agents
         ]
 
@@ -141,7 +145,9 @@ class Swarm:
         extra = f"  q={ev.payload.get('query')!r}" if ev.type == EventType.TOOL_CALL else ""
         if ev.type == EventType.PLAN and ev.payload.get("proposed_query"):
             extra = f"\n      → proposes: {ev.payload['proposed_query']!r}"
-        self.console.print(f"[{EVENT_STYLE[ev.type]}]  {ev.event_id:<22} {ev.type.value:<13} {escape(ev.summary[:110] + extra)}[/]")
+        self.console.print(
+            f"[{EVENT_STYLE[ev.type]}]  {ev.event_id:<22} {ev.type.value:<13} {escape(ev.summary[:110] + extra)}[/]"
+        )
 
     def _print_decision(self, agent_id: str, phase: str, vd: ValidatedDecision, level: str, note: str) -> None:
         d = vd.decision
@@ -190,7 +196,9 @@ class Swarm:
             "input": inp.model_dump(mode="json"), "result": vd.model_dump(mode="json"),
         }
 
-    async def _supervise(self, worker: ResearchWorker, proposal: Optional[ProposedAction], phase: str) -> tuple[str, str]:
+    async def _supervise(
+        self, worker: ResearchWorker, proposal: Optional[ProposedAction], phase: str
+    ) -> tuple[str, str]:
         inp = self.build_input(worker, proposal)
         if self.shadow_supervisor:
             vd, shadow_vd = await asyncio.gather(self.supervisor.evaluate(inp), self.shadow_supervisor.evaluate(inp))
@@ -251,7 +259,9 @@ class Swarm:
                 proposal = await w.propose()
                 _, note = await self._supervise(w, proposal, "post_correction")
             if note == "INTERVENTION POINT" and self.halt_on_drift:
-                self.console.print(f"[bold red]  ■ {w.id} halted at step {step} before executing {escape(repr(proposal.query))}[/]")
+                self.console.print(
+                    f"[bold red]  ■ {w.id} halted at step {step} before executing {escape(repr(proposal.query))}[/]"
+                )
                 self.timeline.agent_halted(w.id, step, proposal.query)
                 self.run.interventions[w.id]["halted_step"] = step
                 return

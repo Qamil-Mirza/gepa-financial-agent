@@ -33,9 +33,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-metric-calls", type=int, default=300)
     ap.add_argument("--minibatch", type=int, default=6)
     ap.add_argument("--max-workers", type=int, default=8)
-    ap.add_argument("--val-repeats", type=int, default=2, help="score each val case this many times (less selection noise)")
+    ap.add_argument(
+        "--val-repeats", type=int, default=2, help="score each val case this many times (less selection noise)"
+    )
     ap.add_argument("--gepa-seed", type=int, default=0)
-    ap.add_argument("--acceptance", default="strict_improvement", choices=["strict_improvement", "improvement_or_equal"])
+    ap.add_argument(
+        "--acceptance", default="strict_improvement", choices=["strict_improvement", "improvement_or_equal"]
+    )
     ap.add_argument("--name", default=None, help="run and prompt name (default pitstop_<model>_<budget>)")
     ap.add_argument("--mock", action="store_true", help="mock supervisor and reflection (pipeline check only)")
     args = ap.parse_args(argv)

@@ -21,3 +21,20 @@ uv run python examples/quickstart/agent.py
 ```
 
 State is stored under `~/.pitstop` (set `PITSTOP_HOME` to use another directory).
+
+## Dashboard demo data
+
+To see the local dashboard with something on it, fill an empty directory with offline demo data, then start the dashboard on it:
+
+```sh
+uv run python examples/quickstart/dashboard_demo.py --home /tmp/pitstop-demo --runs 60
+PITSTOP_HOME=/tmp/pitstop-demo uv run pitstop ui
+```
+
+The script runs four workflows through the real SDK. The model and the pre-action gate's judge are real OpenAI SDK clients whose HTTP transport is answered in-process with scripted replies, so it needs no keys, makes no network request and costs nothing. All text in it is synthetic.
+
+- `earnings-research` (high criticality, `budget_usd=2.0` per day): `--runs` runs on model `m-a` (default 60, at least 35), then 35 on `m-b`, which uses twice the tokens per call. The scan's change detection alarms on tokens per call and cost, and attribution names the model change (P1). In the last run the writer tries to publish to a public channel; the gate's judge rejects it (P0 `out_of_scope_action`) and the run halts. Its tile is red.
+- `support-triage` (medium): one run repeats the same knowledge-base search, and PitStop steers it twice (P1 `unproductive_loop`). Its tile is yellow.
+- `nightly-digest` and `kb-sync` (low): healthy runs only. Their tiles are green.
+
+It writes a `config.toml` with prices for its made-up models into the directory. It refuses a directory that already has a `pitstop.db` or a `config.toml`, so it can't touch an existing PitStop home.

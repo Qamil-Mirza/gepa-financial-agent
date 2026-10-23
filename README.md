@@ -14,7 +14,7 @@ Keep your agents on the racing line: drift detection and GEPA-powered prompt cor
 
 Agents drift in two ways. They go **off-task**: chasing a stale directive, looping, or reporting a figure their evidence does not support. Or they **degrade**: still on the right task, but quality, tool calls or cost quietly get worse after a model, provider or prompt change. Some drift needs action within seconds (an off-task call to a tool with side effects), some can wait for a weekly fix. Existing observability tools stop at the alert; PitStop is meant to also steer the agent back in the moment and rewrite the prompt that caused the drift.
 
-> **Status: pre-release.** Today the repo contains the drop-in Python SDK (drift detection, steering and hard dollar budgets), adapters for the OpenAI Agents SDK and LangChain, an OpenTelemetry span processor, the background `pitstop scan` pass, the CLI to inspect it, the research-swarm example watched by the SDK ([examples/financial-research](examples/financial-research/README.md)), the GEPA calibration tooling and benchmarks. The local dashboard and agent-prompt correction are on the [Roadmap](#roadmap).
+> **Status: pre-release.** Today the repo contains the drop-in Python SDK (drift detection, steering and hard dollar budgets), adapters for the OpenAI Agents SDK and LangChain, an OpenTelemetry span processor, the background `pitstop scan` pass, the CLI to inspect it, the local dashboard (`pitstop ui`, with a background scan worker), the research-swarm example watched by the SDK ([examples/financial-research](examples/financial-research/README.md)), the GEPA calibration tooling and benchmarks. The L3 run judge, L4 endpoint canaries and agent-prompt correction are on the [Roadmap](#roadmap).
 
 ## Contents
 
@@ -26,6 +26,7 @@ Agents drift in two ways. They go **off-task**: chasing a stale directive, loopi
   - [Alerts](#alerts)
   - [Background checks: `pitstop scan`](#background-checks-pitstop-scan)
   - [What changed?](#what-changed)
+- [Dashboard: `pitstop ui`](#dashboard-pitstop-ui)
 - [OpenAI Agents SDK](#openai-agents-sdk)
 - [LangChain / LangGraph](#langchain--langgraph)
 - [Already tracing with OpenTelemetry?](#already-tracing-with-opentelemetry)
@@ -35,6 +36,8 @@ Agents drift in two ways. They go **off-task**: chasing a stale directive, loopi
   - [One run of the research swarm](#one-run-of-the-research-swarm)
   - [Calibrating the detector prompt](#calibrating-the-detector-prompt)
 - [Where it's going (architecture)](#wheres-it-going-architecture)
+  - [Runtime](#runtime)
+  - [Detection, urgency and correction](#detection-urgency-and-correction)
 - [Repo map](#repo-map)
 - [Benchmarks](#benchmarks)
 - [Roadmap](#roadmap)
@@ -140,6 +143,8 @@ Anthropic premium billing modes (fast speed, long-context premiums and server-to
 
 Only calls on the default `agent` meter feed drift detection and set the run's model. PitStop's own judge, supervisor and GEPA calls inside a run are metered against the budget but never counted as the agent's behavior; each `llm_call` event records its `meter`.
 
+Then run `uv run pitstop ui` to see your workflow on the pit wall: its open drifts, spend against budget and last run, with a live feed (setup in [Dashboard](#dashboard-pitstop-ui)).
+
 ### Pre-action gate
 
 Before a `@pitstop.tool(side_effects=True)` tool runs inside a `high` or `medium` workflow, and after the L0 checks let it through, a judge model is asked whether this one call serves the workflow's goal (and the agent's goal, if set). It sees the goals, the tool name, its arguments (first 2,000 characters) and the agent's last 5 tool calls; the prompt is frozen and versioned (`l1_gate_v2`). The arguments and the recent calls reach the judge inside `<tool_args>` and `<recent_calls>` blocks that the prompt treats as data, never as instructions; a `</` inside them is written as `<\/`, so a tool argument cannot close its block and smuggle in instructions. The judge endpoint receives the tool's name and arguments and the agent's last 5 tool calls; choose an endpoint you trust with that data. Read-only tools and `low` workflows are never gated. A "no" is recorded as an `out_of_scope_action` drift (P0) and the tool returns the usual `{"blocked_by": "pitstop", "reason": ...}` instead of running; on a `high` workflow the run also halts at its next call boundary. Every verdict is a `gate` event.
@@ -239,7 +244,7 @@ How a detector behaves:
 
 On an alarm, `scan` runs L5 attribution around the run where the shift began (see [What changed?](#what-changed)) and records a drift with action `record`, deduplicated with an open drift of the same workflow and drift type. The level follows the urgency table: `tool_call_breakage` and `refusal_spike` are P1 (P2 on `low` workflows), the others P2 (P3 on `low`). When the attribution names a `model`, `base_url` or `prompt_versions` change, the drift is raised to P1 (P2 on `low` workflows), never lowered. P0/P1 drifts alert right away, with the attribution summary as the "what likely changed" line; P2/P3 go in the digest.
 
-Run it from cron, or let it loop. The M3 server will run the same pass on a schedule.
+Run it from cron, let it loop, or let the [dashboard's worker](#dashboard-pitstop-ui) run it every minute.
 
 ```text
 $ uv run pitstop scan                 # one pass over up to 500 finished, unscanned runs
@@ -265,6 +270,38 @@ tokens_per_call mean: 120 over 30 runs before, 240 over 20 runs after
 
 Times are UTC. `prompt_versions` reads as the run's prompt versions in JSON with sorted keys (`{"researcher": 1}`), and a tag with no value before reads `(unset)`. When no tag changed, it prints `no run tag changed around <time>; likely an input or upstream shift`; with no earlier runs, `no runs before <time> to compare`. The mean line appears when the drift's evidence names a metric (`metric`); otherwise it prints how many runs were compared. An unknown drift id exits 1.
 
+## Dashboard: `pitstop ui`
+
+A local dashboard over the same SQLite store the SDK writes. From a clone of the repo, build the UI once (Node 22) and start it:
+
+```sh
+uv sync                                           # pitstop, with the ui extra's packages (fastapi, uvicorn)
+npm --prefix ui ci && npm --prefix ui run build   # the dashboard, into src/pitstop/server/static/
+uv run pitstop ui                                 # http://127.0.0.1:8787, opens your browser (--no-open to skip)
+```
+
+Without the build, the server answers with a "Dashboard not built" page that lists those two npm commands. Once PitStop is published, `pip install "pitstop[ui]"` installs it with the dashboard already built.
+
+`pitstop serve` is the same server without opening a browser. Both load a `.env` from the current directory like every pitstop command, and neither the server nor its worker makes a model call. An empty store shows a setup snippet and the demo command instead of the pit wall.
+
+- **Pit wall.** One tile per workflow, those that need you first, with its open drifts by level, spend against its budget and the last run's status, plus a live feed of drifts, halts, fallbacks, refused runs and model changes.
+- **Workflow page.** A Run graph tab (the agents, tools and calls of a time window or one run, with per-node latency and the checks that fired; click a node for its details), a What changed tab (cost, tokens and error series with markers where a model, base URL or prompt version changed) and a Runs tab. The right column lists the workflow's open drifts: **Explain** shows the L5 attribution (as `pitstop explain`) and **Dismiss** closes a drift. A later occurrence of the same finding opens a new one.
+- **Run detail.** One run's facts, graph and event timeline.
+- **Settings.** Read-only: the effective config (workflows, budgets, judge, alert channels and routes, worker, where data lives). Secrets show as the name of the env var and whether it is set, never the value. Change settings in `config.toml`.
+
+Quality scores and the Endpoints page arrive with the L3 run judge and L4 canaries (milestone 3b).
+
+**The worker replaces a cron `pitstop scan`.** While the server runs, a background worker runs `scan` every 60 seconds (`--scan-every SECONDS`) and the P2/P3 digest check hourly. `--no-worker` turns it off, for example when cron already runs `pitstop scan`.
+
+**Offline demo.** `dashboard_demo.py` records realistic runs through the real SDK with scripted models: no keys, no network. It refuses a home that already has a store.
+
+```sh
+uv run python examples/quickstart/dashboard_demo.py --home /tmp/pitstop-demo
+PITSTOP_HOME=/tmp/pitstop-demo uv run pitstop ui
+```
+
+**Host safety.** The server binds `127.0.0.1` and has no login. The dashboard shows prompts and tool arguments, so keep it on loopback. A non-loopback `--host` prints a warning and exposes the dashboard to that network. A wildcard `--host` (`0.0.0.0`, `::`) is refused (exit 2): pass a concrete address, such as the machine's LAN IP, and browse to it. The server only accepts requests whose `Host` is a loopback name or the exact `--host` value; any other gets a 400. Writes (Dismiss) need an `X-PitStop: 1` header, and the server sends no CORS headers, so another web page cannot write to it. After startup the API returns no stack traces; a locked store answers 503.
+
 ## OpenAI Agents SDK
 
 Install `pip install "pitstop[openai-agents]"`. Guard the agent's tools, pass the run hooks, and give the SDK a wrapped client:
@@ -287,7 +324,7 @@ with pitstop.workflow("support", goal="Answer the ticket", criticality="medium",
 
 `guard(agent, side_effects=...)` adds PitStop's tool input guardrail to each of the agent's function tools (once, however often you call it) and returns the same agent; the tools named in `side_effects` are side-effect tools, and a name that is none of the agent's function tools raises `ValueError`. Each tool call then goes through the same checks as a `@pitstop.tool` call before it runs: a pending halt, the scope and loop checks, and the pre-action gate for side-effect tools on `high` and `medium` workflows. A blocked call doesn't run: the model gets `{"blocked_by":"pitstop","reason":...}` as the tool's result (a steer gets the corrective text). A tool whose body is itself a `@pitstop.tool` of the same name is checked once, not twice, and each call records one result. `guard` changes the tools in place, so a tool shared with another agent is guarded there too; call `guard` on each agent of a handoff chain. Use `guard`, not the bare guardrail: `tool_guardrail(side_effects=...)` (for `function_tool(..., tool_input_guardrails=[...])`) doesn't mark the tool body as checked or record its results, so around a `@pitstop.tool` of the same name it checks each call twice and counts loops at half the threshold.
 
-`Hooks()` names the running agent: the agent's model calls, tool calls and halt events carry its name (after a handoff, the new agent's), and the run is tagged `adapter = openai-agents`. The named agent keeps the goal of the `pitstop.agent(..., goal=...)` scope `Runner.run` runs in, and the pre-action gate judges side-effect calls against it (against the workflow goal when there is no such scope). A `pitstop.agent(...)` scope entered inside the run still names its own calls. Two `Runner.run` calls running at once in the same scope share one name; give each its own `pitstop.agent(...)` scope to keep them apart. Hooks also raise a pending halt before the next model call, even when the model isn't metered. Subclass `Hooks` (and call `super()`) to add your own run hooks.
+`Hooks()` names the running agent: the agent's model calls, tool calls and halt events carry its name (after a handoff, the new agent's), and the run is tagged `adapter = openai-agents`. When an agent run as a tool (`agent.as_tool(..., hooks=Hooks())`) ends, the name goes back to the agent that called it. The named agent keeps the goal of the `pitstop.agent(..., goal=...)` scope `Runner.run` runs in, and the pre-action gate judges side-effect calls against it (against the workflow goal when there is no such scope). A `pitstop.agent(...)` scope entered inside the run still names its own calls. Two `Runner.run` calls running at once in the same scope share one name (the agent that started last, until it ends; no name outlives both runs); give each its own `pitstop.agent(...)` scope to keep them apart. Hooks also raise a pending halt before the next model call, even when the model isn't metered. Subclass `Hooks` (and call `super()`) to add your own run hooks.
 
 `pitstop.Halted` and `pitstop.BudgetExceeded` reach the caller of `Runner.run` when a guarded call, a hook or a wrapped model call raises them. Their class there is also an `agents.exceptions.AgentsException`, the only kind the SDK re-raises unchanged; `except pitstop.Halted` works as usual. A budget hit inside a tool body is different: the SDK hands that `BudgetExceeded` to the model as an error message, so PitStop raises the halt it left pending once the tool returns, and it arrives as `pitstop.Halted`, not `pitstop.BudgetExceeded` (catch `pitstop.Halted` to cover both).
 
@@ -316,9 +353,11 @@ with pitstop.workflow("support", goal="Answer the ticket", criticality="medium",
 
 Each tool call then goes through the same checks as a `@pitstop.tool` call before it runs: a pending halt, the scope and loop checks, and the pre-action gate for the tools named in `side_effects` on `high` and `medium` workflows. A blocked or steered call doesn't run: the model gets a `ToolMessage` with `status="error"` whose content is `{"blocked_by":"pitstop","reason":...}` (or the corrective text of a steer). A tool whose body is itself a `@pitstop.tool` of the same name is checked once, and each call records one result. The middleware also raises a pending halt before each model call, so `pitstop.Halted` (and `BudgetExceeded` from a wrapped client) comes out of `invoke` / `ainvoke`. `agent=` names the agent for the run's model calls, tool events and halt events; it keeps the goal of the enclosing `pitstop.agent(..., goal=...)` scope, which the gate judges side-effect calls against (the workflow goal when there is none). The run is tagged `adapter = langchain`. Outside a `pitstop.workflow(...)` the middleware does nothing. A `side_effects` name that is none of the agent's tools is logged as a warning once.
 
-What is enforced and what is only observed: tool calls are enforced (blocked, steered, halted). Model calls are budgeted only through a `pitstop.wrap`-ed client as above, and such a call is recorded once, by `wrap`, whatever its ledger meter (`pitstop.sdk.wrap.meter(...)`). A model call that no wrapped client metered (any other chat model, or `ChatOpenAI` without a wrapped client) is still recorded, as an `llm_call` event marked `"observed": true` with the tokens the reply reports and a cost estimated from the price table, and the L0 checks run on it (refusal spikes, and invalid tool calls as tool-call breakage). Its cost never reaches the budget ledger, so it can't trip a budget or the spend-spike halt.
+What is enforced and what is only observed: tool calls are enforced (blocked, steered, halted). Model calls are budgeted only through a `pitstop.wrap`-ed client as above, and such a call is recorded once, by `wrap`, whatever its ledger meter (`pitstop.sdk.wrap.meter(...)`). A model call that no wrapped client metered (any other chat model, or `ChatOpenAI` without a wrapped client) is still recorded, as an `llm_call` event marked `"observed": true`, named by the model the request named (the chat model's `model_name` or `model`, else the one the reply names), with the tokens the reply reports and a cost estimated from the price table, and the L0 checks run on it (refusal spikes, and invalid tool calls as tool-call breakage). Its cost never reaches the budget ledger, so it can't trip a budget or the spend-spike halt.
 
 Limits: only tool calls that reach the agent's tool node are guarded; tools the provider runs server side are not. A tool call that pauses on a LangGraph `interrupt()` is checked again by the guard when it resumes, so it counts twice toward the loop checks. A plain LangGraph `StateGraph` without `create_agent` doesn't use middleware: decorate its tools with `@pitstop.tool` and give its model a `pitstop.wrap`-ed client.
+
+Known limitations of observed model calls: PitStop records one observed event per model-node turn, so when one turn of the model node makes several unwrapped model calls (a retry or fallback middleware inside PitStop's, say), only the reply the turn returns is recorded. And a handler that mixes wrapped and unwrapped calls in one turn hides the unwrapped one: once a wrapped client has metered a call in that turn, the turn's unwrapped calls are not observed.
 
 ## Already tracing with OpenTelemetry?
 
@@ -330,7 +369,7 @@ from pitstop.otel import SpanProcessor
 provider.add_span_processor(SpanProcessor(workflow="support"))   # before your exporter's processor
 ```
 
-Each trace with at least one GenAI span (an LLM, tool or agent span) becomes one PitStop run (id `otel-<trace id>`, shown by `pitstop status` and `pitstop drifts` like any other run); a trace of plain spans, such as an HTTP health check, writes nothing. The run ends `ok` or `error` with its root span. At most 1,000 traces are followed at once: past that the oldest is dropped and its run ends with status `dropped`. The workflow name is the root span's `pitstop.workflow` attribute (set it when the span starts), else the `workflow=` argument, else the root span's name; `goal`, `criticality`, `sensitivity` and `tools` work as in `pitstop.workflow(...)`. LLM spans become `llm_call` events with their model, token counts and a cost estimated from the price table; tool spans become `tool_call` and `tool_result` events; agent spans become `agent` events, and each event names the agent it ran under. The first LLM span that names a model sets the run's model and its `base_url`, built as `https://<server.address>`. The L0 checks run on the trace: unproductive tool loops, out-of-scope tools (checked as read-only, since a span does not say whether a tool had side effects) and refusal spikes (a `content_filter` or `refusal` finish reason). Tool-call breakage is not detected: spans carry no tool-call parse-failure signal. Drifts are recorded and P0/P1 alerts are sent as usual. The checks that span several calls (loops, refusal spikes) and the verdict events need those calls to share a root span, for example an agent or request span around them: a bare instrumented LLM call with no parent is a one-span trace of its own.
+Each trace with at least one GenAI span (an LLM, tool or agent span) becomes one PitStop run (id `otel-<trace id>`, shown by `pitstop status` and `pitstop drifts` like any other run); a trace of plain spans, such as an HTTP health check, writes nothing. The run ends `ok` or `error` with its root span. At most 1,000 traces are followed at once: past that the oldest is dropped and its run ends with status `dropped`. The workflow name is the root span's `pitstop.workflow` attribute (set it when the span starts), else the `workflow=` argument, else the root span's name; `goal`, `criticality`, `sensitivity` and `tools` work as in `pitstop.workflow(...)`. LLM spans become `llm_call` events with their model, token counts and a cost estimated from the price table; tool spans become `tool_call` and `tool_result` events; agent spans become `agent` events, and each event names the agent it ran under. An agent name set on a span after it started is read again when the span ends, so it names the span's own event and the spans that end after it. A GenAI span that ends after its root span still writes its events to the run when the trace already has one, and the run keeps the status its root gave it. The first LLM span that names a model sets the run's model and its `base_url`, built as `https://<server.address>`. The L0 checks run on the trace: unproductive tool loops, out-of-scope tools (checked as read-only, since a span does not say whether a tool had side effects) and refusal spikes (a `content_filter` or `refusal` finish reason). Tool-call breakage is not detected: spans carry no tool-call parse-failure signal. Drifts are recorded and P0/P1 alerts are sent as usual. The checks that span several calls (loops, refusal spikes) and the verdict events need those calls to share a root span, for example an agent or request span around them: a bare instrumented LLM call with no parent is a one-span trace of its own.
 
 This is observe-only: the spans are read after they end, so PitStop can't block, steer, halt or fall back, and the estimated costs never count against a budget. OTel runs never drive the actions of SDK runs of the same workflow either: they never count as the model change that engages a fallback, as the previous run whose endpoint budget refuses a run, or in the spend-spike baseline. For hard budgets and blocking, use `pitstop.wrap` and `@pitstop.tool` as above. Spans that run inside a `pitstop.workflow(...)` are skipped, since `wrap` and `@pitstop.tool` already record them. A GenAI-kind root span (an `invoke_agent` span, say) that wraps a `pitstop.workflow(...)` block is still recorded, as a second (OTel) run: keep the workflow block outside the request span, or give the processor a different `workflow=` name. The processor never raises into your app: a malformed span or a locked store costs you at most one logged warning per kind of failure (reading a span, writing the store) for the processor's lifetime.
 
@@ -400,7 +439,7 @@ The code is in [benchmarks/calibration](benchmarks/calibration): `loop.py` runs 
 
 ## Where it's going (architecture)
 
-> **Planned (milestones 3–4).** This section describes the design, and the SDK and `pitstop scan` pieces of it that exist today are covered above. The server process, dashboard, L3, L4 and the correction loop do not exist yet. Full design: [docs/superpowers/specs/2026-10-20-pitstop-runtime-design.md](docs/superpowers/specs/2026-10-20-pitstop-runtime-design.md).
+> **Planned (milestones 3b–4).** This section describes the design. The SDK, `pitstop scan` and the local dashboard server are covered above. L3, L4 and the correction loop do not exist yet. Full design: [docs/superpowers/specs/2026-10-20-pitstop-runtime-design.md](docs/superpowers/specs/2026-10-20-pitstop-runtime-design.md).
 
 ### Runtime
 
@@ -459,12 +498,14 @@ src/pitstop/          the installable package (the SDK only) and the `pitstop` C
   sdk/adapters/       the OpenAI Agents SDK (openai_agents.py) and LangChain (langchain.py) adapters
   otel/               the OpenTelemetry span processor and the pitstop.verdict span events
   detect/             L0 checks, L1 gate, L2 per-run metrics and CUSUM, L5 attribution, spend spike, `scan`
+  server/             the local dashboard: FastAPI app and endpoints, run-graph and change views, the scan worker (`pitstop[ui]`)
   budget/             the budget ledger
   alerts/, store/     alert channels and routing, the SQLite store
   correct/            the GEPA engine (pitstop.correct.gepa) and its model clients
   llm.py              the OpenAI-compatible client used by the example and the benchmarks
   assets/prompts/     the L1 gate prompt
-examples/quickstart/  a keyless demo agent that shows steer-then-halt
+examples/quickstart/  a keyless demo agent that shows steer-then-halt, and dashboard_demo.py, which fills a home for the dashboard
+ui/                   the dashboard source (React, Vite, Node 22); built into src/pitstop/server/static/
 examples/financial-research/  the research-swarm example (package `finresearch`, CLI `finresearch`), a uv workspace member
   finresearch/agents/       research worker agents and the report synthesizer
   finresearch/supervisor/   drift supervisor: signals, LLM verdict + evidence validation, AlertPolicy, corrections
@@ -518,7 +559,7 @@ From the [design spec](docs/superpowers/specs/2026-10-20-pitstop-runtime-design.
 
 1. **Cleanup and restructure. Done.** One installable package, the example agent still runs, tests pass in one command.
 2. **SDK and detection. Done.** M2a: `wrap`, `workflow`, `agent`, `tool`, `prompt`, the hard-stop budget ledger, L0 detection with P0-P3 urgency, steer/block/halt actions, and the `pitstop status`, `pitstop drifts` and `pitstop budget` commands. M2b: hardened config and store (schema v4, migrations, `pitstop budget reconcile`), `wrap` for the OpenAI and Anthropic SDKs, the L1 pre-action gate, fallback to a pinned model, and P0/P1 alerts (PagerDuty, Opsgenie, Slack, email, webhook). M2c: refusing runs on a used-up budget and a P0 spend-spike halt, an OpenTelemetry span processor with verdicts as span events, OpenAI Agents SDK and LangChain/LangGraph adapters, L2 change-point statistics, L5 attribution (`pitstop explain`), the background `pitstop scan` pass, and the research swarm moved to `examples/financial-research/`.
-3. **Dashboard. Next.** Pit wall, run graph, what changed, runs and settings on real data, plus the L3 run judge and L4 endpoint canaries. The first end-to-end demo.
+3. **Dashboard. In progress.** 3a, done: `pitstop ui` / `pitstop serve` (a local server with a background scan worker, `pitstop[ui]`), the pit wall with a live feed, workflow page (run graph, what changed, runs, open drifts with Explain and Dismiss), run detail and read-only settings, call latency and agent parentage in the SDK, and an offline demo. 3b, next: the L3 run judge, L4 endpoint canaries, the watch budget and the Endpoints page. 3c: the landing site, README screenshots and a GIF.
 4. **Correction. Planned.** Managed prompts, replay, the GEPA loop with its gate, manual and auto modes, canary and rollback.
 5. **Later. Not designed yet.** Remote collection over HTTP, more framework adapters, editing settings from the UI, a LiteLLM gateway plugin.
 

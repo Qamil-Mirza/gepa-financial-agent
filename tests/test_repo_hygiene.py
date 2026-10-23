@@ -19,7 +19,7 @@ _MOVED = (r"pitstop\.(orchestrator|collector|schemas|timeline|agents|research|de
           r"|pitstop\.ui\.server|src/pitstop/(orchestrator|collector|schemas|timeline|server)\.py"
           r"|src/pitstop/(agents|research|demo|ui|supervisor)/"
           r"|src/pitstop/assets/(scenarios|prompts/(worker|gepa|supervisor_v0))"
-          r"|pitstop (check|compare|timeline|serve|demo)([^a-z]|$)|pitstop run --")
+          r"|pitstop (check|compare|timeline|demo)([^a-z]|$)|pitstop run --")  # `pitstop serve` is the M3 dashboard
 _STALE = r"gepa_financial_agent|(^|[^.~/])pitstop/pitstop|synthetic-data/|policies/versions|" + _MOVED
 
 
@@ -38,10 +38,26 @@ def test_no_stale_references_in_code():
 def test_suite_runs_without_keys(tmp_path):
     env = {k: v for k, v in os.environ.items() if k not in ("CRUSOE_API_KEY", "YDC_API_KEY")}
     # cwd is an empty temp dir so the repo-root .env is never loaded; repo config is passed explicitly
-    out = subprocess.run([sys.executable, "-m", "pytest", "-q", "-c", str(REPO / "pyproject.toml"), "--rootdir", str(REPO),
-                          str(REPO / "tests/examples/financial_research"), str(REPO / "tests/correct"),
-                          "-p", "no:cacheprovider"],
-                         cwd=tmp_path, env=env, capture_output=True, text=True)
+    out = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-q",
+            "-c",
+            str(REPO / "pyproject.toml"),
+            "--rootdir",
+            str(REPO),
+            str(REPO / "tests/examples/financial_research"),
+            str(REPO / "tests/correct"),
+            "-p",
+            "no:cacheprovider",
+        ],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
     assert out.returncode == 0, out.stdout[-2000:]
 
 

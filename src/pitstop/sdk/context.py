@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import functools
 import inspect
+import json
 import logging
 import sys
 import threading
@@ -38,6 +39,7 @@ _FIX_MODES = ("manual", "auto", None)
 _GATE_ERROR_POLICIES = ("block", "allow", None)
 
 HISTORY_MAX = 64  # per-agent tool history and per-run LLM history are capped at this many recent calls
+_MAX_FRAMEWORK_DEPTH = 64  # live framework agents kept per scope (push_framework_agent); the outermost goes first
 UNSET = object()  # RunContext.spend_baseline before the run's first settle computed it (None: no baseline)
 
 
@@ -103,6 +105,11 @@ class RunContext:
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
     # Agents named by a framework hook (see set_framework_agent): id(base frame) -> (base frame, name).
     framework_agents: dict = field(default_factory=dict, repr=False, compare=False)
+    # Framework agents live per scope (see push_framework_agent): id(base frame) -> (base frame, name before the
+    # first, [live agent names, innermost last]).
+    framework_stacks: dict = field(default_factory=dict, repr=False, compare=False)
+    # (parent, name) of every `agent` event already written for the run: one event per pair.
+    agent_events: set = field(default_factory=set, repr=False, compare=False)
 
     def tool_history_for(self, agent: str | None) -> deque:
         hist = self.tool_history.get(agent)
@@ -144,6 +151,67 @@ class RunContext:
                 self.framework_agents.pop(id(base), None)
             else:
                 self.framework_agents[id(base)] = (base, name)  # holds the frame: its id is never reused meanwhile
+        if name is not None:
+            self.note_agent(name, base.name if base is not None else None)
+
+    def push_framework_agent(self, name: str) -> None:
+        """A framework agent started in the calling task's scope: name it (as set_framework_agent) and keep it on
+        the scope's stack of live framework agents, shared by every hook object of the run."""
+        base = self._frame()
+        with self.lock:
+            entry = self.framework_stacks.get(id(base))
+            if entry is None or entry[0] is not base:
+                named = self.framework_agents.get(id(base))
+                before = named[1] if named is not None and named[0] is base else None
+                entry = self.framework_stacks[id(base)] = (base, before, [])
+            live = entry[2]
+            live.append(name)
+            del live[:-_MAX_FRAMEWORK_DEPTH]
+            self.framework_agents[id(base)] = (base, name)
+        self.note_agent(name, base.name if base is not None else None)
+
+    def pop_framework_agent(self, name: str | None) -> None:
+        """A framework agent of the calling task's scope ended (or handed off): drop it from the scope's stack and,
+        when the scope's name is still its own, name the innermost agent still live there (the name before the
+        first one when none is). An agent that ended out of order never comes back as the name. An agent the stack
+        does not hold only has its name removed (when it is still the scope's)."""
+        base = self._frame()
+        with self.lock:
+            named = self.framework_agents.get(id(base))
+            current = named[1] if named is not None and named[0] is base else None
+            entry = self.framework_stacks.get(id(base))
+            live = entry[2] if entry is not None and entry[0] is base else []
+            if name not in live:
+                if name is not None and current == name:
+                    self.framework_agents.pop(id(base), None)
+                return
+            del live[len(live) - 1 - live[::-1].index(name)]
+            nxt = live[-1] if live else entry[1]
+            if not live:
+                self.framework_stacks.pop(id(base), None)
+            if current != name:
+                return
+            if nxt is None:
+                self.framework_agents.pop(id(base), None)
+            else:
+                self.framework_agents[id(base)] = (base, nxt)
+
+    def note_agent(self, name: str, parent: str | None) -> None:
+        """Write the run's `agent` event for `name` under `parent` (the run graph's edge), once per (parent, name).
+        Fails open."""
+        key = (parent, name)
+        with self.lock:
+            if key in self.agent_events:
+                return
+            self.agent_events.add(key)
+
+        def write() -> None:
+            with get_runtime().store.transaction() as c:
+                c.execute("INSERT INTO events(run_id, ts, agent, kind, name, payload, cost_usd) VALUES (?,?,?,?,?,?,?)",
+                          (self.run_id, time.time(), name, "agent", name,
+                           json.dumps({"parent": parent, "source": "sdk"}), None))
+
+        _safe(write)
 
     def _frame(self) -> _AgentFrame | None:
         cur = _agent_var.get()
@@ -302,7 +370,10 @@ def _unhooked(make: Callable, arg: Any) -> Any:
     gc.collect() finalizes both. The loop's finalizer would schedule an aclose() for each, and the inner one's
     would race the wrapper's own close of it ("aclose(): asynchronous generator is already running"). With this
     one, only the wrapper's aclose() runs, and it closes the inner generator inside the run. Without a finalizer
-    hook at all (no event loop), the inner generator keeps none, as before."""
+    hook at all (no event loop), the inner generator keeps none, as before.
+
+    Limit: the inner generator is closed only by its wrapper. When the wrapper's close was skipped (it was being
+    stepped elsewhere), the inner generator's cleanup is never finalized by anyone."""
     firstiter, finalizer = sys.get_asyncgen_hooks()
     sys.set_asyncgen_hooks(firstiter=None, finalizer=_closed_by_wrapper if finalizer is not None else None)
     try:
@@ -397,9 +468,15 @@ class _Workflow(_Scope):
         (fail open); an invalid config still fails closed."""
         try:
             rt = get_runtime()
-            row = rt.store.connect().execute(
-                "SELECT base_url FROM runs WHERE workflow=? AND base_url IS NOT NULL"
-                " AND (adapter IS NULL OR adapter != 'otel') ORDER BY started_at DESC LIMIT 1", (self.spec.name,)).fetchone()
+            row = (
+                rt.store.connect()
+                .execute(
+                    "SELECT base_url FROM runs WHERE workflow=? AND base_url IS NOT NULL"
+                    " AND (adapter IS NULL OR adapter != 'otel') ORDER BY started_at DESC LIMIT 1",
+                    (self.spec.name,),
+                )
+                .fetchone()
+            )
             return rt.ledger.exhausted(workflow=self.spec.name, workflow_budget_usd=self.spec.budget_usd,
                                        base_url=row["base_url"] if row is not None else None)
         except ConfigInvalid as e:
@@ -464,7 +541,9 @@ class _Agent(_Scope):
                 _Agent._warned = True
                 log.info("pitstop.agent used outside a workflow; ignored")
             return None
-        _agent_var.set(_AgentFrame(ctx.run_id, self.name, self.goal, _agent_var.get(), self))
+        prev = _agent_var.get()
+        _agent_var.set(_AgentFrame(ctx.run_id, self.name, self.goal, prev, self))
+        ctx.note_agent(self.name, prev.name if prev is not None and prev.run_id == ctx.run_id else None)
         return ctx
 
     def __exit__(self, et, ev, tb):

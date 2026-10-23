@@ -134,15 +134,27 @@ class ReportSynthesizer:
                 break
             user += ("\n\nYour previous report cited no findings. Rewrite it so that every figure and claim is "
                      "followed by its finding tag in square brackets, e.g. [F3] or [F3, F7].")
-        return {"title": str(obj.get("title") or "Financial research report")[:200], "markdown": body,
-                "gaps": str(obj.get("gaps", ""))[:1000], "cited_finding_ids": list(dict.fromkeys(cited)),
-                "invalid_citations": list(dict.fromkeys(invalid)), "unverified_figures": unverified_figures(body, included),
-                "included": included, "excluded": excluded, "model": self.llm.model}
+        return {
+            "title": str(obj.get("title") or "Financial research report")[:200],
+            "markdown": body,
+            "gaps": str(obj.get("gaps", ""))[:1000],
+            "cited_finding_ids": list(dict.fromkeys(cited)),
+            "invalid_citations": list(dict.fromkeys(invalid)),
+            "unverified_figures": unverified_figures(body, included),
+            "included": included,
+            "excluded": excluded,
+            "model": self.llm.model,
+        }
 
     @staticmethod
     def render(report: dict[str, Any], objective: str) -> str:
         """Final markdown: title, model-written body, then code-built caveats and Sources."""
-        out = [f"# {report['title']}", f"*Objective:* {objective}", "", report["markdown"] or f"_{report.get('error')}_"]
+        out = [
+            f"# {report['title']}",
+            f"*Objective:* {objective}",
+            "",
+            report["markdown"] or f"_{report.get('error')}_",
+        ]
         notes = []
         if report["invalid_citations"]:
             notes.append(f"- Citations that match no usable finding: {', '.join(report['invalid_citations'])}.")

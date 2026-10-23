@@ -1,9 +1,9 @@
 """Build the hard held-out test set with the same pipeline as benchmarks/synth/ (imported, not copied).
 
-  uv run python benchmarks/held_out/build_hard_set.py prefetch   # cache You.com answers for on-task, bait, detour queries
-  uv run python benchmarks/held_out/build_hard_set.py generate   # real Nemotron rollouts on Crusoe, verified, in traces/
-  uv run python benchmarks/held_out/build_hard_set.py export     # re-verify and write data/test.jsonl
-  uv run python benchmarks/held_out/build_hard_set.py stats
+uv run python benchmarks/held_out/build_hard_set.py prefetch   # cache You.com answers for on-task, bait, detour queries
+uv run python benchmarks/held_out/build_hard_set.py generate   # real Nemotron rollouts on Crusoe, verified, in traces/
+uv run python benchmarks/held_out/build_hard_set.py export     # re-verify and write data/test.jsonl
+uv run python benchmarks/held_out/build_hard_set.py stats
 """
 from __future__ import annotations
 
@@ -68,7 +68,10 @@ async def prefetch(max_calls: int) -> None:
                for q in t.on_task_queries + [d.bait_query for d in t.distractors] + [d.query for d in t.detours]]
     results = await asyncio.gather(*(bank.prefetch(q) for q in queries), return_exceptions=True)
     failed = [r for r in results if isinstance(r, Exception)]
-    print(f"{len(queries)} queries, live calls {bank.live_calls}, failed {len(failed)}, cache {len(ResearchBank(cache_dir=CACHE_DIR))}")
+    print(
+        f"{len(queries)} queries, live calls {bank.live_calls}, failed {len(failed)}, "
+        f"cache {len(ResearchBank(cache_dir=CACHE_DIR))}"
+    )
 
 
 async def generate(args) -> None:

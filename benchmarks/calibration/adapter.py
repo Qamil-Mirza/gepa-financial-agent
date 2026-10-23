@@ -7,8 +7,8 @@ Every candidate is scored through PitStop's own code path, unchanged: `Superviso
 (DRIFTING at confidence >= AlertPolicy().high). Only the transport is ours: `CrusoeLLM` sends the identical request
 through `CrusoeClient`, which adds 429/5xx backoff and cost accounting.
 
-Data is PitStop's hard-pairs set (`benchmarks/hard_pairs/data/{train,val,test}.jsonl`, split by company: train NVIDIA, val
-Broadcom, test AMD). GEPA reflects on train and selects on val; nothing here reads test.
+Data is PitStop's hard-pairs set (`benchmarks/hard_pairs/data/{train,val,test}.jsonl`, split by company: train
+NVIDIA, val Broadcom, test AMD). GEPA reflects on train and selects on val; nothing here reads test.
 """
 from __future__ import annotations
 

@@ -87,6 +87,13 @@ def test_otel_runs_are_not_a_setup(store):
     assert recent_change(store, "wf", "r4", now=NOW) == Change("model", "m-a", "m-b", "r3", 4.0)
 
 
+def test_otel_runs_compare_only_with_otel_runs(store):
+    _run(store, "o1", model="m1", started_at=1.0, adapter="otel")
+    _run(store, "r2", model="m-x", started_at=2.0)
+    _run(store, "o3", model="m2", started_at=3.0, adapter="otel")
+    assert recent_change(store, "wf", "o3", now=NOW) == Change("model", "m1", "m2", "o1", 3.0)
+
+
 def test_recent_change_none_without_history_or_change(store):
     _run(store, "r1", started_at=1.0)
     assert recent_change(store, "wf", "r1", now=NOW) is None  # no earlier run

@@ -15,6 +15,7 @@ from rich.console import Console
 from finresearch import offline
 from finresearch.config import SCENARIOS
 from finresearch.schemas import EventType, Scenario
+import pitstop
 from pitstop.sdk.runtime import get_runtime
 
 SCRUB = ("CRUSOE_API_KEY", "YDC_API_KEY", "PAGERDUTY_ROUTING_KEY", "OPSGENIE_API_KEY", "SLACK_WEBHOOK_URL",
@@ -112,7 +113,7 @@ def test_blocked_worker_is_told_why_when_it_replans(tmp_path, monkeypatch):
     monkeypatch.setattr(offline.ScriptedWorkerLLM, "_reply",
                         staticmethod(lambda system, user: seen.append(user) or reply(system, user)))
     _offline_run(tmp_path)
-    told = [u for u in seen if "PitStop blocked your last research call" in u]
+    told = [u for u in seen if "PitStop blocked this research call" in u]
     assert told and all("Your directive: Investigate NVIDIA's data-center" in u for u in told)
 
 
@@ -152,3 +153,53 @@ def test_unwatched_swarm_records_no_pitstop_run_and_makes_no_judge_call(tmp_path
     assert run.pitstop_run_id is None
     assert any("GeForce" in q for q in swarm.research.queries)  # the injected drift ran: nothing gated it
     assert json.loads((run.run_dir / "meta.json").read_text())["pitstop"] is None
+
+
+def _blocked_worker(FakeLLMClass, seen):
+    from finresearch.agents.worker import ResearchWorker
+    from finresearch.collector import TrajectoryCollector
+    from finresearch.config import PROMPTS
+    from finresearch.schemas import AgentSpec, ProposedAction
+
+    class Research:
+        effort = "deep"
+
+        async def research(self, query, output_schema=None):
+            return {"blocked_by": "pitstop", "reason": "about consumer gaming, not the directive"}
+
+    def handler(system, user):
+        seen.append(user)
+        return json.dumps({"action": "research", "query": "NVDA data center revenue", "plan_summary": "p"})
+
+    w = ResearchWorker(AgentSpec(agent_id="a", directive="Research X."), swarm_objective="o",
+                       llm=FakeLLMClass(handler), research=Research(), collector=TrajectoryCollector(),
+                       prompts_dir=PROMPTS / "worker", watched=False)
+    return w, ProposedAction
+
+
+def test_worker_sees_block_reason_text(FakeLLMClass):
+    seen: list[str] = []
+    w, ProposedAction = _blocked_worker(FakeLLMClass, seen)
+    asyncio.run(w.execute(ProposedAction(action="research", query="geforce gaming")))
+    asyncio.run(w.propose())
+    assert "PitStop blocked this research call: about consumer gaming, not the directive" in seen[-1]
+    assert "blocked_by" not in seen[-1] and "{" not in seen[-1].split("PitStop blocked")[1]
+
+
+def test_research_tool_decorated_once(tmp_path, monkeypatch):
+    from finresearch.schemas import ProposedAction
+
+    real, calls = pitstop.tool, []
+
+    def counting(*a, **kw):
+        calls.append(kw)
+        return real(*a, **kw)
+
+    monkeypatch.setattr(pitstop, "tool", counting)
+    scenario = Scenario.model_validate_json((SCENARIOS / "nvda_amd.json").read_text())
+    swarm = offline.make_swarm(scenario, runs_dir=tmp_path / "runs", console=Console(file=io.StringIO()))
+    assert len(calls) == 1
+    w = swarm.workers[0]
+    for q in ("NVDA data center revenue", "NVDA gross margin"):
+        asyncio.run(w.execute(ProposedAction(action="research", query=q)))
+    assert len(calls) == 1

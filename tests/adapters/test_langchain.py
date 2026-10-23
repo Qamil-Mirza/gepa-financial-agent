@@ -370,18 +370,35 @@ async def test_concurrent_wrapped_and_unwrapped_calls_observed_per_call(tmp_path
     """The unwrapped model call is still in flight when the wrapped one of the same run is metered: only the
     unwrapped one is observed."""
     import asyncio
+    import threading
 
+    from langchain.agents.middleware import AgentMiddleware
     from langchain_openai import ChatOpenAI
 
     _init(tmp_path)
-    slow = ScriptedChat(responses=[_reply("slow done", i=1)], sleep=0.3)
+    metered = threading.Barrier(2)  # the unwrapped call returns only once the wrapped one is metered
+
+    class Held(ScriptedChat):
+        def _generate(self, *args, **kwargs):
+            metered.wait(10)
+            return super()._generate(*args, **kwargs)
+
+    class AfterMetering(AgentMiddleware):
+        """Inside PitStopMiddleware: its handler returns after the wrapped client recorded the call."""
+
+        async def awrap_model_call(self, request, handler):
+            response = await handler(request)
+            await asyncio.to_thread(metered.wait, 10)
+            return response
+
+    slow = Held(responses=[_reply("slow done", i=1)])
     sync_w = pitstop.wrap(openai_client(lambda r: httpx.Response(200, json=chat_completion("fast done"))))
     async_w = pitstop.wrap(openai_client(lambda r: httpx.Response(200, json=chat_completion("fast done")),
                                          async_=True))
     fast = ChatOpenAI(model=MODEL, client=sync_w.chat.completions, async_client=async_w.chat.completions,
                       api_key="x")
     a = create_agent(slow, [], middleware=[PitStopMiddleware()])
-    b = create_agent(fast, [], middleware=[PitStopMiddleware()])
+    b = create_agent(fast, [], middleware=[PitStopMiddleware(), AfterMetering()])
     msg = {"messages": [{"role": "user", "content": "go"}]}
     with pitstop.workflow("wf", goal="Research", criticality="medium"):
         ra, rb = await asyncio.gather(a.ainvoke(msg), b.ainvoke(msg))
@@ -423,3 +440,19 @@ def test_interrupt_in_tool_passes_through_unrecorded(tmp_path):
                               {"configurable": {"thread_id": "t1"}})
     assert "__interrupt__" in result
     assert len(_events("tool_call")) == 1 and _events("tool_result") == []
+
+
+def test_observed_event_named_by_requested_model(tmp_path):
+    """The observed event is named by the model the request named, not the (dated or routed) id the reply echoes."""
+
+    class Named(ScriptedChat):
+        model_name: str = "requested-1"
+
+    _init(tmp_path)
+    agent = create_agent(Named(responses=[_reply("done", i=1)]), [], middleware=[PitStopMiddleware()])
+    with pitstop.workflow("wf", goal="Research", criticality="medium") as ctx:
+        agent.invoke({"messages": [{"role": "user", "content": "go"}]})
+    [e] = _events("llm_call")
+    assert e["name"] == "requested-1" and e["payload"]["observed"] is True
+    [row] = _db().execute("SELECT model FROM runs WHERE id=?", (ctx.run_id,)).fetchall()
+    assert row["model"] == "requested-1"

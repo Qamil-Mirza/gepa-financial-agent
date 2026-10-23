@@ -1,0 +1,508 @@
+{
+  "nodes": [
+    {
+      "id": "workflow",
+      "kind": "workflow",
+      "label": "earnings-research",
+      "agent_path": [],
+      "calls": 758,
+      "runs": 95,
+      "cost_usd": 0.6572427000000001,
+      "latency_p50_s": null,
+      "time_per_run_s": 0.003128421052631579,
+      "time_partial": false,
+      "verdicts": {
+        "block": 0,
+        "steer": 0,
+        "halt": 0,
+        "fallback": 0,
+        "gate_reject": 0,
+        "gate_error": 0,
+        "tool_error": 0
+      },
+      "on_slowest_path": true,
+      "run_ids": [
+        "a58113718d7148c59abf3ccd07903de7",
+        "dcc6c146bb89491684a3ef347764c254",
+        "fb20d37686c94415ac93f347f820b709",
+        "5631b6d0e52f4b848d03a2f9e1d5182b",
+        "67d6ec0c71134ebb9d4d2e2fc30a0603",
+        "1c07dc9aadf34cf9af2858e8a7df5bc0",
+        "12fc219f34c94a82b990a7993aad8f3d",
+        "680834bdd0f74d6cb69e4876123443c7",
+        "2b636392e57a4ff1acb38094ac08c3b9",
+        "3250af8eb7974a08bbf7c43ecc133094",
+        "cd2a5ef6da5047359d856ba95de262d0",
+        "a9cdb5cff894494e8cde5ba9a01a8af9",
+        "880c7280380e4b93bd789c453e5f15a8",
+        "4219db5defdc4136a0d6f79a2d02bd69",
+        "0dcf036f75a843f8b17a16b8b7b72754",
+        "07cbb18c193c4cdb974d866ff0aee9d1",
+        "33f2e0e77e4243028200583cec53eafe",
+        "eadcd5fed636459086fac848c65b0879",
+        "f597606a633f424d94708a1736a7b9d3",
+        "3a8996f5cf5843e4886ec4569626f117"
+      ]
+    },
+    {
+      "id": "agent:researcher",
+      "kind": "agent",
+      "label": "researcher",
+      "agent_path": [
+        "researcher"
+      ],
+      "calls": 475,
+      "runs": 95,
+      "cost_usd": 0.36071309999999995,
+      "latency_p50_s": null,
+      "time_per_run_s": 0.0020242105263157894,
+      "time_partial": false,
+      "verdicts": {
+        "block": 0,
+        "steer": 0,
+        "halt": 0,
+        "fallback": 0,
+        "gate_reject": 0,
+        "gate_error": 0,
+        "tool_error": 0
+      },
+      "on_slowest_path": true,
+      "run_ids": [
+        "a58113718d7148c59abf3ccd07903de7",
+        "dcc6c146bb89491684a3ef347764c254",
+        "fb20d37686c94415ac93f347f820b709",
+        "5631b6d0e52f4b848d03a2f9e1d5182b",
+        "67d6ec0c71134ebb9d4d2e2fc30a0603",
+        "1c07dc9aadf34cf9af2858e8a7df5bc0",
+        "12fc219f34c94a82b990a7993aad8f3d",
+        "680834bdd0f74d6cb69e4876123443c7",
+        "2b636392e57a4ff1acb38094ac08c3b9",
+        "3250af8eb7974a08bbf7c43ecc133094",
+        "cd2a5ef6da5047359d856ba95de262d0",
+        "a9cdb5cff894494e8cde5ba9a01a8af9",
+        "880c7280380e4b93bd789c453e5f15a8",
+        "4219db5defdc4136a0d6f79a2d02bd69",
+        "0dcf036f75a843f8b17a16b8b7b72754",
+        "07cbb18c193c4cdb974d866ff0aee9d1",
+        "33f2e0e77e4243028200583cec53eafe",
+        "eadcd5fed636459086fac848c65b0879",
+        "f597606a633f424d94708a1736a7b9d3",
+        "3a8996f5cf5843e4886ec4569626f117"
+      ]
+    },
+    {
+      "id": "llm:researcher|m-a",
+      "kind": "llm",
+      "label": "m-a",
+      "agent_path": [
+        "researcher"
+      ],
+      "calls": 180,
+      "runs": 60,
+      "cost_usd": 0.16652489999999995,
+      "latency_p50_s": 0.0006,
+      "time_per_run_s": 0.0013431578947368421,
+      "time_partial": false,
+      "verdicts": {
+        "block": 0,
+        "steer": 0,
+        "halt": 0,
+        "fallback": 0,
+        "gate_reject": 0,
+        "gate_error": 0,
+        "tool_error": 0
+      },
+      "on_slowest_path": true,
+      "run_ids": [
+        "d54a5aca66ad44ddb2b3d7498e33527b",
+        "cdb62788f15d4f52986e1cb5a2312bf3",
+        "f354d9e04a5c4f389326b9d05e8d95a3",
+        "a74da0ed361c48058239356ab451eba5",
+        "567d6f9b6f974354bc0c503d86223563",
+        "0715692874444372a6c906d2236e7286",
+        "b8a390e30ff74b6fb00a960ff6848e38",
+        "778c1d2ff4114917abf0fd6366049cf8",
+        "6b00304897084c7abba1d8e710dd6a80",
+        "27a27c6d9679445692c7a01924640fa8",
+        "54d8596cf675412da3410017ae20756b",
+        "acaf463283c64e5ebdf23374f96d02a4",
+        "c4c5b4fa2d1e4f90abeaf23b4acdebfd",
+        "b303b0baddda4c3c8c2f33fad9822e96",
+        "de7f6690907b46b6813a0640d0bc8955",
+        "3bf8d95a35cd4f32a87558c66e2a3cfb",
+        "afd40e788f4244dc8929f83ca600b06b",
+        "a4bbefaedf134cf588629cbc757daa11",
+        "8493f83f172e4c038c668397eca82fc9",
+        "bca8c841d10a4da4ad9fd4cc19247d85"
+      ]
+    },
+    {
+      "id": "llm:researcher|m-b",
+      "kind": "llm",
+      "label": "m-b",
+      "agent_path": [
+        "researcher"
+      ],
+      "calls": 105,
+      "runs": 35,
+      "cost_usd": 0.1941882,
+      "latency_p50_s": 0.0006,
+      "time_per_run_s": 0.0006810526315789473,
+      "time_partial": false,
+      "verdicts": {
+        "block": 0,
+        "steer": 0,
+        "halt": 0,
+        "fallback": 0,
+        "gate_reject": 0,
+        "gate_error": 0,
+        "tool_error": 0
+      },
+      "on_slowest_path": false,
+      "run_ids": [
+        "a58113718d7148c59abf3ccd07903de7",
+        "dcc6c146bb89491684a3ef347764c254",
+        "fb20d37686c94415ac93f347f820b709",
+        "5631b6d0e52f4b848d03a2f9e1d5182b",
+        "67d6ec0c71134ebb9d4d2e2fc30a0603",
+        "1c07dc9aadf34cf9af2858e8a7df5bc0",
+        "12fc219f34c94a82b990a7993aad8f3d",
+        "680834bdd0f74d6cb69e4876123443c7",
+        "2b636392e57a4ff1acb38094ac08c3b9",
+        "3250af8eb7974a08bbf7c43ecc133094",
+        "cd2a5ef6da5047359d856ba95de262d0",
+        "a9cdb5cff894494e8cde5ba9a01a8af9",
+        "880c7280380e4b93bd789c453e5f15a8",
+        "4219db5defdc4136a0d6f79a2d02bd69",
+        "0dcf036f75a843f8b17a16b8b7b72754",
+        "07cbb18c193c4cdb974d866ff0aee9d1",
+        "33f2e0e77e4243028200583cec53eafe",
+        "eadcd5fed636459086fac848c65b0879",
+        "f597606a633f424d94708a1736a7b9d3",
+        "3a8996f5cf5843e4886ec4569626f117"
+      ]
+    },
+    {
+      "id": "tool:researcher|fetch_transcript",
+      "kind": "tool",
+      "label": "fetch_transcript",
+      "agent_path": [
+        "researcher"
+      ],
+      "calls": 95,
+      "runs": 95,
+      "cost_usd": 0.0,
+      "latency_p50_s": 0.0,
+      "time_per_run_s": 0.0,
+      "time_partial": false,
+      "verdicts": {
+        "block": 0,
+        "steer": 0,
+        "halt": 0,
+        "fallback": 0,
+        "gate_reject": 0,
+        "gate_error": 0,
+        "tool_error": 0
+      },
+      "on_slowest_path": false,
+      "run_ids": [
+        "a58113718d7148c59abf3ccd07903de7",
+        "dcc6c146bb89491684a3ef347764c254",
+        "fb20d37686c94415ac93f347f820b709",
+        "5631b6d0e52f4b848d03a2f9e1d5182b",
+        "67d6ec0c71134ebb9d4d2e2fc30a0603",
+        "1c07dc9aadf34cf9af2858e8a7df5bc0",
+        "12fc219f34c94a82b990a7993aad8f3d",
+        "680834bdd0f74d6cb69e4876123443c7",
+        "2b636392e57a4ff1acb38094ac08c3b9",
+        "3250af8eb7974a08bbf7c43ecc133094",
+        "cd2a5ef6da5047359d856ba95de262d0",
+        "a9cdb5cff894494e8cde5ba9a01a8af9",
+        "880c7280380e4b93bd789c453e5f15a8",
+        "4219db5defdc4136a0d6f79a2d02bd69",
+        "0dcf036f75a843f8b17a16b8b7b72754",
+        "07cbb18c193c4cdb974d866ff0aee9d1",
+        "33f2e0e77e4243028200583cec53eafe",
+        "eadcd5fed636459086fac848c65b0879",
+        "f597606a633f424d94708a1736a7b9d3",
+        "3a8996f5cf5843e4886ec4569626f117"
+      ]
+    },
+    {
+      "id": "tool:researcher|search_filings",
+      "kind": "tool",
+      "label": "search_filings",
+      "agent_path": [
+        "researcher"
+      ],
+      "calls": 95,
+      "runs": 95,
+      "cost_usd": 0.0,
+      "latency_p50_s": 0.0,
+      "time_per_run_s": 0.0,
+      "time_partial": false,
+      "verdicts": {
+        "block": 0,
+        "steer": 0,
+        "halt": 0,
+        "fallback": 0,
+        "gate_reject": 0,
+        "gate_error": 0,
+        "tool_error": 0
+      },
+      "on_slowest_path": false,
+      "run_ids": [
+        "a58113718d7148c59abf3ccd07903de7",
+        "dcc6c146bb89491684a3ef347764c254",
+        "fb20d37686c94415ac93f347f820b709",
+        "5631b6d0e52f4b848d03a2f9e1d5182b",
+        "67d6ec0c71134ebb9d4d2e2fc30a0603",
+        "1c07dc9aadf34cf9af2858e8a7df5bc0",
+        "12fc219f34c94a82b990a7993aad8f3d",
+        "680834bdd0f74d6cb69e4876123443c7",
+        "2b636392e57a4ff1acb38094ac08c3b9",
+        "3250af8eb7974a08bbf7c43ecc133094",
+        "cd2a5ef6da5047359d856ba95de262d0",
+        "a9cdb5cff894494e8cde5ba9a01a8af9",
+        "880c7280380e4b93bd789c453e5f15a8",
+        "4219db5defdc4136a0d6f79a2d02bd69",
+        "0dcf036f75a843f8b17a16b8b7b72754",
+        "07cbb18c193c4cdb974d866ff0aee9d1",
+        "33f2e0e77e4243028200583cec53eafe",
+        "eadcd5fed636459086fac848c65b0879",
+        "f597606a633f424d94708a1736a7b9d3",
+        "3a8996f5cf5843e4886ec4569626f117"
+      ]
+    },
+    {
+      "id": "agent:writer",
+      "kind": "agent",
+      "label": "writer",
+      "agent_path": [
+        "writer"
+      ],
+      "calls": 283,
+      "runs": 95,
+      "cost_usd": 0.29652960000000006,
+      "latency_p50_s": null,
+      "time_per_run_s": 0.0011042105263157896,
+      "time_partial": false,
+      "verdicts": {
+        "block": 0,
+        "steer": 0,
+        "halt": 1,
+        "fallback": 0,
+        "gate_reject": 0,
+        "gate_error": 0,
+        "tool_error": 0
+      },
+      "on_slowest_path": false,
+      "run_ids": [
+        "a58113718d7148c59abf3ccd07903de7",
+        "dcc6c146bb89491684a3ef347764c254",
+        "fb20d37686c94415ac93f347f820b709",
+        "5631b6d0e52f4b848d03a2f9e1d5182b",
+        "67d6ec0c71134ebb9d4d2e2fc30a0603",
+        "1c07dc9aadf34cf9af2858e8a7df5bc0",
+        "12fc219f34c94a82b990a7993aad8f3d",
+        "680834bdd0f74d6cb69e4876123443c7",
+        "2b636392e57a4ff1acb38094ac08c3b9",
+        "3250af8eb7974a08bbf7c43ecc133094",
+        "cd2a5ef6da5047359d856ba95de262d0",
+        "a9cdb5cff894494e8cde5ba9a01a8af9",
+        "880c7280380e4b93bd789c453e5f15a8",
+        "4219db5defdc4136a0d6f79a2d02bd69",
+        "0dcf036f75a843f8b17a16b8b7b72754",
+        "07cbb18c193c4cdb974d866ff0aee9d1",
+        "33f2e0e77e4243028200583cec53eafe",
+        "eadcd5fed636459086fac848c65b0879",
+        "f597606a633f424d94708a1736a7b9d3",
+        "3a8996f5cf5843e4886ec4569626f117"
+      ]
+    },
+    {
+      "id": "llm:writer|m-a",
+      "kind": "llm",
+      "label": "m-a",
+      "agent_path": [
+        "writer"
+      ],
+      "calls": 120,
+      "runs": 60,
+      "cost_usd": 0.13822230000000002,
+      "latency_p50_s": 0.0006,
+      "time_per_run_s": 0.0007031578947368421,
+      "time_partial": false,
+      "verdicts": {
+        "block": 0,
+        "steer": 0,
+        "halt": 0,
+        "fallback": 0,
+        "gate_reject": 0,
+        "gate_error": 0,
+        "tool_error": 0
+      },
+      "on_slowest_path": false,
+      "run_ids": [
+        "d54a5aca66ad44ddb2b3d7498e33527b",
+        "cdb62788f15d4f52986e1cb5a2312bf3",
+        "f354d9e04a5c4f389326b9d05e8d95a3",
+        "a74da0ed361c48058239356ab451eba5",
+        "567d6f9b6f974354bc0c503d86223563",
+        "0715692874444372a6c906d2236e7286",
+        "b8a390e30ff74b6fb00a960ff6848e38",
+        "778c1d2ff4114917abf0fd6366049cf8",
+        "6b00304897084c7abba1d8e710dd6a80",
+        "27a27c6d9679445692c7a01924640fa8",
+        "54d8596cf675412da3410017ae20756b",
+        "acaf463283c64e5ebdf23374f96d02a4",
+        "c4c5b4fa2d1e4f90abeaf23b4acdebfd",
+        "b303b0baddda4c3c8c2f33fad9822e96",
+        "de7f6690907b46b6813a0640d0bc8955",
+        "3bf8d95a35cd4f32a87558c66e2a3cfb",
+        "afd40e788f4244dc8929f83ca600b06b",
+        "a4bbefaedf134cf588629cbc757daa11",
+        "8493f83f172e4c038c668397eca82fc9",
+        "bca8c841d10a4da4ad9fd4cc19247d85"
+      ]
+    },
+    {
+      "id": "llm:writer|m-b",
+      "kind": "llm",
+      "label": "m-b",
+      "agent_path": [
+        "writer"
+      ],
+      "calls": 69,
+      "runs": 35,
+      "cost_usd": 0.1583073,
+      "latency_p50_s": 0.0006,
+      "time_per_run_s": 0.0004010526315789474,
+      "time_partial": false,
+      "verdicts": {
+        "block": 0,
+        "steer": 0,
+        "halt": 0,
+        "fallback": 0,
+        "gate_reject": 0,
+        "gate_error": 0,
+        "tool_error": 0
+      },
+      "on_slowest_path": false,
+      "run_ids": [
+        "a58113718d7148c59abf3ccd07903de7",
+        "dcc6c146bb89491684a3ef347764c254",
+        "fb20d37686c94415ac93f347f820b709",
+        "5631b6d0e52f4b848d03a2f9e1d5182b",
+        "67d6ec0c71134ebb9d4d2e2fc30a0603",
+        "1c07dc9aadf34cf9af2858e8a7df5bc0",
+        "12fc219f34c94a82b990a7993aad8f3d",
+        "680834bdd0f74d6cb69e4876123443c7",
+        "2b636392e57a4ff1acb38094ac08c3b9",
+        "3250af8eb7974a08bbf7c43ecc133094",
+        "cd2a5ef6da5047359d856ba95de262d0",
+        "a9cdb5cff894494e8cde5ba9a01a8af9",
+        "880c7280380e4b93bd789c453e5f15a8",
+        "4219db5defdc4136a0d6f79a2d02bd69",
+        "0dcf036f75a843f8b17a16b8b7b72754",
+        "07cbb18c193c4cdb974d866ff0aee9d1",
+        "33f2e0e77e4243028200583cec53eafe",
+        "eadcd5fed636459086fac848c65b0879",
+        "f597606a633f424d94708a1736a7b9d3",
+        "3a8996f5cf5843e4886ec4569626f117"
+      ]
+    },
+    {
+      "id": "tool:writer|publish_note",
+      "kind": "tool",
+      "label": "publish_note",
+      "agent_path": [
+        "writer"
+      ],
+      "calls": 94,
+      "runs": 95,
+      "cost_usd": 0.0,
+      "latency_p50_s": 0.0,
+      "time_per_run_s": 0.0,
+      "time_partial": false,
+      "verdicts": {
+        "block": 1,
+        "steer": 0,
+        "halt": 0,
+        "fallback": 0,
+        "gate_reject": 1,
+        "gate_error": 0,
+        "tool_error": 0
+      },
+      "on_slowest_path": false,
+      "run_ids": [
+        "a58113718d7148c59abf3ccd07903de7",
+        "dcc6c146bb89491684a3ef347764c254",
+        "fb20d37686c94415ac93f347f820b709",
+        "5631b6d0e52f4b848d03a2f9e1d5182b",
+        "67d6ec0c71134ebb9d4d2e2fc30a0603",
+        "1c07dc9aadf34cf9af2858e8a7df5bc0",
+        "12fc219f34c94a82b990a7993aad8f3d",
+        "680834bdd0f74d6cb69e4876123443c7",
+        "2b636392e57a4ff1acb38094ac08c3b9",
+        "3250af8eb7974a08bbf7c43ecc133094",
+        "cd2a5ef6da5047359d856ba95de262d0",
+        "a9cdb5cff894494e8cde5ba9a01a8af9",
+        "880c7280380e4b93bd789c453e5f15a8",
+        "4219db5defdc4136a0d6f79a2d02bd69",
+        "0dcf036f75a843f8b17a16b8b7b72754",
+        "07cbb18c193c4cdb974d866ff0aee9d1",
+        "33f2e0e77e4243028200583cec53eafe",
+        "eadcd5fed636459086fac848c65b0879",
+        "f597606a633f424d94708a1736a7b9d3",
+        "3a8996f5cf5843e4886ec4569626f117"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "workflow",
+      "target": "agent:researcher"
+    },
+    {
+      "source": "agent:researcher",
+      "target": "llm:researcher|m-a"
+    },
+    {
+      "source": "agent:researcher",
+      "target": "llm:researcher|m-b"
+    },
+    {
+      "source": "agent:researcher",
+      "target": "tool:researcher|fetch_transcript"
+    },
+    {
+      "source": "agent:researcher",
+      "target": "tool:researcher|search_filings"
+    },
+    {
+      "source": "workflow",
+      "target": "agent:writer"
+    },
+    {
+      "source": "agent:writer",
+      "target": "llm:writer|m-a"
+    },
+    {
+      "source": "agent:writer",
+      "target": "llm:writer|m-b"
+    },
+    {
+      "source": "agent:writer",
+      "target": "tool:writer|publish_note"
+    }
+  ],
+  "runs_in_scope": 95,
+  "window": "24h",
+  "run_id": null,
+  "slowest_path": [
+    "workflow",
+    "agent:researcher",
+    "llm:researcher|m-a"
+  ]
+}
