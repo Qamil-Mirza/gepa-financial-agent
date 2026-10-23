@@ -7,6 +7,8 @@ import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/pitwall.css";
 import "./styles/workflow.css";
+import "./styles/changes.css";
+import "./styles/run.css";
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";

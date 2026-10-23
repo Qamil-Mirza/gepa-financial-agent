@@ -18,6 +18,7 @@ export type Graph = Schemas["Graph"];
 export type GraphNode = Schemas["GraphNode"];
 export type Health = Schemas["Health"];
 export type Marker = Schemas["Marker"];
+export type MetricInfo = Schemas["MetricInfo"];
 export type RunDetail = Schemas["RunDetail"];
 export type RunPage = Schemas["RunPage"];
 export type RunRow = Schemas["RunRow"];

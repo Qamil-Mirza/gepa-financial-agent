@@ -1,15 +1,28 @@
 // The workflow page at /w?name=…&tab=…: the tile facts in the header, three tabs (the run graph by default,
-// with its scope in the URL too: window= and run=), and the open drifts in a right column that stays on every
-// tab. The page polls /api/workflow every 10 s (decision 11); the graph tab polls its own data. What changed and
-// Runs are Task 14.
-import { lazy, Suspense, useCallback, useMemo, useState } from "react";
+// with its scope in the URL too: window= and run=; What changed as small multiples with change markers; Runs as
+// a table with a cursor), and the open drifts in a right column that stays on every tab. The page polls
+// /api/workflow every 10 s (decision 11); each tab polls its own data.
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams, type SetURLSearchParams } from "react-router";
-import { ApiError, dismissDrift, getWorkflow, type GraphWindow, type WorkflowDetail } from "../api/client";
+import {
+  ApiError,
+  dismissDrift,
+  getChanges,
+  getRuns,
+  getWorkflow,
+  type Changes,
+  type GraphWindow,
+  type RunRow,
+  type WorkflowDetail,
+} from "../api/client";
 import { usePoll } from "../api/poll";
 import { BudgetBar } from "../components/BudgetBar";
 import { DriftCard } from "../components/DriftCard";
 import { ErrorState } from "../components/ErrorState";
 import { Flag } from "../components/Flag";
+import { MarkerLegend } from "../components/MarkerLegend";
+import { RunsTable, type MoreState } from "../components/RunsTable";
+import { SeriesChart, SeriesTable } from "../components/SeriesChart";
 import { Stale, useStampedAt } from "../components/Stale";
 import { Criticality, lastRunText } from "../components/Tile";
 import { parseWindow } from "../components/WindowPicker";
@@ -69,11 +82,126 @@ function Skeleton({ name }: { name: string }) {
   );
 }
 
-function Placeholder({ title, text }: { title: string; text: string }) {
+function TabSkeleton({ what }: { what: string }) {
   return (
-    <div className="tab-placeholder">
-      <p className="tab-placeholder-title">{title}</p>
-      <p className="muted">{text}</p>
+    <div className="graph-canvas graph-skeleton" aria-busy="true">
+      <p className="sr-only" role="status">
+        Loading {what}…
+      </p>
+    </div>
+  );
+}
+
+// ---------- What changed ----------
+
+function ChangesTab({ name }: { name: string }) {
+  const poll = usePoll((signal) => getChanges(name, { signal }), EVERY_MS, [name]);
+  const stampedAt = useStampedAt(poll.data);
+  if (poll.loading) return <TabSkeleton what="what changed" />;
+  if (!poll.data) return <ErrorState error={poll.error} title="What changed didn't load" onRetry={poll.refresh} />;
+  const data: Changes = poll.data;
+  const charted = data.metrics.filter((m) => data.points.some((p) => Number.isFinite(p.metrics[m.name])));
+
+  if (data.points.length === 0) {
+    return (
+      <section className="changes" aria-label="What changed">
+        <div className="tab-placeholder">
+          <p className="tab-placeholder-title">No scored runs yet.</p>
+          <p className="muted">
+            Each run's tool errors, refusals, tokens per call, calls, cost, duration and output length land here once the
+            background worker (or <code>pitstop scan</code>) has scored it.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="changes" aria-label="What changed">
+      {poll.error && <Stale what="What changed" sinceS={stampedAt !== null ? stampedAt / 1000 : null} />}
+      <p className="changes-key">
+        {plural(data.points.length, "scored run")}, one per slot, oldest to newest. A filled point finished ok; a hollow one
+        halted, was refused or errored. A dashed line is a change, drawn before the first run that carried it.
+      </p>
+      <div className="changes-charts">
+        {charted.map((m, i) => (
+          <SeriesChart
+            key={m.name}
+            metric={m}
+            points={data.points}
+            markers={data.markers}
+            labelMarkers={i === 0}
+            xAxis={i === charted.length - 1}
+          />
+        ))}
+      </div>
+      <p className="changes-note muted">Quality score: coming with the run judge.</p>
+      <h3 className="changes-title">Changes</h3>
+      <MarkerLegend markers={data.markers} metrics={data.metrics} />
+      <details className="changes-table">
+        <summary>Table view</summary>
+        <SeriesTable changes={data} />
+      </details>
+    </section>
+  );
+}
+
+// ---------- Runs ----------
+
+interface MorePages {
+  runs: RunRow[];
+  nextBefore: number | null;
+}
+
+function RunsTab({ name }: { name: string }) {
+  const first = usePoll((signal) => getRuns(name, null, { signal }), EVERY_MS, [name]);
+  const stampedAt = useStampedAt(first.data);
+  const [more, setMore] = useState<MorePages | null>(null);
+  const [moreState, setMoreState] = useState<MoreState>({ kind: "idle" });
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+
+  const cursor = more ? more.nextBefore : (first.data?.next_before ?? null);
+  const loadMore = async () => {
+    if (cursor === null || moreState.kind === "loading") return;
+    setMoreState({ kind: "loading" });
+    try {
+      const page = await getRuns(name, cursor);
+      if (!alive.current) return;
+      setMore((prev) => ({ runs: [...(prev?.runs ?? []), ...page.runs], nextBefore: page.next_before }));
+      setMoreState({ kind: "idle" });
+    } catch (e) {
+      if (!alive.current) return;
+      setMoreState({ kind: "error", message: e instanceof Error ? e.message : String(e) });
+    }
+  };
+
+  if (first.loading) return <TabSkeleton what="runs" />;
+  if (!first.data) return <ErrorState error={first.error} title="The runs didn't load" onRetry={first.refresh} />;
+
+  // the first page refreshes every poll; later pages stay. A run that slid from the first page onto a later one
+  // appears once.
+  const seen = new Set<string>();
+  const rows = [...first.data.runs, ...(more?.runs ?? [])].filter((r) => !seen.has(r.id) && seen.add(r.id));
+
+  if (rows.length === 0) {
+    return (
+      <div className="tab-placeholder">
+        <p className="tab-placeholder-title">No runs recorded yet.</p>
+        <p className="muted">Runs appear here as soon as the workflow records one.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="runs-tab">
+      {first.error && <Stale what="Runs" sinceS={stampedAt !== null ? stampedAt / 1000 : null} />}
+      <p className="runs-count">{plural(rows.length, "run")}, newest first</p>
+      <RunsTable runs={rows} hasMore={cursor !== null} moreState={moreState} onLoadMore={() => void loadMore()} />
     </div>
   );
 }
@@ -221,15 +349,8 @@ function WorkflowPage({ name, params, setParams }: PageProps) {
               />
             </Suspense>
           )}
-          {tab === "changes" && (
-            <Placeholder
-              title="What changed is on its way."
-              text="Quality, errors and cost over time, with model, endpoint and prompt changes drawn as markers."
-            />
-          )}
-          {tab === "runs" && (
-            <Placeholder title="Runs are on their way." text="Every run with its status, duration, model, cost and verdicts." />
-          )}
+          {tab === "changes" && <ChangesTab name={name} />}
+          {tab === "runs" && <RunsTab name={name} />}
         </div>
 
         <aside className="wf-side" aria-labelledby="drifts-title">

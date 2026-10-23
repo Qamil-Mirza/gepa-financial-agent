@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { runHref, workflowHref } from "../routes";
-import { explain, fetchStub, graph, runs, workflow } from "../test/fixtures";
+import { changes, explain, fetchStub, graph, runs, workflow } from "../test/fixtures";
 import { mockReactFlow } from "../test/reactflow";
 import { Workflow } from "./Workflow";
 
@@ -260,6 +260,60 @@ describe("Workflow", () => {
     expect(await screen.findByRole("radio", { name: "24h" }, { timeout: 5000 })).toBeChecked();
     // the right column stays on every tab
     expect(screen.getByRole("list", { name: "Open drifts" })).toBeVisible();
+  });
+
+  it("chart draws one path per metric and labels markers", async () => {
+    vi.stubGlobal("fetch", vi.fn(fetchStub({ ...API, "/api/changes": changes })));
+    const { container } = renderPage(workflowHref(NAME, "changes"));
+    const figures = await screen.findAllByRole("figure");
+    expect(figures).toHaveLength(changes.metrics.length); // every metric has data in the demo
+    expect(figures.map((f) => f.getAttribute("aria-label") ?? "")).toEqual([
+      "Tool errors",
+      "Refusals",
+      "Tokens per call",
+      "LLM calls",
+      "Cost per run",
+      "Duration",
+      "Output length",
+    ]);
+    expect(container.querySelectorAll("path.series-line")).toHaveLength(changes.metrics.length);
+    // every chart carries the change lines; the words appear once, on the first chart
+    expect(container.querySelectorAll("line.series-marker")).toHaveLength(changes.metrics.length * changes.markers.length);
+    expect(screen.getAllByText("model m-a → m-b")).toHaveLength(1);
+    expect(screen.getAllByText("L2 alarm: tokens per call")).toHaveLength(1);
+    // the legend, the table twin and the judge note
+    const legend = screen.getByRole("list", { name: "Changes" });
+    expect(within(legend).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(legend).getByRole("button", { name: "Explain" })).toBeVisible();
+    expect(screen.getByText("Quality score: coming with the run judge.")).toBeVisible();
+    const table = screen.getByRole("table", { name: "Every run's metrics" });
+    expect(within(table).getAllByRole("row")).toHaveLength(changes.points.length + 1);
+    expect(within(table).getAllByRole("link")[0]).toHaveAttribute("href", runHref(changes.points[0].run_id));
+    expect(screen.queryByRole("radio", { name: "24h" })).toBeNull();
+  });
+
+  it("runs table loads more with cursor", async () => {
+    const page2 = {
+      runs: runs.runs.slice(0, 3).map((r, i) => ({ ...r, id: `older-${i}`, started_at: (r.started_at ?? 0) - 1000 })),
+      next_before: null,
+    };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), "http://localhost");
+      if (url.pathname === "/api/runs" && url.searchParams.has("before")) return json(page2);
+      return fetchStub(API)(input);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderPage(workflowHref(NAME, "runs"));
+    const table = await screen.findByRole("table", { name: "Runs" });
+    expect(within(table).getAllByRole("row")).toHaveLength(runs.runs.length + 1);
+    expect(screen.getByText("50 runs, newest first")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Load more" }));
+    await screen.findByRole("link", { name: /older-0/ });
+    expect(requested(fetchMock)).toContain(`/api/runs?workflow=${NAME}&before=${runs.next_before}`);
+    expect(within(table).getAllByRole("row")).toHaveLength(runs.runs.length + 3 + 1);
+    expect(screen.queryByRole("button", { name: /Load more/ })).toBeNull(); // the last page
+    expect(screen.getByText("53 runs, newest first")).toBeVisible();
   });
 
   it("unknown workflow shows not-found state", async () => {

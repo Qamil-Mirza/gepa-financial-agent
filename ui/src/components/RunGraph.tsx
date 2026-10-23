@@ -20,7 +20,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { getGraph, getRuns, type Graph, type GraphNode, type GraphWindow, type RunRow } from "../api/client";
+import { getGraph, getRuns, type Graph, type GraphNode, type GraphWindow, type RunPage, type RunRow } from "../api/client";
 import { usePoll } from "../api/poll";
 import { plural } from "../format";
 import { layoutGraph, type Layout } from "../graph/layout";
@@ -40,9 +40,13 @@ export interface RunGraphProps {
   name: string;
   window: GraphWindow;
   runId: string | null;
-  onWindow: (window: GraphWindow) => void;
-  onRun: (runId: string | null) => void;
+  onWindow?: (window: GraphWindow) => void;
+  onRun?: (runId: string | null) => void;
+  /** False on run detail: the scope is fixed to one run, so no window picker, run select or scope line. */
+  controls?: boolean;
 }
+
+const NO_RUNS: RunPage = { runs: [], next_before: null };
 
 // ---------- the node card ----------
 
@@ -183,9 +187,9 @@ function runOption(run: RunRow): string {
   return `${shortRunId(run.id)} · ${run.status ?? "status unknown"}${when}`;
 }
 
-export default function RunGraph({ name, window: win, runId, onWindow, onRun }: RunGraphProps) {
+export default function RunGraph({ name, window: win, runId, onWindow, onRun, controls = true }: RunGraphProps) {
   const graph = usePoll((signal) => getGraph(name, { runId, window: win }, { signal }), EVERY_MS, [name, win, runId]);
-  const runs = usePoll((signal) => getRuns(name, null, { signal }), EVERY_MS, [name]);
+  const runs = usePoll((signal) => (controls ? getRuns(name, null, { signal }) : Promise.resolve(NO_RUNS)), EVERY_MS, [name, controls]);
   const [laid, setLaid] = useState<{ graph: Graph; layout: Layout } | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -279,26 +283,28 @@ export default function RunGraph({ name, window: win, runId, onWindow, onRun }: 
 
   return (
     <section className="graph" aria-label="Run graph">
-      <div className="graph-bar">
-        <WindowPicker value={win} onChange={onWindow} disabled={runId !== null} />
-        <label className="runpick">
-          <span className="runpick-label">Run</span>
-          <select className="runpick-select" value={runId ?? ""} onChange={(e) => onRun(e.target.value || null)}>
-            <option value="">All runs in the window</option>
-            {runId !== null && !choices.some((r) => r.id === runId) && <option value={runId}>{shortRunId(runId)}</option>}
-            {choices.map((r) => (
-              <option key={r.id} value={r.id}>
-                {runOption(r)}
-              </option>
-            ))}
-          </select>
-        </label>
-        {data && (
-          <p className="graph-scope" role="status">
-            {scopeLine(data, runId ? runsById.get(runId) : undefined)}
-          </p>
-        )}
-      </div>
+      {controls && (
+        <div className="graph-bar">
+          <WindowPicker value={win} onChange={(w) => onWindow?.(w)} disabled={runId !== null} />
+          <label className="runpick">
+            <span className="runpick-label">Run</span>
+            <select className="runpick-select" value={runId ?? ""} onChange={(e) => onRun?.(e.target.value || null)}>
+              <option value="">All runs in the window</option>
+              {runId !== null && !choices.some((r) => r.id === runId) && <option value={runId}>{shortRunId(runId)}</option>}
+              {choices.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {runOption(r)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {data && (
+            <p className="graph-scope" role="status">
+              {scopeLine(data, runId ? runsById.get(runId) : undefined)}
+            </p>
+          )}
+        </div>
+      )}
 
       {graph.loading ? (
         <div className="graph-canvas graph-skeleton" aria-busy="true">
