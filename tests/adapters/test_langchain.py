@@ -327,3 +327,78 @@ def test_wrapped_chatopenai_budget_exceeded_reaches_caller(tmp_path):
             agent.invoke({"messages": [{"role": "user", "content": "go"}]})
     assert seen == []
     assert _events("llm_call") == []  # nothing observed for a call that never happened
+
+
+def test_wrapped_chatopenai_under_other_meter_recorded_once(tmp_path):
+    from langchain_openai import ChatOpenAI
+
+    from pitstop.sdk.wrap import meter
+
+    _init(tmp_path)
+    wrapped = pitstop.wrap(openai_client(lambda r: httpx.Response(200, json=chat_completion("all done"))))
+    model = ChatOpenAI(model=MODEL, client=wrapped.chat.completions, api_key="x")
+    agent = create_agent(model, _tools([]), middleware=[PitStopMiddleware()])
+    with pitstop.workflow("wf", goal="Summarize", criticality="medium"):
+        with meter("summarizer"):
+            agent.invoke({"messages": [{"role": "user", "content": "go"}]})
+    [e] = _events("llm_call")
+    assert "observed" not in e["payload"] and e["payload"]["meter"] == "summarizer"
+
+
+async def test_concurrent_wrapped_and_unwrapped_calls_observed_per_call(tmp_path):
+    """The unwrapped model call is still in flight when the wrapped one of the same run is metered: only the
+    unwrapped one is observed."""
+    import asyncio
+
+    from langchain_openai import ChatOpenAI
+
+    _init(tmp_path)
+    slow = ScriptedChat(responses=[_reply("slow done", i=1)], sleep=0.3)
+    sync_w = pitstop.wrap(openai_client(lambda r: httpx.Response(200, json=chat_completion("fast done"))))
+    async_w = pitstop.wrap(openai_client(lambda r: httpx.Response(200, json=chat_completion("fast done")),
+                                         async_=True))
+    fast = ChatOpenAI(model=MODEL, client=sync_w.chat.completions, async_client=async_w.chat.completions,
+                      api_key="x")
+    a = create_agent(slow, [], middleware=[PitStopMiddleware()])
+    b = create_agent(fast, [], middleware=[PitStopMiddleware()])
+    msg = {"messages": [{"role": "user", "content": "go"}]}
+    with pitstop.workflow("wf", goal="Research", criticality="medium"):
+        ra, rb = await asyncio.gather(a.ainvoke(msg), b.ainvoke(msg))
+    assert (ra["messages"][-1].content, rb["messages"][-1].content) == ("slow done", "fast done")
+    events = _events("llm_call")
+    assert sorted((e["name"], e["payload"].get("observed", False)) for e in events) == [("fake-1", True),
+                                                                                       (MODEL, False)]
+    assert events[0]["name"] == MODEL  # the wrapped call finished while the unwrapped one was in flight
+
+
+async def test_async_loop_halt_raises_from_ainvoke(tmp_path):
+    _init(tmp_path)
+    calls = []
+    replies = [_reply(calls=[("search", {"q": "nvidia"})], i=i) for i in range(1, 7)] + [_reply("done", i=7)]
+    agent = create_agent(_model(*replies), _tools(calls), middleware=[PitStopMiddleware()])
+    with pytest.raises(pitstop.Halted, match="steer limit"):
+        with pitstop.workflow("wf", goal="Research NVIDIA", criticality="medium"):
+            await agent.ainvoke({"messages": [{"role": "user", "content": "go"}]})
+    assert calls == [("search", "nvidia")] * 2
+    assert len(_events("steer")) == 2 and len(_events("halt")) == 1
+
+
+def test_interrupt_in_tool_passes_through_unrecorded(tmp_path):
+    from langgraph.checkpoint.memory import InMemorySaver
+    from langgraph.types import interrupt
+
+    _init(tmp_path)
+
+    @tool
+    def send_email(to: str) -> str:
+        """Send an email after a human approves."""
+        interrupt("approve?")
+        return "sent"
+
+    model = _model(_reply(calls=[("send_email", {"to": "ops@example.com"})], i=1), _reply("done", i=2))
+    agent = create_agent(model, [send_email], middleware=[PitStopMiddleware()], checkpointer=InMemorySaver())
+    with pitstop.workflow("wf", goal="Report", criticality="low"):
+        result = agent.invoke({"messages": [{"role": "user", "content": "go"}]},
+                              {"configurable": {"thread_id": "t1"}})
+    assert "__interrupt__" in result
+    assert len(_events("tool_call")) == 1 and _events("tool_result") == []

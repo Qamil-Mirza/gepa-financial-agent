@@ -23,6 +23,10 @@ observed instead (plan decision 12): `wrap_model_call` records an `llm_call` eve
 `wrap`'s plus `"observed": true`, tokens from the reply's `usage_metadata` and a price-table cost estimate, and runs
 the L0 model-call checks on it (invalid tool calls count as parse failures, refusals as refusals). It never writes a
 ledger row, so an observed call cannot trip a budget; the first one names the run's model when no wrapped call did.
+Whether a wrapped client metered the call is known per model call: the handler runs inside `metered_cell()`
+(`pitstop.sdk.wrap.call`), whose cell a wrapped call made inside it marks when it records its event, on any ledger
+meter (`pitstop.sdk.wrap.meter(...)`). Contexts LangGraph copies from it share the cell; concurrent model calls each
+get their own.
 
 Agent naming: `agent=` names the agent for PitStop. `before_agent` names it for the scope `invoke` was called in
 (`RunContext.set_framework_agent`, `pitstop.agent(name)` semantics: LangGraph runs nodes in copied contexts, so a
@@ -33,9 +37,9 @@ agent keeps the goal of the enclosing `pitstop.agent(...)` scope, which the gate
 tags the run `runs.adapter = 'langchain'`.
 
 Limits: only tool calls that reach the agent's `ToolNode` are guarded (tools the model calls server side are not).
-"Metered by wrap" is judged per run (`RunContext.llm_calls` before and after the model call), so two model calls of
-one run in flight at once, one wrapped and one not, can both be taken as metered. Plain LangGraph `StateGraph` graphs
-without `create_agent` use `@pitstop.tool` and `pitstop.wrap` directly.
+An `interrupt()` inside a tool passes through unrecorded; the resumed call is guarded again, so it counts twice in
+the loop history. Plain LangGraph `StateGraph` graphs without `create_agent` use `@pitstop.tool` and `pitstop.wrap`
+directly.
 """
 from __future__ import annotations
 
@@ -47,10 +51,12 @@ from typing import Any, Iterable
 from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.tools import ToolException
+from langgraph.errors import GraphBubbleUp
 
 from ..context import RunContext, _meter, _safe, check_halt, current_run
 from ..guard import aguard_call, checked, guard_call, record_tool_result, tool_args_text
 from ..runtime import get_runtime
+from ..wrap.call import metered_cell
 
 __all__ = ["PitStopMiddleware"]
 
@@ -106,9 +112,9 @@ class PitStopMiddleware(AgentMiddleware):
         if ctx is None:
             return handler(request)
         _safe(lambda: self._check_tool_names(request))
-        before = ctx.llm_calls
-        response = handler(request)
-        if ctx.llm_calls == before:  # no agent-meter call through a wrapped client: observe it
+        with metered_cell() as cell:
+            response = handler(request)
+        if not cell.metered:  # no wrapped client metered this model call: observe it
             _safe(lambda: self._observe(ctx, request, response))
         return response
 
@@ -117,9 +123,9 @@ class PitStopMiddleware(AgentMiddleware):
         if ctx is None:
             return await handler(request)
         _safe(lambda: self._check_tool_names(request))
-        before = ctx.llm_calls
-        response = await handler(request)
-        if ctx.llm_calls == before:
+        with metered_cell() as cell:
+            response = await handler(request)
+        if not cell.metered:
             _safe(lambda: self._observe(ctx, request, response))
         return response
 
@@ -136,6 +142,8 @@ class PitStopMiddleware(AgentMiddleware):
         with checked(ctx, name) as mark:
             try:
                 result = handler(request)
+            except GraphBubbleUp:  # an interrupt() inside the tool: not a result; the resumed call is guarded again
+                raise
             except BaseException as e:
                 if not mark.recorded:
                     record_tool_result(ctx, name, error=e, agent=self.agent)
@@ -155,6 +163,8 @@ class PitStopMiddleware(AgentMiddleware):
         with checked(ctx, name) as mark:
             try:
                 result = await handler(request)
+            except GraphBubbleUp:  # an interrupt() inside the tool: not a result; the resumed call is guarded again
+                raise
             except BaseException as e:
                 if not mark.recorded:
                     record_tool_result(ctx, name, error=e, agent=self.agent)

@@ -9,7 +9,9 @@ import json
 import logging
 import math
 import time
-from typing import Any, Literal
+from contextlib import contextmanager
+from contextvars import ContextVar
+from typing import Any, Iterator, Literal
 
 from ...userconfig import ConfigInvalid
 from ...budget.ledger import Reservation
@@ -28,6 +30,33 @@ log = logging.getLogger("pitstop")
 _NO_STREAM_OPTIONS: set[str] = set()
 
 Mode = Literal["normal", "raw", "streaming"]  # "raw": with_raw_response; "streaming": with_streaming_response
+
+
+class MeteredCell:
+    """Set by `metered_cell()` around a framework's model call; `metered` turns True when a wrapped call made inside
+    it records its `llm_call` event (any meter). Shared by every context copied from the one that set it."""
+    __slots__ = ("metered",)
+
+    def __init__(self) -> None:
+        self.metered = False
+
+
+_metered_cell: ContextVar[MeteredCell | None] = ContextVar("pitstop_metered_cell", default=None)
+
+
+@contextmanager
+def metered_cell() -> Iterator[MeteredCell]:
+    """A fresh MeteredCell for the block: an adapter wraps one model call in it and, when the cell stays unmarked,
+    knows no `pitstop.wrap`-ed client metered that call (and may record it as observed)."""
+    cell = MeteredCell()
+    token = _metered_cell.set(cell)
+    try:
+        yield cell
+    finally:
+        try:
+            _metered_cell.reset(token)
+        except ValueError:  # exited from another Context: leave that context's cell alone
+            pass
 
 
 # -- post-call hooks (L0 detection) --------------------------------------------------------------------------
@@ -156,6 +185,7 @@ class _Call:
         self.got_result = False
         self.closed = False
         self.obs = Observed()
+        self.cell = _metered_cell.get()  # the adapter's per-model-call cell, marked when this call is recorded
 
     @classmethod
     def begin(cls, client: Any, shape: Shape, kwargs: dict, mode: Mode = "normal",
@@ -305,9 +335,12 @@ class _Call:
                 refused: bool) -> None:
         """Write the `llm_call` event (its tokens are the ones settled, or estimated) and the run's tags: the first
         agent call sets model, base_url and adapter (an adapter that tagged the run first keeps its tag), and a
-        call redirected to the fallback model records the first model it replaced."""
+        call redirected to the fallback model records the first model it replaced. Marks the adapter's
+        MeteredCell, if one was set when the call began."""
         from ... import __version__
 
+        if self.cell is not None:
+            self.cell.metered = True
         o = self.obs
         payload: dict[str, Any] = {"tool_calls": o.tool_calls, "finish_reason": o.finish_reason,
                                    "content_chars": o.content_chars, "meter": self.meter,
