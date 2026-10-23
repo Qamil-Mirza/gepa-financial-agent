@@ -15,13 +15,35 @@ def _warm(c: Cusum, rng: random.Random, spec=BOTH, mean=10.0) -> float:
 
 
 def test_constants():
-    assert WARMUP == 20
-    assert PARAMS == {"low": (0.5, 8.0), "normal": (0.5, 5.0), "high": (0.5, 4.0)}
+    assert WARMUP == 30
+    assert PARAMS == {"low": (0.5, 10.0), "normal": (0.5, 8.0), "high": (0.5, 6.0)}
+
+
+def _first_alarm(seed: int, spec, *, shift: float = 0.0, runs: int = 300) -> int | None:
+    """Warm up on N(10, 1), then feed `runs` values of N(10 + shift, 1); the index of the first alarm, if any."""
+    rng, c = random.Random(seed), Cusum()
+    _warm(c, rng, spec)
+    for i in range(runs):
+        if c.update(rng.gauss(10 + shift, 1), float(WARMUP + i), spec, "normal") is not None:
+            return i
+    return None
+
+
+def test_false_alarm_budget():
+    # at most 5% of stationary streams alarm even once in 300 runs, two-sided and up-only
+    for spec in (BOTH, UP):
+        alarmed = sum(_first_alarm(seed, spec) is not None for seed in range(200))
+        assert alarmed <= 10, (spec.directions, alarmed)
+
+
+def test_detects_3_sigma_step():
+    detected = sum(_first_alarm(seed, BOTH, shift=3.0, runs=10) is not None for seed in range(200))
+    assert detected >= 190
 
 
 def test_no_alarm_on_stationary_noise():
     rng, c = random.Random(7), Cusum()
-    for i in range(300):
+    for i in range(WARMUP + 300):
         assert c.update(rng.gauss(10, 1), float(i), BOTH, "normal") is None
     assert c.n == WARMUP  # the baseline froze after the warmup
 
@@ -30,7 +52,7 @@ def test_step_up_alarms_quickly():
     rng, c = random.Random(7), Cusum()
     first = _warm(c, rng)
     alarm = None
-    for i in range(8):
+    for i in range(10):
         alarm = c.update(rng.gauss(13, 1), first + i, BOTH, "normal")
         if alarm is not None:
             break
@@ -42,7 +64,7 @@ def test_step_up_alarms_quickly():
 def test_step_down_alarms_when_allowed():
     rng, c = random.Random(7), Cusum()
     first = _warm(c, rng)
-    alarms = [c.update(rng.gauss(7, 1), first + i, BOTH, "normal") for i in range(8)]
+    alarms = [c.update(rng.gauss(7, 1), first + i, BOTH, "normal") for i in range(10)]
     assert any(a is not None and a.direction == "down" for a in alarms)
 
 
@@ -57,27 +79,35 @@ def test_floor_prevents_zero_std_alarm():
     spec, c = METRICS["tool_error_rate"], Cusum()
     for i in range(WARMUP):
         assert c.update(0.0, float(i), spec, "normal") is None
-    assert c.update(0.02, 20.0, spec, "normal") is None  # z = 0.02 / 0.05 floor = 0.4 < k
-    alarms = [c.update(0.5, 21.0 + i, spec, "normal") for i in range(3)]
+    assert c.update(0.02, 100.0, spec, "normal") is None  # z = 0.02 / 0.05 floor = 0.4 < k
+    alarms = [c.update(0.5, 101.0 + i, spec, "normal") for i in range(3)]
     fired = [a for a in alarms if a is not None]
     assert len(fired) == 1 and fired[0].direction == "up" and fired[0].baseline_std == 0.05
-    assert fired[0].at == 21.0 and fired[0].value == 0.5
+    assert fired[0].at == 101.0 and fired[0].value == 0.5
+
+
+def test_absolute_floor_on_zero_baseline():
+    # a relative floor of a zero mean is zero: the metric's min_floor (1 call) keeps the std up
+    spec, c = METRICS["llm_calls"], Cusum()
+    for i in range(WARMUP):
+        assert c.update(0.0, float(i), spec, "normal") is None
+    assert c.update(1.0, 100.0, spec, "normal") is None  # z = 1 / 1 = 1: s_hi = 0.5 < h
 
 
 def test_relative_floor_on_flat_baseline():
     c = Cusum()
     for i in range(WARMUP):
         c.update(100.0, float(i), UP, "normal")
-    assert c.update(102.0, 20.0, UP, "normal") is None  # z = 2 / (5% of 100) = 0.4 < k
+    assert c.update(102.0, 100.0, UP, "normal") is None  # z = 2 / (5% of 100) = 0.4 < k
 
 
 def test_sensitivity_sets_threshold():
     # z = 1.5 per step after the warmup (std floored at 5% of 100 = 5, x = 107.5): s_hi grows by 1 per step
-    for sens, steps in (("high", 5), ("normal", 6), ("low", 9)):
+    for sens, steps in (("high", 7), ("normal", 9), ("low", 11)):
         c = Cusum()
         for i in range(WARMUP):
             c.update(100.0, float(i), UP, sens)
-        alarms = [c.update(107.5, 20.0 + i, UP, sens) for i in range(steps)]
+        alarms = [c.update(107.5, 100.0 + i, UP, sens) for i in range(steps)]
         assert alarms[:-1] == [None] * (steps - 1) and alarms[-1] is not None, sens
 
 

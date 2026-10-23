@@ -28,11 +28,11 @@ def test_metric_table():
     assert METRICS == {
         "tool_error_rate": MetricSpec("tool_call_breakage", ("up",), 0.05, False),
         "refusal_rate": MetricSpec("refusal_spike", ("up",), 0.05, False),
-        "tokens_per_call": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True),
-        "llm_calls": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True),
-        "cost_usd": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True),
-        "duration_s": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True),
-        "output_chars": MetricSpec("quality_drop", ("up", "down"), 0.05, True),
+        "tokens_per_call": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True, 1.0),
+        "llm_calls": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True, 1.0),
+        "cost_usd": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True, 0.0001),
+        "duration_s": MetricSpec("cost_or_latency_creep", ("up",), 0.05, True, 0.1),
+        "output_chars": MetricSpec("quality_drop", ("up", "down"), 0.05, True, 1.0),
     }
 
 
